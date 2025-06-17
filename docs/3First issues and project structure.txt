@@ -1,0 +1,177 @@
+
+# 📁 **GitHub Project Structure (React Native + Django Mono-Repo)**
+
+```
+real-time-jobs-app/
+├── backend/                      # Django backend
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── .env                      # Secrets (ignored by .gitignore)
+│   ├── config/                   # Django project settings
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── asgi.py               # ASGI for Django Channels
+│   └── jobs/                     # Django app: jobs, users, chat, etc.
+│       ├── models/
+│       ├── serializers/
+│       ├── views/
+│       ├── consumers.py          # WebSocket logic
+│       ├── routing.py            # WebSocket routes
+│       └── urls.py
+│
+├── frontend/                     # React Native mobile app
+│   ├── app.json / expo.json      # If using Expo
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── index.js / App.tsx
+│   ├── src/
+│   │   ├── screens/              # Screens (Login, Feed, Details...)
+│   │   ├── components/           # Reusable UI elements
+│   │   ├── services/             # API and WebSocket clients
+│   │   ├── models/               # TypeScript interfaces
+│   │   └── utils/                # Constants, helpers
+│   └── assets/
+│       └── images/
+│
+├── docs/                         # Documentation (flows, API, diagrams)
+│   ├── roadmap.md
+│   ├── data_models.md
+│   ├── api_routes.md
+│   └── wireframes/
+│
+├── .github/                      # GitHub configs
+│   └── workflows/                # GitHub Actions
+│       ├── backend.yml           # Lint + test Django
+│       └── frontend.yml          # Type check + test React Native
+│
+├── .gitignore
+├── README.md
+└── LICENSE
+```
+
+---
+
+# 🛠️ GitHub Setup & Best Practices
+
+### ✅ 1. **Branches**
+
+| Branch      | Purpose                                 |
+| ----------- | --------------------------------------- |
+| `main`      | Stable code, auto-deployed              |
+| `dev`       | Active development + integration branch |
+| `feature/*` | Individual feature branches             |
+
+> Example:
+> `feature/login-auth`
+> `feature/ws-job-feed`
+> `feature/payment-escrow`
+
+---
+
+### ✅ 2. **GitHub Actions (.yml)**
+
+**File:** `.github/workflows/backend.yml`
+
+```yaml
+name: Django Backend CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Lint
+        run: |
+          cd backend
+          black . --check
+          flake8 .
+
+      - name: Run tests
+        run: |
+          cd backend
+          python manage.py test
+```
+
+**File:** `.github/workflows/frontend.yml`
+
+```yaml
+name: React Native Frontend CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Type Check + Lint
+        run: |
+          cd frontend
+          npm run lint
+          tsc --noEmit
+
+      - name: Run tests
+        run: |
+          cd frontend
+          npm test
+```
+
+---
+
+### ✅ 3. **Milestones & Issues**
+
+Create milestones like:
+
+* 🥇 **MVP**: auth, job feed, bidding, Stripe
+* 🧪 **Beta**: chat, map, push notifications
+* 🚀 **Launch**: production polish & deployment
+
+---
+
+### ✅ 4. **Initial TODO List (Create as GitHub Issues)**
+
+| Task                                     | Tag         |
+| ---------------------------------------- | ----------- |
+| Set up Django project + JWT auth         | `backend`   |
+| Set up PostgreSQL + config               | `backend`   |
+| Set up React Native project (Expo/CLI)   | `frontend`  |
+| Create login/signup UI                   | `frontend`  |
+| Create `Job` model + post/view API       | `backend`   |
+| Integrate WebSocket job broadcast        | `fullstack` |
+| Connect RN WebSocket client to backend   | `frontend`  |
+| Implement bidding + job assignment logic | `backend`   |
+| Build bidding/chat UI with WebSocket     | `frontend`  |
+| Stripe escrow-style payment flow         | `fullstack` |
+| Build rating model + UI                  | `fullstack` |
+| Deploy backend (Railway / Fly.io)        | `devops`    |
+| Configure Firebase push notifications    | `frontend`  |
+
+---
+
+Would you like me to turn this into a **starter GitHub repo template** with folders, CI, and README ready to go? Or package it as a ZIP with dummy code folders?
+

@@ -1,0 +1,7 @@
+| **Item**                     | **Budget (3 months)** | **Budget (6 months)** |
+| ---------------------------- | --------------------- | --------------------- |
+| Hosting & Infra              | €150                  | €300                  |
+| Domain + Email + SMS         | €20                   | €40                   |
+| Marketing (local ads, etc.)  | €100–300              | €300–600              |
+| Legal/accounting help (SRL)  | €150–250              | €150–250 (one-time)   |
+| Misc (design, backups, etc.) | €100                  | €150                  |

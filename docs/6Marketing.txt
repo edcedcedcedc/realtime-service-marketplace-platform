@@ -1,0 +1,134 @@
+Absolutely. Here's your **short map (marketing step-by-step plan)** followed by **message/post templates** you can plug and play in Telegram, social media, or flyers.
+
+---
+
+## 📍 **ShortMap: Lean Marketing Steps**
+
+### ✅ **Week 0–1: Prepare and Seed**
+
+* [ ] Build landing page (Carrd/Figma/Notion) with email/Telegram signup.
+* [ ] Create Telegram **channel** + **group** (`@jobly_chisinau`)
+* [ ] Start collecting early users:
+
+  * DM freelancers in local FB/Telegram groups
+  * Ask them to join the Telegram group
+* [ ] Design flyers + stickers with QR code to website/Telegram
+* [ ] Print flyers/stickers at local copy centers
+
+📲 [Join Telegram]
+📱 [Try the App]
+---
+
+### ✅ **Week 2–3: Launch MVP + Street Presence**
+
+* [ ] Launch MVP → basic working app + live jobs/bids
+* [ ] Distribute flyers at:
+
+  * Dorms (USM, UTM, ASEM)
+  * Local cafes
+  * Bus stops
+* [ ] Use Telegram group like a manual marketplace (if app is low on users)
+* [ ] Start short TikToks or Reels with demo of live job posting
+
+---
+
+### ✅ **Week 4–5: Community Growth & Promotion**
+
+* [ ] Offer early users €5 bonus for referrals
+* [ ] Reach out to micro-influencers (2–5K local) and give free task in exchange for a post
+* [ ] Boost 1–2 Facebook posts in Chișinău groups (\~€5–10)
+* [ ] Post “job of the day” in Telegram channel every morning
+
+---
+
+### ✅ **Week 6+: Retention and Flywheel**
+
+* [ ] Add ratings/testimonials inside app
+* [ ] Push users to post reviews on Instagram/Telegram
+* [ ] Repost successful job matches (screenshots/testimonials)
+* [ ] Try first real money ad (\~€10) to test conversion from Facebook → landing page
+
+---
+
+## 📦 Templates
+
+---
+
+### 🔹 **Telegram Group Introduction Message**
+
+```
+👋 Welcome to Jobly Chișinău!
+
+This is a **real-time job marketplace** for small tasks like cleaning, moving, repairs, or delivery.  
+Post what you need — and available people nearby can help immediately.
+
+✅ No middlemen  
+✅ Real-time bidding  
+✅ You only pay after the job is done  
+
+📌 How to Use:
+1. Write your task in this format:
+🔧 Job: Help moving a desk  
+📍 Location: Botanica  
+💰 Budget: 200 MDL  
+🕐 Time: Now or Today 14:00
+
+2. Wait for offers  
+3. Accept the best one  
+
+🚀 Want to try the app instead? → [link to app or website]
+
+```
+
+---
+
+### 🔹 **Flyer Text (minimal style)**
+
+```
+🛠️ NEED HELP FAST?
+Real-time workers in Chișinău
+
+💡 Cleaners, movers, delivery, fixers  
+📍 Get help in minutes  
+💬 No middlemen, just live offers
+
+Try Jobly: [shortlink]  
+Telegram: @jobly_chisinau  
+```
+
+---
+
+### 🔹 **DM Template for Local Groups (Freelancers or Students)**
+
+```
+Hey! 👋 I’m building a new local app in Chișinău where people can **get paid for small tasks instantly** — like cleaning, delivery, moving help, repairs, etc.
+
+No bosses. No middlemen.  
+Just real-time jobs and fast payment.
+
+Wanna test it early and maybe earn a bit on the side?
+
+Join the tester group: @jobly_chisinau  
+Or check it out here: [link to website]
+
+💰 First 20 helpers get bonus cash for trying it out!
+```
+
+---
+
+### 🔹 **Instagram / TikTok Script Idea (30 sec)**
+
+> 🎥 Scene: Person posts job: “Need help carrying my desk downstairs”
+>
+> 🎙️ Voiceover:
+> “You needed help? You posted. 3 workers replied. You picked one. Job done in 30 minutes.”
+>
+> 💬 Caption:
+> “Real-time jobs in Chișinău. No middlemen. No waiting. Just help when you need it.”
+>
+> 👉 \[Download link]
+
+---
+
+If you want I can also generate **QR codes, Figma flyer templates, or a promo landing page** for you. Just say the word!
+

@@ -1,0 +1,92 @@
+the big picture:
+
+1. **Read and understand** the Moldovan Civil Code articles related to:
+
+   * **Service Contracts (Art. 1194–1199)** — your app’s relationship with contractors.
+   * **Contractual Obligations (Art. 1165–1168)** — general duties and rights under contracts.
+   * **Mandate / Intermediary agreements (Art. 1190–1193)** — if you handle payments as escrow or agent.
+
+2. **Register your company as an SRL** — a limited liability company in Moldova. This will be your legal entity operating the platform.
+
+3. **Contractors: two main groups:**
+
+   * **I.P.s (Întreprinzător Individual):** Registered freelancers who invoice you and pay their own taxes.
+   * **Non-registered individuals:** Work occasionally, get paid by you, and are responsible for declaring income/taxes themselves (or sometimes don’t).
+
+4. **Big platforms like Glovo, Bolt, and Duck** operate with this model:
+
+   * They register as companies (SRLs or bigger)
+   * Contractors work as I.P.s or non-registered freelancers
+   * Platforms act as intermediaries and take commissions (often with escrow systems)
+   * Contractors handle their own tax filings
+
+
+
+
+What to read:
+
+Art. 1194–1199 — Contract de prestări servicii (Service Contract)
+Art. 1165–1168 — Obligații contractuale (Contractual obligations)
+Art. 1190–1193 — Mandate / Intermediary agreements (if you're holding money for someone else)
+
+SRL checklist:
+
+| ✅ Step | Description                                                                                |
+| ------ | ------------------------------------------------------------------------------------------ |
+| 1️⃣    | Choose company name (verify it’s unique at [asp.gov.md](https://asp.gov.md))               |
+| 2️⃣    | Choose legal address (can be your apartment or lawyer’s address)                           |
+| 3️⃣    | Choose activity code (CAEM) — most likely `6311` (Web platforms) or `6202` (IT consulting) |
+| 4️⃣    | Choose administrator (your name or a partner)                                              |
+| 5️⃣    | Prepare charter (standard one is okay at start)                                            |
+| 6️⃣    | Register online via [MSign](https://servicii.gov.md) or at ASP physically                  |
+| 7️⃣    | Get company stamp (optional but useful)                                                    |
+| 8️⃣    | Open bank account (e.g., maib, Victoriabank, Mobias)                                       |
+| 9️⃣    | Register for taxes at SFS (Serviciul Fiscal de Stat)                                       |
+| 🔟    | Start issuing invoices and operate legally                                                 |
+
+
+
+
+
+Example of worker when works:
+
+CASE A: Cleaner is registered as an I.P. (freelancer / “Întreprinzător Individual”)
+They:
+Receive 700 MDL
+Issue you or the client an invoice
+Declare it in their accounting
+Pay ~7% tax on that money (or more, depending on regime)
+✅ All legal, clean.
+❌ But most people don’t want to register an I.P. — too much work.
+
+CASE B: Cleaner is not registered and just receives money
+This is what happens 90% of the time in Glovo, Bolt, Fiverr, and probably your app too.
+They:
+Receive 700 MDL to their card or cash
+Don’t register anywhere
+Don’t pay tax unless the tax office finds out and asks
+🔹 Legally, they are supposed to declare that money as "occasional income" and pay income tax.
+🔹 In practice, they almost never do.
+✅ You are not responsible for this.
+
+
+Terms of Service, clarifying the contractor’s responsibility for taxes and registration:
+
+**Responsabilitatea fiscală și înregistrarea contractorilor**
+1. Contractorii care oferă servicii prin intermediul platformei sunt responsabili pentru înregistrarea 
+lor fiscală și pentru plata tuturor impozitelor și contribuțiilor sociale aferente veniturilor obținute.
+2. Platforma funcționează ca un intermediar și nu este angajatorul contractorilor.
+3. Contractorii trebuie să fie înregistrati legal (de exemplu, ca Întreprinzător Individual) 
+conform legislației în vigoare și să emită facturi sau alte documente fiscale atunci când este cazul.
+4. Platforma reține un comision pentru facilitarea tranzacțiilor între clienți și contractorii care prestează serviciile.
+5. Contractorii sunt singurii responsabili pentru respectarea obligațiilor fiscale, iar platforma nu răspunde pentru eventualele datorii fiscale ale acestora.
+
+**Налоговые обязательства и регистрация подрядчиков**
+1. Подрядчики, предоставляющие услуги через платформу, несут ответственность за свою налоговую регистрацию 
+и уплату всех налогов и социальных взносов, связанных с полученными доходами.
+2. Платформа выступает посредником и не является работодателем подрядчиков.
+3. Подрядчики обязаны быть официально зарегистрированы (например, как индивидуальные предприниматели) 
+в соответствии с действующим законодательством и при необходимости выставлять счета или другие налоговые документы.
+4. Платформа удерживает комиссию за посредничество при проведении сделок между клиентами и подрядчиками.
+5. Подрядчики самостоятельно несут ответственность за выполнение налоговых обязательств, и платформа не отвечает за возможные налоговые задолженности подрядчиков.
+
