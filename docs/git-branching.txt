@@ -1,0 +1,38 @@
+# Git Branch Naming Standards
+
+## Format:
+branchtype/phasenumber/shorttext
+
+- `branchtype` — The type of work the branch contains.
+- `phasename+phasenumber` — The project phase or milestone number (e.g. 0, 1, 2).
+- `shorttext` — A concise description of the branch purpose.
+
+## Examples:
+feature/phase0/user-authentication
+fix/phase1/payment-bug
+hotfix/phase1b/urgent-crash-fix
+chore/phase0/setup-ci
+docs/phase2/api-reference-update
+refactor/phase1b/split-job-model
+
+## Allowed Branch Types:
+- feature  → New functionality
+- fix      → Bug fixes
+- hotfix   → Urgent fixes on production
+- chore    → Maintenance, config, tools
+- docs     → Documentation changes
+- refactor → Code refactoring (no behavior change)
+- test     → Testing improvements
+- spike    → Exploratory/prototype work
+
+## Guidelines:
+- Use lowercase letters and dashes for `shorttext`
+- `phasenumber` can include letters if needed (e.g., `1a`, `2b`)
+- Keep branch names concise and informative
+- Avoid using version numbers in branch names; use Git tags instead
+- Delete feature branches after merging
+
+# Example Workflow:
+> git checkout -b feature/phase1a/job-bidding-ui
+> git push origin feature/phase1a/job-bidding-ui
+
