@@ -1,14 +1,12 @@
-MANAGE=backend/manage.py
-
 run:
-	python $(MANAGE) runserver
+	cd backend && python manage.py runserver
 migrate:
-	python $(MANAGE) migrate
+	cd backend && python manage.py migrate
 makemigrations:
-	python $(MANAGE) makemigrations
+	cd backend && python manage.py makemigrations
 createsuperuser:
-	python $(MANAGE) createsuperuser
+	cd backend && python manage.py createsuperuser
 shell:
-	python $(MANAGE) shell
+	cd backend && python manage.py shell
 test:
-	python $(MANAGE) test
+	cd backend && python manage.py test -v 2
