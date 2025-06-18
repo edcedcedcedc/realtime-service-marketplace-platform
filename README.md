@@ -95,4 +95,11 @@ STRIPE is used for:
 
 ---
 
-*Symmetrical Engine is currently in early development.*
+### Backend workflow
+source venv/bin/activate - virtual env 
+deactivate
+python manage.py migrate - after db updates
+python manage.py runserver - run dev server
+
+api - will handle core logic — jobs, bids, users, chats
+REST Framework - will let you expose APIs consumed by your React Native frontend
