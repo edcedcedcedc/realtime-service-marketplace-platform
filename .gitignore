@@ -1,1 +1,19 @@
 symmetrical-engine.code-workspace
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+
+# Local settings
+settings_local.py
+
+# Database files (if any)
+db.sqlite3
+
+# IDE/editor config
+.vscode/
+.idea/
