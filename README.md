@@ -84,15 +84,70 @@ STRIPE is used for:
 - **Payments**: Stripe Connect
 - **Deployment**: Docker, PostgreSQL
 
-## 📌 Phase 1 Goals
 
-- [ ] Implement login / signup flow
-- [ ] Post job & live feed system
-- [ ] Basic bidding interaction
-- [ ] Job thread & status transitions
-- [ ] Stripe escrow logic
-- [ ] Build MVP UI with core screens
+# Backend Documentation
+
+## Overview
+
+This backend is built with Django and Django REST Framework. It provides a RESTful API for a job marketplace platform, supporting user registration, authentication (JWT), job posting, bidding, and rating.
 
 ---
 
-*Symmetrical Engine is currently in early development.*
+## Features
+
+- **User Registration & Authentication:**  
+  Users can register and log in using JWT-based authentication.
+
+- **Job Management:**  
+  Clients can post jobs with details like title, description, location, and budget.
+
+- **Bidding System:**  
+  Workers can view jobs and place bids. Clients can accept bids and payments are managed via Stripe (planned).
+
+- **User Profiles & Ratings:**  
+  Each user has a profile and can be rated after job completion.
+
+---
+
+## API Endpoints
+
+| Endpoint                | Method | Description                        |
+|-------------------------|--------|------------------------------------|
+| `/api/register/`        | POST   | Register a new user                |
+| `/api/login/`        | POST   | Login user                |
+| `/api/token/`           | POST   | Obtain JWT access and refresh token|
+| `/api/token/refresh/`   | POST   | Refresh JWT access token           |
+| `/api/jobs/`            | GET/POST | List or create jobs (to be implemented) |
+| `/api/bids/`            | GET/POST | List or create bids (to be implemented) |
+| `/api/profile/`         | GET    | Get user profile (to be implemented) |
+
+---
+
+## Authentication
+
+- Uses JWT (JSON Web Tokens) via `djangorestframework-simplejwt`.
+- Include the token in the `Authorization` header as:  
+  ```
+  Authorization: Bearer <access_token>
+  ```
+
+---
+
+## Running Common Commands
+
+Use the provided `Makefile` or `manage.bat` for common tasks:
+
+- `make run`  — Start the server
+- `make migrate`  — Apply migrations
+- `make createsuperuser` — Create admin user
+
+---
+
+## Development Notes
+
+- Database: SQLite for development (PostgreSQL recommended for production)
+- All API endpoints are under `/api/`
+- Extend models and endpoints as needed for your use case
+
+---
+
