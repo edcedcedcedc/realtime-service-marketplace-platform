@@ -9,7 +9,13 @@ const api = axios.create({
 
 
 api.interceptors.request.use(async (config) => {
+ 
+
+  if (config.url?.endsWith('/register/') || config.url?.endsWith('/login/')) {
+    return config;
+  }
   const token = await AsyncStorage.getItem('token');
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
