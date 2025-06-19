@@ -19,13 +19,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
       const res = await api.post("/login/", {
-        email,
+        username,
         password,
       });
       await AsyncStorage.setItem("access", res.data.access);
@@ -52,9 +52,9 @@ export default function LoginScreen({ navigation }: any) {
           <Text style={styles.title}>Your App Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
+            placeholder="Username"
+            value={username}
+            onChangeText={setUsername}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}

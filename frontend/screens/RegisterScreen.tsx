@@ -20,6 +20,7 @@ import { RadioButton } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("client");
@@ -33,6 +34,7 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       const res = await api.post("/register/", {
         email,
+        username,
         password,
         role,
       });
@@ -68,7 +70,14 @@ export default function RegisterScreen({ navigation }: any) {
             autoCapitalize="none"
             autoCorrect={false}
           />
-
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
           <TextInput
             style={styles.input}
             placeholder="Password"
