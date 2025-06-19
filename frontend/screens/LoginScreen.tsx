@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import api from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -33,22 +34,20 @@ export default function LoginScreen({ navigation }: any) {
     } catch (err: any) {
       Alert.alert(
         "Login Failed",
-        JSON.stringify(err.response?.data || err.message),
+        JSON.stringify(err.response?.data || err.message)
       );
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid={true}
+      extraScrollHeight={20}
+      keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View>
           <Image source={require("../assets/icon.png")} style={styles.logo} />
           <Text style={styles.title}>Your App Name</Text>
           <TextInput
@@ -82,9 +81,9 @@ export default function LoginScreen({ navigation }: any) {
           >
             <Text style={styles.terms}>Terms and Conditions</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 

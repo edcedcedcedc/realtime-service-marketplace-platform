@@ -5,7 +5,7 @@ createsuperuser shell test-backend reset-frontend update-backend \
 run-backend:
 	cd backend && python manage.py runserver 0.0.0.0:8000
 run-frontend:
-	cd frontend && npx expo start
+	cd frontend && npx expo start -c
 migrate:
 	cd backend && python manage.py migrate
 makemigrations:
