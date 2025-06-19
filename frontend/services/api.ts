@@ -8,17 +8,46 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  if (config.url?.endsWith("/register/") || config.url?.endsWith("/login/")) {
+  if (
+    config.url?.endsWith("/register/") ||
+    config.url?.endsWith("/login/") ||
+    config.url?.endsWith("/token/refresh/")
+  ) {
     return config;
   }
-  const token = await AsyncStorage.getItem("token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const accessToken = await AsyncStorage.getItem("access");
+
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   } else {
     console.error("No JWT token found");
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status == 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refresh = await AsyncStorage.getItem("refresh");
+      if (refresh) {
+        try {
+          const res = await axios.post(`${API_BASE_URL}token/refresh/`, {
+            refresh,
+          });
+          await AsyncStorage.setItem("access", res.data.access);
+          originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          console.log("Refresh token failed:", refreshError);
+        }
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;

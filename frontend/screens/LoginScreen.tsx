@@ -34,7 +34,7 @@ export default function LoginScreen({ navigation }: any) {
     } catch (err: any) {
       Alert.alert(
         "Login Failed",
-        JSON.stringify(err.response?.data || err.message)
+        JSON.stringify(err.response?.data || err.message),
       );
     }
   };
