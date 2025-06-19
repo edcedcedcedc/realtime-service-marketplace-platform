@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
-import axios from 'axios';
+import api from '../services/api'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post('http://<your-backend-ip>/api/token/', {
-        email, password
+      const res = await api.post('/login/', {
+        username, password
       });
       await AsyncStorage.setItem('token', res.data.access);
       navigation.navigate('Home');
@@ -21,12 +21,12 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View>
-      <Text>Email:</Text>
-      <TextInput value={email} onChangeText={setEmail} />
+      <Text>username:</Text>
+      <TextInput value={username} onChangeText={setUsername} />
       <Text>Password:</Text>
       <TextInput value={password} onChangeText={setPassword} secureTextEntry />
       <Button title="Login" onPress={handleLogin} />
-      <Button title="No account? Register" onPress={() => navigation.navigate('Register')} />
+      <Button title="Register" onPress={() => navigation.navigate('Register')} />
     </View>
   );
 }

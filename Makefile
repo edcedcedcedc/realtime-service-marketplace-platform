@@ -1,5 +1,5 @@
 run:
-	cd backend && python manage.py runserver
+	cd backend && python manage.py runserver 0.0.0.0:8000
 migrate:
 	cd backend && python manage.py migrate
 makemigrations:

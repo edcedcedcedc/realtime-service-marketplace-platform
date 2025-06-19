@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
-import axios from 'axios';
+import api from '../services/api'
 
 export default function RegisterScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleRegister = async () => {
     try {
-      await axios.post('http://<your-backend-ip>/api/register/', {
-        email, password
+      await api.post('/register/', {
+        username, password
       });
       Alert.alert('Success', 'You can now log in.');
       navigation.navigate('Login');
@@ -20,8 +20,8 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <View>
-      <Text>Email:</Text>
-      <TextInput value={email} onChangeText={setEmail} />
+      <Text>username:</Text>
+      <TextInput value={username} onChangeText={setUsername} />
       <Text>Password:</Text>
       <TextInput value={password} onChangeText={setPassword} secureTextEntry />
       <Button title="Register" onPress={handleRegister} />
