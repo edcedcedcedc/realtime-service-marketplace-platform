@@ -21,9 +21,13 @@ def register(request):
             {"error": "Username already exists."}, status=status.HTTP_400_BAD_REQUEST
         )
     user = User.objects.create_user(username=username, password=password)
+    refresh = RefreshToken.for_user(user)
     return Response(
-        {"message": f"User {user} registered successfully."},
-        status=status.HTTP_201_CREATED,
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": f"User {user.username} registered and logged in successfully.",
+        }
     )
 
 
