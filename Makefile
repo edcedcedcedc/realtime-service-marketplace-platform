@@ -1,4 +1,6 @@
-.PHONY: run-backend run-frontend migrate makemigrations createsuperuser shell test-backend reset-frontend update-backend update-frontend install-backend
+.PHONY: run-backend run-frontend migrate makemigrations \
+createsuperuser shell test-backend reset-frontend update-backend \
+ update-frontend install-backend format-frontend lint-frontend 
 # Run Django server
 run-backend:
 	cd backend && python manage.py runserver 0.0.0.0:8000
@@ -27,4 +29,8 @@ update-backend:
 	cd backend && pip freeze > requirements.txt
 update-frontend:
 	cd frontend && npm install
+format-frontend:
+	cd frontend && npm run format
+lint-frontend:
+	cd frontend && npm run lint
 
