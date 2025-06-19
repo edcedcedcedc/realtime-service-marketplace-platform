@@ -1,0 +1,37 @@
+This file documents the purpose and usage of Git tags in this repository.
+
+## What are tags?
+
+Tags are references to specific points in Git history, often used to mark release versions or important milestones.
+
+## Current tags in this repository
+
+- v0.0.0 — Initial project state or first commit (optional to keep)
+- v1.0.0 — First major release
+- push   — (Unusual tag, possibly created by mistake; can be deleted)
+
+## Tagging best practices
+
+- Use tags to mark release versions (e.g., v1.0.0, v1.1.0, v2.0.0).
+- Avoid using tags for temporary or non-release purposes.
+- Delete accidental or unnecessary tags to keep history clean.
+
+## Useful commands
+
+- List all tags:
+  git tag
+
+- Create a new tag:
+  git tag v1.2.0
+
+- Delete a local tag:
+  git tag -d <tagname>
+
+- Delete a remote tag:
+  git push origin --delete tag <tagname>
+
+- Checkout code at a tag:
+  git checkout <tagname>
+
+- Show commit for a tag:
+  git show <tagname>

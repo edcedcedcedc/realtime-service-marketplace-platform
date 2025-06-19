@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-s$-wy3b3(mhjxzzftu^$d3e!b1zi^y6&qfo0e@c2z&z0nxrn&e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",  # Django REST Framework
     "rest_framework_simplejwt",
     "api",
+    "corsheaders",
 ]
 
 REST_FRAMEWORK = {
@@ -56,6 +57,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -132,3 +134,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 AUTH_USER_MODEL = "api.User"
+
+CORS_ALLOW_ALL_ORIGINS = True  # Temporarily for dev (later restrict by origin)

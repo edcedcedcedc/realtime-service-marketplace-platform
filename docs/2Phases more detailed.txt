@@ -37,10 +37,22 @@
 ### 🔹 Frontend (React Native):
 
 * [ ] Initialize React Native project (Expo or CLI)
-* [ ] Setup navigation (e.g., `@react-navigation/native`)
+* [ ] Setup navigation 
 * [ ] Create login/signup UI screens
 * [ ] Call Django API to register/login
 * [ ] Save auth token with `AsyncStorage` and navigate to Home screen
+
+frontend/
+├── App.tsx
+├── screens/
+│   ├── LoginScreen.tsx
+│   ├── RegisterScreen.tsx
+│   └── HomeScreen.tsx
+├── services/
+│   └── api.ts        # Axios config
+├── navigation/
+│   └── RootNavigator.tsx
+
 
 ---
 
