@@ -12,10 +12,11 @@ export default function LoginScreen({ navigation }: any) {
       const res = await api.post('/login/', {
         username, password
       });
-      await AsyncStorage.setItem('token', res.data.access);
+      await AsyncStorage.setItem('access', res.data.access);
+      await AsyncStorage.setItem('refresh', res.data.refresh);
       navigation.navigate('Home');
-    } catch (error) {
-      Alert.alert('Login Failed', 'Invalid credentials.');
+    } catch (err: any) {
+      Alert.alert('Login Failed', JSON.stringify(err.response?.data || err.message));
     }
   };
 
