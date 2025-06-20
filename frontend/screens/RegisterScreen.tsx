@@ -17,7 +17,8 @@ import {
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { RadioButton } from "react-native-paper";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import useStore from "../store/useStore";
+
 export default function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -38,13 +39,17 @@ export default function RegisterScreen({ navigation }: any) {
         password,
         role,
       });
-      await AsyncStorage.setItem("access", res.data.access);
-      await AsyncStorage.setItem("refresh", res.data.refresh);
+      useStore
+        .getState()
+        .setAuth(
+          { access: res.data.access, refresh: res.data.refresh },
+          res.data.user
+        );
       navigation.navigate("Home");
     } catch (err: any) {
       Alert.alert(
         "Registration Failed",
-        JSON.stringify(err.response?.data || err.message),
+        JSON.stringify(err.response?.data || err.message)
       );
     }
   };
