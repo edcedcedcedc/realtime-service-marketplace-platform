@@ -19,12 +19,14 @@ export const passwordSchema = Yup.string()
   ); */
 
 export const emailSchema = Yup.string()
-  .email("Invalid email address")
-  .required("Email is required");
+  .required("Email is required")
+  .email("Invalid email address");
+  
 
 export const roleSchema = Yup.string()
-  .oneOf(["worker", "client"], "Role must be either 'worker' or 'client'")
-  .required("Role is required");
+  .required("Role is required")
+  .oneOf(["worker", "client"], "Role must be either 'worker' or 'client'");
+  
 
 export const loginSchema = Yup.object().shape({
   username: usernameSchema,
@@ -35,7 +37,7 @@ export const registerSchema = Yup.object().shape({
   email: emailSchema,
   username: usernameSchema,
   password: passwordSchema,
-  confirmPassword: Yup.string()
+  confirmPassword: passwordSchema
     .oneOf([Yup.ref("password")], "Passwords must match")
     .required("Confirm Password is required"),
   role: roleSchema,

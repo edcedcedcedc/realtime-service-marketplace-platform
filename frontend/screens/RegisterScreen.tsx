@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -7,41 +7,45 @@ import {
   Alert,
   Image,
   StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  ScrollView,
 } from "react-native";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { RadioButton } from "react-native-paper";
 import useStore from "../store/useStore";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { registerSchema } from "../validation/validationSchema";
+import * as Yup from "yup";
 
 export default function RegisterScreen({ navigation }: any) {
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("client");
   const auth = useStore((state) => state.auth);
-  useEffect(() => {
-    console.log("Auth state changed:", auth);
-  }, [auth]);
 
-  const handleRegister = async () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
-      return;
-    }
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<Yup.InferType<typeof registerSchema>>({
+    resolver: yupResolver(registerSchema),
+    reValidateMode: "onChange",
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+      role: "client",
+    },
+  });
 
+  const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
     try {
       const res = await api.post("/register/", {
-        email,
-        username,
-        password,
-        role,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+        role: data.role,
       });
       useStore
         .getState()
@@ -67,55 +71,121 @@ export default function RegisterScreen({ navigation }: any) {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View>
-          <Image source={require("../assets/icon.png")} style={styles.logo} />
           <Text style={styles.title}>Create Account</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
+          {/* Email */}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {errors.email && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.email.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
+          {/* Username */}
+          <Controller
+            control={control}
+            name="username"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  value={value}
+                  onChangeText={onChange}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {errors.username && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.username.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
-          <View>
-            <Text>Register as:</Text>
-            <RadioButton.Group
-              onValueChange={(value) => setRole(value)}
-              value={role}
-            >
-              <RadioButton.Item label="Client" value="client" />
-              <RadioButton.Item label="Worker" value="worker" />
-            </RadioButton.Group>
-          </View>
+
+          {/* Password */}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={value}
+                  onChangeText={onChange}
+                  secureTextEntry
+                />
+                {errors.password && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.password.message}
+                  </Text>
+                )}
+              </>
+            )}
+          />
+
+          {/* Confirm Password */}
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  value={value}
+                  onChangeText={onChange}
+                  secureTextEntry
+                />
+                {errors.confirmPassword && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.confirmPassword.message}
+                  </Text>
+                )}
+              </>
+            )}
+          />
+
+          {/* Role */}
+          <Controller
+            control={control}
+            name="role"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <Text>Register as:</Text>
+                <RadioButton.Group onValueChange={onChange} value={value}>
+                  <RadioButton.Item label="Client" value="client" />
+                  <RadioButton.Item label="Worker" value="worker" />
+                </RadioButton.Group>
+                {errors.role && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.role.message}
+                  </Text>
+                )}
+              </>
+            )}
+          />
 
           <View style={styles.buttonsContainer}>
-            <Button title="Register" onPress={handleRegister} />
-            <View style={{ width: 10 }} />
+            <Button title="Register" onPress={handleSubmit(handleRegister)} />
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -129,10 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 30,
     backgroundColor: "#fff",
-  },
-  label: {
-    marginBottom: 6,
-    fontWeight: "bold",
   },
   logo: {
     width: 120,
