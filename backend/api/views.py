@@ -3,7 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 
 User = get_user_model()
 
@@ -78,3 +79,11 @@ def login(request):
             {"error": "Invalid username or password"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def protected_view(request):
+    if request.method == "POST":
+        return Response({"message": "POST received this is a protected endpoint"})
+    return Response({"message": "GET received this is a protected endpoint"})
