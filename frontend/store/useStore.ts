@@ -26,7 +26,7 @@ interface State {
   clients: User[];
   jobs: Job[];
 
-  setAuth: (jwt: Jwt, user: User) => void;
+  setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
   addClient: (client: User) => void;
@@ -47,7 +47,7 @@ const useStore = create<State>()(
       clients: [],
       jobs: [],
 
-      setAuth: (jwt: Jwt, user: User) => set({ auth: { jwt, user } }),
+      setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
       clearAuth: () => set({ auth: { jwt: null, user: null } }),
       addWorker: (worker: User) =>
         set((state: { workers: User[] }) => ({

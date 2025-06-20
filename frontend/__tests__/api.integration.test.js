@@ -1,6 +1,6 @@
 jest.mock("@react-native-async-storage/async-storage");
+const useStore = require("../store/useStore").default;
 const api = require("../services/api").default;
-const AsyncStorage = require("@react-native-async-storage/async-storage");
 
 describe("Update access token based on refresh token and expired access token", () => {
   let refreshToken;
@@ -15,8 +15,15 @@ describe("Update access token based on refresh token and expired access token", 
     refreshToken = loginResponse.data.refresh;
 
     // 2. Seed AsyncStorage with expired access token and valid refresh token
-    await AsyncStorage.setItem("access", expiredAccessToken);
-    await AsyncStorage.setItem("refresh", refreshToken);
+    useStore.setState({
+      auth: {
+        jwt: {
+          access: expiredAccessToken,
+          refresh: refreshToken,
+        },
+        user: loginResponse.data.user,
+      },
+    });
   });
 
   test("should refresh token on 401 and retry original request", async () => {
@@ -27,14 +34,18 @@ describe("Update access token based on refresh token and expired access token", 
     expect(response.status).toBe(200);
 
     // 5. Check AsyncStorage for new access token, different from expired token
-    const newAccessToken = await AsyncStorage.getItem("access");
+    const newAccessToken = useStore.getState().auth.jwt?.access;
     expect(newAccessToken).toBeDefined();
     expect(newAccessToken).not.toBe(expiredAccessToken);
   });
 
   // Optional cleanup if needed
   afterAll(async () => {
-    await AsyncStorage.removeItem("access");
-    await AsyncStorage.removeItem("refresh");
+    useStore.setState({
+      auth: {
+        jwt: { access: null, refresh: null },
+        user: null,
+      },
+    });
   });
 });

@@ -28,8 +28,8 @@ test("register updates zustand auth state", async () => {
   const res = await api.post("/register/", {
     username: "user1",
     password: "user1",
-    email:"user1@email.com",
-    role:"worker"
+    email: "user1@email.com",
+    role: "worker",
   });
 
   // Update zustand store

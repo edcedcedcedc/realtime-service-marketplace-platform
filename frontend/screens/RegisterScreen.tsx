@@ -43,13 +43,13 @@ export default function RegisterScreen({ navigation }: any) {
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user
+          res.data.user,
         );
       navigation.navigate("Home");
     } catch (err: any) {
       Alert.alert(
         "Registration Failed",
-        JSON.stringify(err.response?.data || err.message)
+        JSON.stringify(err.response?.data || err.message),
       );
     }
   };
