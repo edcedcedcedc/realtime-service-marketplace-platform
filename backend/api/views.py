@@ -23,10 +23,14 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
     if User.objects.filter(email=email).exists():
-        return Response({"error": "Email already exists."}, status=400)
+        return Response(
+            {"error": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     if User.objects.filter(username=username).exists():
-        return Response({"error": "Username already taken."}, status=400)
+        return Response(
+            {"error": "Username already taken."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     if role not in ["worker", "client"]:
         return Response(
@@ -34,15 +38,8 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    is_worker = role == "worker"
-    is_client = role == "client"
-
     user = User.objects.create_user(
-        email=email,
-        username=username,
-        password=password,
-        is_worker=(role == "worker"),
-        is_client=(role == "client"),
+        username=username, password=password, email=email, role=role
     )
     refresh = RefreshToken.for_user(user)
 
@@ -50,10 +47,12 @@ def register(request):
         {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "message": "User registered and logged in successfully.",
-            "email": email,
-            "username": username,
-            "role": role,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+            },
         },
         status=status.HTTP_201_CREATED,
     )
@@ -69,10 +68,16 @@ def login(request):
         refresh = RefreshToken.for_user(user)
         return Response(
             {
-                "refresh": str(refresh),
                 "access": str(refresh.access_token),
-                "user": {"id": user.id, "username": user.username},
-            }
+                "refresh": str(refresh),
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": user.role,
+                },
+            },
+            status=status.HTTP_202_ACCEPTED,
         )
     else:
         return Response(

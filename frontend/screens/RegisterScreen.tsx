@@ -29,6 +29,7 @@ export default function RegisterScreen({ navigation }: any) {
   useEffect(() => {
     console.log("Auth state changed:", auth);
   }, [auth]);
+
   const handleRegister = async () => {
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
