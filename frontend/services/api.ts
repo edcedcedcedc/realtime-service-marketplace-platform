@@ -8,6 +8,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+ 
   if (
     config.url?.endsWith("/register/") ||
     config.url?.endsWith("/login/") ||
@@ -15,11 +16,12 @@ api.interceptors.request.use(async (config) => {
   ) {
     return config;
   }
-
+  
   const accessToken = await AsyncStorage.getItem("access");
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
+    console.log(config.headers.Authorization, 'auth')
   } else {
     console.error("No JWT token found");
   }
