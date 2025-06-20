@@ -25,7 +25,7 @@ describe("API Interceptors", () => {
   const AsyncStorage = require("@react-native-async-storage/async-storage");
   const axios = require("axios");
 
-  test("does not attach token for login/register/refresh", async () => {
+  test("does not attach token for 'api/login/ and 'api/register/", async () => {
     const urls = ["/register/", "/login/"];
     for (const url of urls) {
       const config = { url, headers: {} };

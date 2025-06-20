@@ -1,6 +1,7 @@
 .PHONY: run-backend run-frontend migrate makemigrations \
 createsuperuser shell test-backend reset-frontend update-backend \
- update-frontend install-backend format-frontend lint-frontend reset-db-backend 
+ update-frontend install-backend format-frontend \
+ lint-frontend reset-db-backend test-frontend
 # =============================================================================
 # [ BACKEND TASKS ]
 # =============================================================================
@@ -39,6 +40,8 @@ lint-frontend:
 reset-frontend:
 	cd frontend && rm -rf node_modules && rm -f package.json package-lock.json
 	cd frontend && npm install
+test-frontnend:
+	cd frontend && npm run test
 
 
 
