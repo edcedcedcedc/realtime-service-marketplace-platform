@@ -23,7 +23,6 @@ describe("API Interceptors", () => {
 
   const api = require("../services/api").default;
   const AsyncStorage = require("@react-native-async-storage/async-storage");
-  const axios = require("axios");
 
   test("does not attach token for 'api/login/ and 'api/register/", async () => {
     const urls = ["/register/", "/login/"];
@@ -44,11 +43,5 @@ describe("API Interceptors", () => {
     const modified =
       await api.interceptors.request.handlers[0].fulfilled(config);
     expect(modified.headers.Authorization).toBe("Bearer mock-token");
-  });
-
-  test("refreshes token on 401 and retries original request", async () => {
-    AsyncStorage.getItem.mockImplementation((key) =>
-      key === "refresh" ? Promise.resolve("mock-refresh") : null
-    );
   });
 });
