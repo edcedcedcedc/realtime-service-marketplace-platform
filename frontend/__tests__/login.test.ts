@@ -22,7 +22,6 @@ jest.mock("axios", () => {
 });
 
 test("login updates zustand auth state", async () => {
-  
   useStore.setState({ auth: { jwt: null, user: null } });
 
   // Call login API (mocked)
@@ -38,9 +37,9 @@ test("login updates zustand auth state", async () => {
       { access: res.data.access, refresh: res.data.refresh },
       res.data.user,
     );
-    const auth = useStore.getState().auth;
-    console.log("Current auth state:", auth);
-    console.log("Global state:", useStore.getState());
+  const auth = useStore.getState().auth;
+  console.log("Current auth state:", auth);
+  console.log("Global state:", useStore.getState());
   // Assert zustand state updated
   expect(auth.jwt?.access).toBe("mock-access-token");
   expect(auth.jwt?.refresh).toBe("mock-refresh-token");
