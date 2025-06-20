@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,7 +22,11 @@ import useStore from "../store/useStore";
 export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const auth = useStore((state) => state.auth);
 
+  useEffect(() => {
+    console.log("Auth state changed:", auth);
+  }, [auth]);
   const handleLogin = async () => {
     const { setAuth } = useStore.getState();
     try {
@@ -37,7 +41,7 @@ export default function LoginScreen({ navigation }: any) {
     } catch (err: any) {
       Alert.alert(
         "Login Failed",
-        JSON.stringify(err.response?.data || err.message),
+        JSON.stringify(err.response?.data || err.message)
       );
     }
   };

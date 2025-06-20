@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -25,7 +25,10 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("client");
-
+  const auth = useStore((state) => state.auth);
+  useEffect(() => {
+    console.log("Auth state changed:", auth);
+  }, [auth]);
   const handleRegister = async () => {
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
@@ -43,13 +46,13 @@ export default function RegisterScreen({ navigation }: any) {
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       navigation.navigate("Home");
     } catch (err: any) {
       Alert.alert(
         "Registration Failed",
-        JSON.stringify(err.response?.data || err.message),
+        JSON.stringify(err.response?.data || err.message)
       );
     }
   };

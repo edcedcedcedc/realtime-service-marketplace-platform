@@ -74,12 +74,6 @@ const useStore = create<State>()(
           await AsyncStorage.removeItem(key);
         },
       },
-      partialize: (state) => ({
-        auth: {
-          jwt: { refresh: state.auth.jwt?.refresh ?? null },
-          user: state.auth.user,
-        },
-      }),
     },
   ),
 );
