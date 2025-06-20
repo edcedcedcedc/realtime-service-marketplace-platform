@@ -17,19 +17,22 @@ import {
 import api from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import useStore from "../store/useStore";
 
 export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
+    const { setAuth } = useStore.getState();
     try {
       const res = await api.post("/login/", {
         username,
         password,
       });
-      await AsyncStorage.setItem("access", res.data.access);
-      await AsyncStorage.setItem("refresh", res.data.refresh);
+      const jwt = { access: res.data.access, refresh: res.data.refresh };
+      const user = res.data.user;
+      setAuth(jwt, user);
       navigation.navigate("Home");
     } catch (err: any) {
       Alert.alert(
