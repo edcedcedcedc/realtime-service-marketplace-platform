@@ -2,7 +2,7 @@
   "esModuleInterop": true,
   "compilerOptions": {
     "strict": true,
-    "types": []
+    "types": ["jest", "node", "ts-node"]
   },
   "extends": "expo/tsconfig.base"
 }
