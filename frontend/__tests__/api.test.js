@@ -15,11 +15,12 @@ jest.mock("axios", () => {
   instance.post = jest.fn();
   instance.get = jest.fn();
   instance.request = jest.fn();
+  const mockedPost = jest.fn();
 
   return {
     ...actualAxios,
     create: jest.fn(() => instance),
-    post: jest.fn(),
+    post: mockedPost,
     get: jest.fn(),
     request: jest.fn(),
   };
@@ -36,6 +37,16 @@ const AsyncStorage = require("@react-native-async-storage/async-storage");
 describe("API Interceptors", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    const axios = require("axios");
+    axios.post.mockImplementation((url, data) => {
+      if (
+        url.endsWith("token/refresh/") &&
+        data.refresh === "mock-refresh-token"
+      ) {
+        return Promise.resolve({ data: { access: "new-access-token" } });
+      }
+      return Promise.reject(new Error("Unexpected POST call"));
+    });
   });
 
   test("does not attach token for 'api/login/ and 'api/register/", async () => {
@@ -84,8 +95,7 @@ describe("API Interceptors", () => {
 test("GET /protected/ returns 401 when no token is set", async () => {
   AsyncStorage.getItem.mockResolvedValue(null);
 
-  // Mock api.request to reject with a 401 error response:
-  const axiosInstance = require("axios").create(); // your mocked instance
+  const axiosInstance = require("axios").create();
   axiosInstance.request.mockRejectedValue({
     response: { status: 401 },
     toJSON: () => ({ message: "Unauthorized" }),
