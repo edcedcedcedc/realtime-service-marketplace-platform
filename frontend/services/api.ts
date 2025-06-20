@@ -8,19 +8,19 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
- 
-  if (
-    config.url?.endsWith("/register/") ||
-    config.url?.endsWith("/login/")
-  ) {
+
+  console.log("baseURL:", config.baseURL);
+  console.log("url:", config.url);
+
+  if (config.url?.endsWith("/register/") || config.url?.endsWith("/login/")) {
     return config;
   }
-  
+
   const accessToken = await AsyncStorage.getItem("access");
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
-    console.log(config.headers.Authorization, 'auth')
+    console.log(config.headers.Authorization, "auth");
   } else {
     console.error("No JWT token found");
   }
