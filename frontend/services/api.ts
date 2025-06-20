@@ -11,8 +11,7 @@ api.interceptors.request.use(async (config) => {
  
   if (
     config.url?.endsWith("/register/") ||
-    config.url?.endsWith("/login/") ||
-    config.url?.endsWith("/token/refresh/")
+    config.url?.endsWith("/login/")
   ) {
     return config;
   }

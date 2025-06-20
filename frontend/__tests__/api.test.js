@@ -26,7 +26,7 @@ describe("API Interceptors", () => {
   const axios = require("axios");
 
   test("does not attach token for login/register/refresh", async () => {
-    const urls = ["/register/", "/login/", "/token/refresh/"];
+    const urls = ["/register/", "/login/"];
     for (const url of urls) {
       const config = { url, headers: {} };
       const modified =
