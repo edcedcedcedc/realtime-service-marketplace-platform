@@ -1,5 +1,5 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import useStore from "../store/useStore";
 
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
 
@@ -15,7 +15,7 @@ api.interceptors.request.use(async (config) => {
     return config;
   }
 
-  const accessToken = await AsyncStorage.getItem("access");
+  const accessToken = useStore.getState().auth.jwt?.access;
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
@@ -32,13 +32,16 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status == 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refresh = await AsyncStorage.getItem("refresh");
+
+      const store = useStore.getState();
+      const refresh = store.auth.jwt?.refresh;
+
       if (refresh) {
         try {
           const res = await axios.post(`${API_BASE_URL}token/refresh/`, {
             refresh,
           });
-          await AsyncStorage.setItem("access", res.data.access);
+          store.setAuth({ access: res.data.access, refresh }, store.auth.user);
           originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
           return api(originalRequest);
         } catch (refreshError) {

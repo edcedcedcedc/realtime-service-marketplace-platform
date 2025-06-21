@@ -37,8 +37,7 @@ format-frontend:
 lint-frontend:
 	cd frontend && npm run lint
 reset-frontend:
-	cd frontend && rm -rf node_modules && rm -f package.json package-lock.json
-	cd frontend && npm install
+	cd frontend && rm -rf node_modules && rm -f package-lock.json && npm install
 test-frontend:
 	cd frontend && npm run test
 

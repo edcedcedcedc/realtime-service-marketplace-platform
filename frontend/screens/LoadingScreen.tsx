@@ -1,22 +1,38 @@
-import React from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Image } from "react-native";
+import React, { useEffect } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Button,
+} from "react-native";
 
 interface FancyLoadingScreenProps {
-  message?: string;
+  route?: any;
+  navigation: any;
 }
 
 export default function FancyLoadingScreen({
-  message = "Loading, please wait...",
-}: FancyLoadingScreenProps) {
+  navigation,
+  route,
+}: FancyLoadingScreenProps): React.JSX.Element {
+  const message = route?.params?.message || "Please wait...";
+  useEffect(() => {
+    console.log("Loading Mounted");
+    return () => {
+      console.log("Loading Unmounted");
+    };
+  }, []);
   return (
     <View style={styles.container}>
-      {/* Logo placeholder */}
       <View style={styles.logoPlaceholder}>
-        <Text style={styles.logoText}>[Your Logo Here]</Text>
+        <>
+          <Text style={styles.logoText}>[Your Logo Here]</Text>
+          <Button title="Login" onPress={() => navigation.replace("Login")} />
+        </>
       </View>
 
       <ActivityIndicator size="large" color="#007AFF" style={styles.spinner} />
-
       <Text style={styles.message}>{message}</Text>
     </View>
   );

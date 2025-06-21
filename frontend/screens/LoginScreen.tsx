@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,33 +8,59 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  ScrollView,
 } from "react-native";
 import api from "../services/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import useStore from "../store/useStore";
+import { loginSchema } from "../validation/validationSchema";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 
 export default function LoginScreen({ navigation }: any) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const auth = useStore((state) => state.auth);
 
-  const handleLogin = async () => {
+  useEffect(() => {
+    console.log("Auth state changed:", auth);
+  }, [auth]);
+
+  useEffect(() => {
+    console.log("Login Mounted");
+    return () => {
+      console.log("Login Unmounted");
+    };
+  }, []);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(loginSchema),
+    reValidateMode: "onChange",
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  const handleLogin = async (data: { username: string; password: string }) => {
+    const { setAuth } = useStore.getState();
+    console.log("Form data:", data);
     try {
       const res = await api.post("/login/", {
-        username,
-        password,
+        username: data.username,
+        password: data.password,
       });
-      await AsyncStorage.setItem("access", res.data.access);
-      await AsyncStorage.setItem("refresh", res.data.refresh);
-      navigation.navigate("Home");
+      const jwt = { access: res.data.access, refresh: res.data.refresh };
+      const user = res.data.user;
+      setAuth(jwt, user);
+      navigation.replace("Home");
     } catch (err: any) {
       Alert.alert(
         "Login Failed",
-        JSON.stringify(err.response?.data || err.message),
+        JSON.stringify(err.response?.data || err.message)
       );
     }
   };
@@ -50,24 +76,57 @@ export default function LoginScreen({ navigation }: any) {
         <View>
           <Image source={require("../assets/icon.png")} style={styles.logo} />
           <Text style={styles.title}>Your App Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
+
+          {/* Username Field */}
+          <Controller
+            control={control}
+            name="username"
+            render={({ field: { onChange, value } }) => {
+              return (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Username"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {errors.username && (
+                    <Text style={{ color: "red", marginBottom: 10 }}>
+                      {errors.username.message}
+                    </Text>
+                  )}
+                </>
+              );
+            }}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
+
+          {/* Password Field */}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={value}
+                  onChangeText={onChange}
+                  secureTextEntry
+                />
+                {errors.password && (
+                  <Text style={{ color: "red", marginBottom: 10 }}>
+                    {errors.password.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
+
           <View style={styles.buttonsContainer}>
-            <Button title="Login" onPress={handleLogin} />
+            <Button title="Login" onPress={handleSubmit(handleLogin)} />
             <View style={{ width: 10 }} />
             <Button
               title="Register"
@@ -78,6 +137,9 @@ export default function LoginScreen({ navigation }: any) {
             onPress={() =>
               Alert.alert("Terms and Conditions", "Display your terms here")
             }
+            style={{
+              alignSelf: "center",
+            }}
           >
             <Text style={styles.terms}>Terms and Conditions</Text>
           </TouchableOpacity>
