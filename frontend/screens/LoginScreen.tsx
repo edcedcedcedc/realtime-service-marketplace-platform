@@ -56,7 +56,7 @@ export default function LoginScreen({ navigation }: any) {
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-      navigation.navigate("Home");
+      navigation.replace("Home");
     } catch (err: any) {
       Alert.alert(
         "Login Failed",
@@ -137,6 +137,9 @@ export default function LoginScreen({ navigation }: any) {
             onPress={() =>
               Alert.alert("Terms and Conditions", "Display your terms here")
             }
+            style={{
+              alignSelf: "center",
+            }}
           >
             <Text style={styles.terms}>Terms and Conditions</Text>
           </TouchableOpacity>

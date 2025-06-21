@@ -6,9 +6,9 @@ export default function HomeScreen({ navigation }: any) {
     navigation.replace("Login");
   };
   useEffect(() => {
-    console.log("Register Mounted");
+    console.log("Home Mounted");
     return () => {
-      console.log("Register Unmounted");
+      console.log("Home Unmounted");
     };
   }, []);
 

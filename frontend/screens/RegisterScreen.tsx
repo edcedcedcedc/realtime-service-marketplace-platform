@@ -9,6 +9,7 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
+  TouchableOpacity,
 } from "react-native";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -18,10 +19,9 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
+import { StackActions } from "@react-navigation/native";
 
 export default function RegisterScreen({ navigation }: any) {
-  const auth = useStore((state) => state.auth);
-
   const {
     control,
     handleSubmit,
@@ -53,7 +53,7 @@ export default function RegisterScreen({ navigation }: any) {
           { access: res.data.access, refresh: res.data.refresh },
           res.data.user
         );
-      navigation.navigate("Home");
+      navigation.replace("Home");
     } catch (err: any) {
       Alert.alert(
         "Registration Failed",
