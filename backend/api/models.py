@@ -4,10 +4,13 @@ from django.db import models
 
 class User(AbstractUser):
     # Extend as needed (e.g., add is_worker, is_client flags)
-    email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
-    is_worker = models.BooleanField(default=False)
-    is_client = models.BooleanField(default=False)
+    email = models.EmailField(unique=True)
+    role = models.CharField(
+        max_length=20,
+        choices=[("worker", "Worker"), ("client", "Client")],
+        default="client",
+    )
 
 
 class Profile(models.Model):
