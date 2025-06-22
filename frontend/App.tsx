@@ -10,7 +10,7 @@ export default function App() {
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>
-      <Toast config={ToastConfig} visibilityTime={1000} />
+      <Toast config={ToastConfig} visibilityTime={2000} />
     </>
   );
 }
