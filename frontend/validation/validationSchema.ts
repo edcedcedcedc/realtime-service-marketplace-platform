@@ -3,11 +3,11 @@ import * as Yup from "yup";
 export const usernameSchema = Yup.string()
   .required("Username is required")
   .min(3, "Username must be at least 3 characters")
-  .max(32, "Username can't be over 32 characters");
-/* .matches(
-    /^[A-Za-z][A-Za-z0-9_]*$/,
-    "Username must start with a letter and contain only English letters, numbers, or underscores",
-  ); */
+  .max(32, "Username can't be over 32 characters")
+  .matches(
+    /^(?!.*[\s@#$%^&*!?\/\\])(?!.*[._]{2})[a-zA-Z0-9][a-zA-Z0-9._-]{1,30}[a-zA-Z0-9]$/,
+    "Username must start and end with a letter and contain only English letters, numbers, or underscores"
+  );
 
 export const passwordSchema = Yup.string()
   .required("Password is required")
