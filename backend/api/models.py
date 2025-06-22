@@ -1,9 +1,9 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
-    # Extend as needed (e.g., add is_worker, is_client flags)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     role = models.CharField(
@@ -12,26 +12,47 @@ class User(AbstractUser):
         default="client",
     )
 
+    def __str__(self):
+        return self.username
+
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+    )
     bio = models.TextField(blank=True)
     rating = models.FloatField(default=0)
-    # Add more fields as needed
 
     def __str__(self):
         return f"{self.user.username}'s profile"
 
 
 class Job(models.Model):
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="jobs")
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+    ]
+
     title = models.CharField(max_length=255)
     description = models.TextField()
-    location = models.CharField(max_length=255, blank=True)
-    suggested_budget = models.DecimalField(max_digits=10, decimal_places=2)
-    accept_bids = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_completed = models.BooleanField(default=False)
+    budget = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    location = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
+    cancelled = models.BooleanField(default=False)
+
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="jobs_posted",
+    )
+    worker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="jobs_taken",
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.title
