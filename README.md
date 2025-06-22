@@ -111,16 +111,22 @@ This backend is built with Django and Django REST Framework. It provides a RESTf
 
 ## API Endpoints
 
-| Endpoint                | Method | Description                        |
+| Endpoints REGISTER               | Method | Description                        |
 |-------------------------|--------|------------------------------------|
 | `api/register/`        | POST   | Register a new user                |
 | `api/login/`           | POST   | Login user                |
 | `api/token/`           | POST   | Obtain JWT access and refresh token|
 | `api/token/refresh/`   | POST   | Refresh JWT access token           |
-| `api/jobs/open/`       |  GET   | List open jobs |
-| `api/jobs/`            | POST    | Create a job |
-| `/api/profile/`         | GET    | Get user profile (to be implemented) |
 
+
+| Endpoints  JOBS               | Method | Description          |
+| ------------------------ | ------ | -------------------- |
+| `/api/jobs/`             | POST   | Post a new job       |
+| `/api/jobs/open/`        | GET    | Get open jobs        |
+| `/api/jobs/in-progress/` | GET    | Get in-progress jobs |
+| `/api/jobs/completed/`   | GET    | Get completed jobs   |
+| `/api/jobs/all/`         | GET    | Get all jobs         |
+| `/api/jobs/<int:pk>/`    | GET    | Get job by ID        |
 
 ---
 

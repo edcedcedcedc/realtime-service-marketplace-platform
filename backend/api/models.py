@@ -39,6 +39,7 @@ class Job(models.Model):
     budget = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
+    cancelled = models.BooleanField(default=False)
 
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -48,7 +49,7 @@ class Job(models.Model):
     worker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name="jobs_done",
+        related_name="jobs_taken",
         null=True,
         blank=True,
     )
