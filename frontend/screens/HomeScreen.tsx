@@ -3,7 +3,7 @@ import { View, Text, Button } from "react-native";
 
 export default function HomeScreen({ navigation }: any) {
   const logout = async () => {
-    navigation.replace("Login");
+    navigation.replace("Start");
   };
   useEffect(() => {
     console.log("Home Mounted");

@@ -11,6 +11,7 @@ import {
   Keyboard,
   TouchableOpacity,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { RadioButton } from "react-native-paper";
@@ -53,12 +54,19 @@ export default function RegisterScreen({ navigation }: any) {
           { access: res.data.access, refresh: res.data.refresh },
           res.data.user
         );
+      Toast.show({
+        type: "success",
+        text1: "Registration Successful",
+      });
       navigation.replace("Home");
     } catch (err: any) {
-      Alert.alert(
-        "Registration Failed",
-        JSON.stringify(err.response?.data || err.message)
-      );
+      Toast.show({
+        type: "error",
+        text1: "Registration Failed",
+        text2: err.response.data.error,
+      });
+
+      /* Alert.alert("Registration Failed", JSON.stringify(err.response)); */
     }
   };
 
