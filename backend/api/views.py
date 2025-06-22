@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from .serializers import JobSerializer
+from .models import Job
+from rest_framework import generics
 
 
 User = get_user_model()
@@ -92,3 +95,17 @@ def protected_view(request):
     if request.method == "POST":
         return Response({"message": "POST received this is a protected endpoint"})
     return Response({"message": "GET received this is a protected endpoint"})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def open_jobs(request):
+    jobs = Job.objects.filter(status="open").order_by("-id")
+    serializer = JobSerializer(jobs, many=True)
+    return Response(serializer.data)
+
+
+class JobCreateView(generics.CreateAPIView):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]

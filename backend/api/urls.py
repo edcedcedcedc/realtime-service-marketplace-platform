@@ -1,4 +1,4 @@
-from .views import register, login
+from .views import JobCreateView, open_jobs, register, login
 from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -12,4 +12,6 @@ urlpatterns = [
     path("api/register/", register, name="register"),
     path("api/login/", login, name="login"),
     path("api/protected/", protected_view, name="protected"),
+    path("api/jobs/open/", open_jobs, name="open-jobs"),
+    path("api/jobs/", JobCreateView.as_view(), name="job-create"),
 ]
