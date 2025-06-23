@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import JobSerializer
 from .models import Job
-
+from .utils import broadcast_jobfeed_update
 
 User = get_user_model()
 
@@ -99,20 +99,10 @@ def protected_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_job(request):
-    serializer = JobSerializer(data=request.data)
-    if serializer.is_valid():
-        # Set the client as the logged in user before saving
-        serializer.save(client=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def create_job(request):
     serializer = JobSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
-        serializer.save(client=request.user)
+        job = serializer.save(client=request.user)
+        broadcast_jobfeed_update(job)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
