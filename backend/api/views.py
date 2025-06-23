@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import JobSerializer
 from .models import Job
-from .utils import broadcast_job_update, broadcast_jobfeed_update
+from .utils import broadcast_jobfeed_update
 
 User = get_user_model()
 
