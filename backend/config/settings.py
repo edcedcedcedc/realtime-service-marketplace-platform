@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "api",
     "corsheaders",
+    "channels",
 ]
 
 REST_FRAMEWORK = {
@@ -91,6 +92,18 @@ DATABASES = {
     }
 }
 
+
+ASGI_APPLICATION = "config.asgi.application"
+
+# Redis setup
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
