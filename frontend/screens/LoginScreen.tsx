@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   Alert,
   Image,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
+  Platform,
 } from "react-native";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -62,7 +62,7 @@ export default function LoginScreen({ navigation }: any) {
         text1: "Login Successful",
         text2: "Welcome back!",
       });
-      navigation.replace("Home");
+      navigation.replace("Jobsfeed");
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -71,10 +71,6 @@ export default function LoginScreen({ navigation }: any) {
           err.response?.data?.error ||
           "Please check your username and password and try again.",
       });
-      /*  Alert.alert(
-        "Login Failed",
-        JSON.stringify(err.response?.data || err.message)
-      ); */
     }
   };
 
@@ -86,51 +82,55 @@ export default function LoginScreen({ navigation }: any) {
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View>
+        <View style={{ width: "100%" }}>
           <Image source={require("../assets/icon.png")} style={styles.logo} />
           <Text style={styles.title}>Your App Name</Text>
 
-          {/* Username Field */}
+          {/* Username */}
           <Controller
             control={control}
             name="username"
-            render={({ field: { onChange, value } }) => {
-              return (
-                <>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Username"
-                    value={value}
-                    onChangeText={onChange}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  {errors.username && (
-                    <Text style={{ color: "red", marginBottom: 10 }}>
-                      {errors.username.message}
-                    </Text>
-                  )}
-                </>
-              );
-            }}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <>
+                <TextInput
+                  style={[styles.input, errors.username && styles.inputError]}
+                  placeholder="Username"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholderTextColor="#999"
+                  selectionColor="#2962FF"
+                />
+                {errors.username && (
+                  <Text style={styles.errorText}>
+                    {errors.username.message}
+                  </Text>
+                )}
+              </>
+            )}
           />
 
-          {/* Password Field */}
+          {/* Password */}
           <Controller
             control={control}
             name="password"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value, onBlur } }) => (
               <>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.password && styles.inputError]}
                   placeholder="Password"
                   value={value}
                   onChangeText={onChange}
+                  onBlur={onBlur}
                   secureTextEntry
+                  placeholderTextColor="#999"
+                  selectionColor="#2962FF"
                 />
                 {errors.password && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
+                  <Text style={styles.errorText}>
                     {errors.password.message}
                   </Text>
                 )}
@@ -138,21 +138,31 @@ export default function LoginScreen({ navigation }: any) {
             )}
           />
 
+          {/* Buttons */}
           <View style={styles.buttonsContainer}>
-            <Button title="Login" onPress={handleSubmit(handleLogin)} />
-            <View style={{ width: 10 }} />
-            <Button
-              title="Register"
+            <TouchableOpacity
+              style={[styles.button, styles.loginButton]}
+              onPress={handleSubmit(handleLogin)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.registerButton]}
               onPress={() => navigation.navigate("Register")}
-            />
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonText}>Register</Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Terms */}
           <TouchableOpacity
             onPress={() =>
               Alert.alert("Terms and Conditions", "Display your terms here")
             }
-            style={{
-              alignSelf: "center",
-            }}
+            style={{ alignSelf: "center", marginTop: 10 }}
           >
             <Text style={styles.terms}>Terms and Conditions</Text>
           </TouchableOpacity>
@@ -166,39 +176,87 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 30,
+    alignItems: "center",
+    paddingHorizontal: 24,
     backgroundColor: "#fff",
   },
   logo: {
-    width: 120,
-    height: 120,
-    alignSelf: "center",
+    width: 100,
+    height: 100,
     marginBottom: 20,
+    alignSelf: "center",
     resizeMode: "contain",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 30,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 32,
+    color: "#212121",
   },
   input: {
-    height: 45,
-    borderColor: "#ccc",
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 15,
-    borderRadius: 6,
-    paddingHorizontal: 10,
+    borderColor: "#BDBDBD",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    fontSize: 16,
+    color: "#212121",
+    // Shadow for iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    // Elevation for Android
+    elevation: 2,
+  },
+  inputError: {
+    borderColor: "#D32F2F",
+  },
+  errorText: {
+    color: "#D32F2F",
+    marginTop: -12,
+    marginBottom: 12,
+    fontSize: 13,
   },
   buttonsContainer: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 8,
+    marginBottom: 24,
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
     justifyContent: "center",
-    marginBottom: 20,
+    alignItems: "center",
+    elevation: 3,
+    // Shadow iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  loginButton: {
+    backgroundColor: "#2962FF",
+  },
+  registerButton: {
+    backgroundColor: "#388E3C",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16,
   },
   terms: {
-    textAlign: "center",
-    color: "#888",
     fontSize: 12,
+    color: "#757575",
     textDecorationLine: "underline",
   },
 });
