@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -51,6 +52,7 @@ class Job(models.Model):
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
     must_start_by = models.DateTimeField(null=True, blank=True)
     expires_from_feed = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

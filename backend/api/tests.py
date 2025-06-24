@@ -102,6 +102,14 @@ class JobTests(AuthTests):
         self.assertEqual(patch_response.data["status"], patch_data["status"])
         self.assertEqual(str(patch_response.data["budget"]), patch_data["budget"])
 
+    def test_created_at(self):
+        self.authenticate()
+        response1 = self.client.post(self.jobs_url, self.job_data)
+        response2 = self.client.post(self.jobs_url, self.job_data)
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(response1.data["created_at"], response2.data["created_at"])
+
 
 class JobBroadcastIntegrationTests(TransactionTestCase):
     reset_sequences = True

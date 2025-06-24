@@ -24,6 +24,7 @@ class JobSerializer(serializers.ModelSerializer):
             "worker_id",
             "expires_from_feed",
             "must_start_by",
+            "created_at",
         ]
 
     def create(self, validated_data):
