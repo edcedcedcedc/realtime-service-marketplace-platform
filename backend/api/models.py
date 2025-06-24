@@ -30,8 +30,17 @@ class Profile(models.Model):
 class Job(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
-        ("in_progress", "In Progress"),
+        ("accepted", "accepted"),
+        ("inprogress", "In Progress"),
         ("completed", "Completed"),
+        ("confirmed", "Confirmed"),
+        ("cancelled", "Cancelled"),
+        ("expired", "Expired"),
+    ]
+    URGENCY_CHOICES = [
+        ("now", "Now - 5 minutes"),
+        ("soon", "Soon - 30 minutes"),
+        ("flexible", "Later - 1 hour"),
     ]
 
     title = models.CharField(max_length=255)
@@ -39,8 +48,9 @@ class Job(models.Model):
     budget = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
-    cancelled = models.BooleanField(default=False)
-
+    urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
+    expires_from_feed = models.CharField(max_length=255, default="")
+    must_start_by = models.CharField(max_length=255, default="")
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
