@@ -44,6 +44,7 @@ frontend/npm-debug.*
 frontend/yarn-debug.*
 frontend/yarn-error.*
 
+
 # macOS
 frontend/.DS_Store
 frontend/*.pem

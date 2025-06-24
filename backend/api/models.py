@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -31,7 +32,7 @@ class Job(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
         ("accepted", "accepted"),
-        ("inprogress", "In Progress"),
+        ("in-progress", "In-Progress"),
         ("completed", "Completed"),
         ("confirmed", "Confirmed"),
         ("cancelled", "Cancelled"),
@@ -49,8 +50,10 @@ class Job(models.Model):
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
-    expires_from_feed = models.CharField(max_length=255, default="")
-    must_start_by = models.CharField(max_length=255, default="")
+    must_start_by = models.DateTimeField(null=True, blank=True)
+    expires_from_feed = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

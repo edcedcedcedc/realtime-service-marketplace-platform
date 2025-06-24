@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -101,17 +102,44 @@ def protected_view(request):
 def job_create(request):
     serializer = JobSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
-        job = serializer.save(client=request.user)
-        jobsfeed_broadcast(job)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        job_instance = serializer.save(client=request.user)
+        jobsfeed_broadcast(job_instance)
+        re_serializer = JobSerializer(job_instance)
+        return Response(re_serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def job_update(request, id):
+    try:
+        job_instance = Job.objects.get(pk=id)
+    except Job.DoesNotExist:
+        return Response(
+            {"error": "Job doesn't exist"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.user != job_instance.client:
+        return Response(
+            {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = JobSerializer(
+        job_instance, data=request.data, partial=True, context={"request": request}
+    )
+    if serializer.is_valid():
+        updated_job_instance = serializer.save()
+        jobsfeed_broadcast(updated_job_instance)
+        re_serializer = JobSerializer(updated_job_instance)
+        return Response(re_serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def job_detail(request, pk):
+def job_detail(request, id):
     try:
-        job = Job.objects.get(pk=pk)
+        job = Job.objects.get(pk=id)
         serializer = JobSerializer(job)
         return Response(serializer.data, status.HTTP_200_OK)
     except Job.DoesNotExist:
@@ -129,7 +157,7 @@ def open_jobs(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def in_progress_jobs(request):
-    jobs = Job.objects.filter(status="in_progress").order_by("-id")
+    jobs = Job.objects.filter(status="in-progress").order_by("-id")
     serializer = JobSerializer(jobs, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
