@@ -81,6 +81,27 @@ class JobTests(AuthTests):
         self.assertEqual(response.data["title"], self.job_data["title"])
         self.assertEqual(response.data["client_username"], self.user_data["username"])
 
+    def test_job_patch(self):
+        self.authenticate()
+
+        create_response = self.client.post(self.jobs_url, self.job_data)
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+
+        job_id = create_response.data["id"]
+
+        # New data to patch
+        patch_data = {
+            "status": "in-progress",
+            "budget": "150.00",
+        }
+
+        update_url = reverse("job-update", kwargs={"id": job_id})
+        patch_response = self.client.patch(update_url, patch_data, format="json")
+
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_response.data["status"], patch_data["status"])
+        self.assertEqual(str(patch_response.data["budget"]), patch_data["budget"])
+
 
 class JobBroadcastIntegrationTests(TransactionTestCase):
     reset_sequences = True
