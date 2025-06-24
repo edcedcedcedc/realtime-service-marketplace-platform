@@ -148,13 +148,13 @@ export default function LoginScreen({ navigation }: any) {
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/*  <TouchableOpacity
               style={[styles.button, styles.registerButton]}
               onPress={() => navigation.navigate("Register")}
               activeOpacity={0.7}
             >
               <Text style={styles.buttonText}>Register</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           {/* Terms */}
