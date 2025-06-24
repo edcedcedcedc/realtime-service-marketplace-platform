@@ -53,6 +53,7 @@ class Job(models.Model):
     must_start_by = models.DateTimeField(null=True, blank=True)
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

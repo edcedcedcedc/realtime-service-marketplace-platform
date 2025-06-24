@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 from django.urls import reverse
@@ -81,41 +82,62 @@ class JobTests(AuthTests):
         self.assertEqual(response.data["title"], self.job_data["title"])
         self.assertEqual(response.data["client_username"], self.user_data["username"])
 
-        response1 = self.client.post(self.jobs_url, self.job_data)
-        response2 = self.client.post(self.jobs_url, self.job_data)
-        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
-        self.assertNotEqual(response1.data["created_at"], response2.data["created_at"])
+        response_after_first_post = self.client.post(self.jobs_url, self.job_data)
+        response_after_second_post = self.client.post(self.jobs_url, self.job_data)
+        self.assertEqual(response_after_first_post.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response_after_second_post.status_code, status.HTTP_201_CREATED
+        )
+        self.assertNotEqual(
+            response_after_second_post.data["created_at"],
+            response_after_first_post.data["created_at"],
+        )
 
     def test_job_patch(self):
         self.authenticate()
 
-        create_response = self.client.post(self.jobs_url, self.job_data)
-        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        response = self.client.post(self.jobs_url, self.job_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        job_id = create_response.data["id"]
+        job_id = response.data["id"]
+
         patch_data = {
             "status": "in-progress",
             "budget": "150.00",
         }
 
         update_url = reverse("job-update", kwargs={"id": job_id})
-        patch_response1 = self.client.patch(update_url, patch_data, format="json")
 
-        self.assertEqual(patch_response1.status_code, status.HTTP_200_OK)
-        self.assertEqual(patch_response1.data["status"], patch_data["status"])
-        self.assertEqual(str(patch_response1.data["budget"]), patch_data["budget"])
+        response = self.client.patch(update_url, patch_data, format="json")
 
-        job_id = patch_response1.data["id"]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], patch_data["status"])
+        self.assertEqual(str(response.data["budget"]), patch_data["budget"])
+
+        response_after = self.client.patch(update_url, patch_data, format="json")
+        self.assertEqual(response_after.data["created_at"], response.data["created_at"])
+
+        ########################################
+        # JOB.created_at and JOB.updated_at
+        #########################################
+        created_at_before = response.data["created_at"]
+        updated_at_before = response.data["updated_at"]
+
+        time.sleep(2)
+
         patch_data = {
             "status": "in-progress",
             "budget": "250.00",
         }
         update_url = reverse("job-update", kwargs={"id": job_id})
-        patch_response2 = self.client.patch(update_url, patch_data, format="json")
-        self.assertEqual(
-            patch_response1.data["created_at"], patch_response2.data["created_at"]
-        )
+        response_after = self.client.patch(update_url, patch_data, format="json")
+        self.assertEqual(response_after.status_code, status.HTTP_200_OK)
+
+        created_at_after = response_after.data["created_at"]
+        updated_at_after = response_after.data["updated_at"]
+
+        self.assertEqual(created_at_before, created_at_after)
+        self.assertNotEqual(updated_at_before, updated_at_after)
 
 
 class JobBroadcastIntegrationTests(TransactionTestCase):
@@ -143,7 +165,6 @@ class JobBroadcastIntegrationTests(TransactionTestCase):
 
         response = await communicator.receive_from()
         data = json.loads(response)
-        print(data)
         self.assertEqual(data["title"], job.title)
         self.assertEqual(data["description"], job.description)
         self.assertEqual(data["status"], job.status)

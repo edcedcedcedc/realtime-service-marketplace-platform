@@ -1,6 +1,6 @@
 .PHONY: run-http run-http-ws run-frontend migrate makemigrations \
 createsuperuser shell test-backend reset-frontend freeze \
-update-frontend install-backend format-frontend lint-frontend reset-db-backend test-frontend
+update-frontend install-backend format-frontend lint-frontend reset-db-backend test-frontend coverage-backend 
 # =============================================================================
 # [ BACKEND TASKS ]
 # =============================================================================
@@ -27,6 +27,8 @@ shell:
 	cd backend && python manage.py shell
 test-backend:
 	cd backend && python manage.py test -v 2
+coverage-backend:
+	cd backend && coverage run manage.py test && coverage report
 
 # =============================================================================
 # [ FRONTEND TASKS ]
