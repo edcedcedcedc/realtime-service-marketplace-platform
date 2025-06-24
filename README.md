@@ -109,17 +109,71 @@ This backend is built with Django and Django REST Framework. It provides a RESTf
 
 ---
 
+## Architecture Diagram 
+┌─────────────────────────────────────────────┐
+│               Frontend (React Native)       │
+│ ┌─────────────────────────────────────────┐ │
+│ │ 1. User posts a job (HTTP POST request)│ │
+│ │ 2. WebSocket connects on app startup   │ │
+│ │ 3. Listens for live job updates        │ │
+│ └─────────────────────────────────────────┘ │
+└────────────────────────┬────────────────────┘
+                         │
+        (1) POST /api/jobs/         (2) ws://<host>/ws/jobs/
+                         │
+       ┌─────────────────▼────────────────────┐
+       │   ASGI Server (Daphne or Uvicorn)    │
+       │ - Handles both HTTP and WebSocket    │
+       │ - Knows how to route each protocol   │
+       └─────────────────┬────────────────────┘
+                         │
+            ┌────────────▼────────────┐
+(1) HTTP    │ Django Views (views.py) │
+POST ------► create_job()             │
+            │  - Saves job            │
+            │  - Broadcasts via Redis│
+            └────────────┬────────────┘
+                         │
+        (Broadcast)      ▼
+              ┌────────────────────┐
+              │ Redis (Channel Layer) │
+              │ - Like a mailbox      │
+              │ - Stores messages     │
+              └────────┬─────────────┘
+                       │
+            ┌──────────▼───────────┐
+(2) WS     │ Django Channels Consumer │
+Message ◄──│ (JobFeedConsumer)        │
+           │  - Subscribed to "jobs"  │
+           │  - Receives job updates  │
+           └──────────┬──────────────┘
+                      │
+       ┌──────────────▼──────────────┐
+       │ Frontend (still connected)  │
+       │  - Receives WebSocket event │
+       │  - Updates job feed UI      │
+       └─────────────────────────────┘
+
+
+
 ## API Endpoints
 
-| Endpoint                | Method | Description                        |
+| Endpoints REGISTER               | Method | Description                        |
 |-------------------------|--------|------------------------------------|
-| `/api/register/`        | POST   | Register a new user                |
-| `/api/login/`        | POST   | Login user                |
-| `/api/token/`           | POST   | Obtain JWT access and refresh token|
-| `/api/token/refresh/`   | POST   | Refresh JWT access token           |
-| `/api/jobs/`            | GET/POST | List or create jobs (to be implemented) |
-| `/api/bids/`            | GET/POST | List or create bids (to be implemented) |
-| `/api/profile/`         | GET    | Get user profile (to be implemented) |
+| `api/register/`        | POST   | Register a new user                |
+| `api/login/`           | POST   | Login user                |
+| `api/token/`           | POST   | Obtain JWT access and refresh token|
+| `api/token/refresh/`   | POST   | Refresh JWT access token           |
+
+
+| Endpoints  JOBS               | Method | Description          |
+| ------------------------ | ------ | -------------------- |
+| `/api/jobs/`             | POST   | Post a new job       |
+| `/api/jobs/open/`        | GET    | Get open jobs        |
+| `/api/jobs/in-progress/` | GET    | Get in-progress jobs |
+| `/api/jobs/completed/`   | GET    | Get completed jobs   |
+| `/api/jobs/all/`         | GET    | Get all jobs         |
+| `/api/jobs/<int:pk>/`    | GET    | Get job by ID        |
 
 ---
 
@@ -135,12 +189,19 @@ This backend is built with Django and Django REST Framework. It provides a RESTf
 
 ## Running Common Commands
 
-Use the provided `Makefile` or `manage.bat` for common tasks:
+Use the provided `Makefile` for common tasks:
 
-- `make run`  — Start the server
-- `make migrate`  — Apply migrations
-- `make createsuperuser` — Create admin user
+- `make run-http`  — start wsgi server
+- `make run-http-ws`  — start asgi server
+- `` — Create admin user
 
+<!-- 
+Redis guide on Windows:
+    Start WSL Ubuntu
+    sudo install redis-server redis-cli
+    redis-server
+    redis-cli ping; you should get back pong
+ -->
 ---
 
 ## Development Notes

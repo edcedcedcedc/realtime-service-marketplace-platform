@@ -1,17 +1,19 @@
-.PHONY: run-backend run-frontend migrate makemigrations \
-createsuperuser shell test-backend reset-frontend update-backend \
+.PHONY: run-http run-http-ws run-frontend migrate makemigrations \
+createsuperuser shell test-backend reset-frontend freeze \
 update-frontend install-backend format-frontend lint-frontend reset-db-backend test-frontend
 # =============================================================================
 # [ BACKEND TASKS ]
 # =============================================================================
-run-backend:
+run-http:
 	cd backend && python manage.py runserver 0.0.0.0:8000
+run-http-ws:
+	cd backend && daphne -b 0.0.0.0 -p 8000 config.asgi:application
 install-backend:
 	@cd backend && \
 	echo "Checking backend dependencies..." && \
 	pip install -r requirements.txt --quiet && \
 	echo "All backend dependencies are installed and up to date."
-update-backend:
+freeze:
 	cd backend && pip freeze > requirements.txt
 reset-db-backend:
 	cd backend && rm db.sqlite3 && rm api/migrations/0*.py
@@ -25,6 +27,7 @@ shell:
 	cd backend && python manage.py shell
 test-backend:
 	cd backend && python manage.py test -v 2
+
 # =============================================================================
 # [ FRONTEND TASKS ]
 # =============================================================================

@@ -3,17 +3,17 @@ import * as Yup from "yup";
 export const usernameSchema = Yup.string()
   .required("Username is required")
   .min(3, "Username must be at least 3 characters")
-  .max(32, "Username can't be over 32 characters");
-  /* .matches(
-    /^[A-Za-z][A-Za-z0-9_]*$/,
-    "Username must start with a letter and contain only English letters, numbers, or underscores",
-  ); */
+  .max(32, "Username can't be over 32 characters")
+  .matches(
+    /^(?!.*[\s@#$%^&*!?\/\\])(?!.*[._]{2})[a-zA-Z0-9][a-zA-Z0-9._-]{1,30}[a-zA-Z0-9]$/,
+    "Username must start and end with a letter and contain only English letters, numbers, or underscores"
+  );
 
 export const passwordSchema = Yup.string()
   .required("Password is required")
   .min(5, "Password must be at least 6 characters")
   .max(32, "Password can't be over 32 characters");
-  /* .matches(
+/* .matches(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,32}$/,
     "Password must contain at least one uppercase letter, one lowercase letter, and one number",
   ); */
@@ -21,12 +21,10 @@ export const passwordSchema = Yup.string()
 export const emailSchema = Yup.string()
   .required("Email is required")
   .email("Invalid email address");
-  
 
 export const roleSchema = Yup.string()
   .required("Role is required")
   .oneOf(["worker", "client"], "Role must be either 'worker' or 'client'");
-  
 
 export const loginSchema = Yup.object().shape({
   username: usernameSchema,

@@ -17,6 +17,7 @@ import useStore from "../store/useStore";
 import { loginSchema } from "../validation/validationSchema";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+import Toast from "react-native-toast-message";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
@@ -56,12 +57,24 @@ export default function LoginScreen({ navigation }: any) {
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
+      Toast.show({
+        type: "success",
+        text1: "Login Successful",
+        text2: "Welcome back!",
+      });
       navigation.replace("Home");
     } catch (err: any) {
-      Alert.alert(
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2:
+          err.response?.data?.error ||
+          "Please check your username and password and try again.",
+      });
+      /*  Alert.alert(
         "Login Failed",
         JSON.stringify(err.response?.data || err.message)
-      );
+      ); */
     }
   };
 
