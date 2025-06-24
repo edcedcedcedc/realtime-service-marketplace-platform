@@ -81,6 +81,12 @@ class JobTests(AuthTests):
         self.assertEqual(response.data["title"], self.job_data["title"])
         self.assertEqual(response.data["client_username"], self.user_data["username"])
 
+        response1 = self.client.post(self.jobs_url, self.job_data)
+        response2 = self.client.post(self.jobs_url, self.job_data)
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(response1.data["created_at"], response2.data["created_at"])
+
     def test_job_patch(self):
         self.authenticate()
 
@@ -88,27 +94,28 @@ class JobTests(AuthTests):
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
 
         job_id = create_response.data["id"]
-
-        # New data to patch
         patch_data = {
             "status": "in-progress",
             "budget": "150.00",
         }
 
         update_url = reverse("job-update", kwargs={"id": job_id})
-        patch_response = self.client.patch(update_url, patch_data, format="json")
+        patch_response1 = self.client.patch(update_url, patch_data, format="json")
 
-        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(patch_response.data["status"], patch_data["status"])
-        self.assertEqual(str(patch_response.data["budget"]), patch_data["budget"])
+        self.assertEqual(patch_response1.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_response1.data["status"], patch_data["status"])
+        self.assertEqual(str(patch_response1.data["budget"]), patch_data["budget"])
 
-    def test_created_at(self):
-        self.authenticate()
-        response1 = self.client.post(self.jobs_url, self.job_data)
-        response2 = self.client.post(self.jobs_url, self.job_data)
-        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
-        self.assertNotEqual(response1.data["created_at"], response2.data["created_at"])
+        job_id = patch_response1.data["id"]
+        patch_data = {
+            "status": "in-progress",
+            "budget": "250.00",
+        }
+        update_url = reverse("job-update", kwargs={"id": job_id})
+        patch_response2 = self.client.patch(update_url, patch_data, format="json")
+        self.assertEqual(
+            patch_response1.data["created_at"], patch_response2.data["created_at"]
+        )
 
 
 class JobBroadcastIntegrationTests(TransactionTestCase):
