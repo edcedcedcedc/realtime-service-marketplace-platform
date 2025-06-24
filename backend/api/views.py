@@ -101,13 +101,9 @@ def protected_view(request):
 def job_create(request):
     serializer = JobSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
-        job_instance = serializer.save(
-            client=request.user
-        )  # Save returns the model instance
-        jobsfeed_broadcast(job_instance)  # Pass model instance to broadcast
-        re_serializer = JobSerializer(
-            job_instance
-        )  # Serialize the saved instance for response
+        job_instance = serializer.save(client=request.user)
+        jobsfeed_broadcast(job_instance)
+        re_serializer = JobSerializer(job_instance)
         return Response(re_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,8 +127,9 @@ def job_update(request, id):
         job_instance, data=request.data, partial=True, context={"request": request}
     )
     if serializer.is_valid():
-        updated_job = serializer.save()  # Save returns updated instance
-        re_serializer = JobSerializer(updated_job)
+        updated_job_instance = serializer.save()
+        jobsfeed_broadcast(updated_job_instance)
+        re_serializer = JobSerializer(updated_job_instance)
         return Response(re_serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
