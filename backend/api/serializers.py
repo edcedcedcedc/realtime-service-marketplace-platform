@@ -16,12 +16,14 @@ class JobSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "budget",
+            "urgency",
             "location",
             "status",
-            "cancelled",
             "client_username",
             "worker_username",
             "worker_id",
+            "expires_from_feed",
+            "must_start_by",
         ]
 
     def create(self, validated_data):

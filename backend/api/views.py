@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import JobSerializer
 from .models import Job
-from .utils import broadcast_jobfeed_update
+from .utils import jobsfeed_broadcast
 
 User = get_user_model()
 
@@ -98,13 +98,24 @@ def protected_view(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def create_job(request):
+def job_create(request):
     serializer = JobSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         job = serializer.save(client=request.user)
-        broadcast_jobfeed_update(job)
+        jobsfeed_broadcast(job)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def job_detail(request, pk):
+    try:
+        job = Job.objects.get(pk=pk)
+        serializer = JobSerializer(job)
+        return Response(serializer.data, status.HTTP_200_OK)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
@@ -137,14 +148,3 @@ def all_jobs(request):
     jobs = Job.objects.all().order_by("-id")
     serializer = JobSerializer(jobs, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
-
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def job_detail(request, pk):
-    try:
-        job = Job.objects.get(pk=pk)
-        serializer = JobSerializer(job)
-        return Response(serializer.data, status.HTTP_200_OK)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_400_BAD_REQUEST)
