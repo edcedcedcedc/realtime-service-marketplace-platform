@@ -34,6 +34,9 @@ interface Jwt {
   access: string | null;
   refresh: string | null;
 }
+interface Loading {
+  loading: boolean
+}
 interface State {
   auth: {
     jwt: Jwt | null;
@@ -42,12 +45,14 @@ interface State {
   workers: User[];
   clients: User[];
   jobs: Job[];
+  loading: boolean;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
   addClient: (client: User) => void;
   addJob: (job: Job) => void;
   setJobs: (jobs: Job[]) => void;
+  setLoading: (value: boolean) => void;
 }
 
 const useStore = create<State>()(
@@ -63,7 +68,8 @@ const useStore = create<State>()(
       workers: [],
       clients: [],
       jobs: [],
-
+      loading: false,
+      setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
       clearAuth: () => set({ auth: { jwt: null, user: null } }),
       addWorker: (worker: User) =>

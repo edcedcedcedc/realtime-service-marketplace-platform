@@ -19,6 +19,7 @@ import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
 
 export default function RegisterScreen({ navigation }: any) {
+  const { setAuth, setLoading } = useStore.getState();
   const {
     control,
     handleSubmit,
@@ -37,6 +38,7 @@ export default function RegisterScreen({ navigation }: any) {
 
   const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
     try {
+      setLoading(true);
       const res = await api.post("/register/", {
         email: data.email,
         username: data.username,
@@ -53,13 +55,15 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace("Home");
+      navigation.replace("Jobsfeed");
     } catch (err: any) {
       Toast.show({
         type: "error",
         text1: "Registration Failed",
         text2: err.response?.data?.error,
       });
+    } finally {
+      setLoading(false);
     }
   };
 

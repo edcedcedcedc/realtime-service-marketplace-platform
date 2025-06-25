@@ -22,9 +22,7 @@ import Toast from "react-native-toast-message";
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
   const scrollRef = useRef<any>(null);
-  const [isUsername, setIsUsername] = useState(false);
-  const [isPassword, setIsPassword] = useState(false);
-
+  const { setAuth, setLoading } = useStore.getState();
   useEffect(() => {
     console.log("Auth state changed:", auth);
   }, [auth]);
@@ -50,9 +48,9 @@ export default function LoginScreen({ navigation }: any) {
   });
 
   const handleLogin = async (data: { username: string; password: string }) => {
-    const { setAuth } = useStore.getState();
     console.log("Form data:", data);
     try {
+      setLoading(true);
       const res = await api.post("/login/", {
         username: data.username,
         password: data.password,
@@ -63,7 +61,7 @@ export default function LoginScreen({ navigation }: any) {
       Toast.show({
         type: "success",
         text1: "Login Successful",
-        text2: "Welcome back!",
+        /*  text2: "Welcome back!", */
       });
       navigation.replace("Jobsfeed");
     } catch (err: any) {
@@ -74,6 +72,8 @@ export default function LoginScreen({ navigation }: any) {
           err.response?.data?.error ||
           "Please check your username and password and try again.",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
