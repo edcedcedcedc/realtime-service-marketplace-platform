@@ -10,13 +10,16 @@ import {
 } from "react-native";
 import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
+import Toast from "react-native-toast-message";
 const { width } = Dimensions.get("window");
+import { withTimeout } from "../utils/withTimeout";
 
 export default function JobsFeedScreen({ navigation }: { navigation: any }) {
-  const [loading, setLoading] = useState(true);
+  const { setAuth, setLoading } = useStore.getState();
   const [error, setError] = useState("");
   const jobs = useStore((state) => state.jobs);
   const setJobs = useStore((state) => state.setJobs);
+
   useEffect(() => {
     fetchJobs();
   }, []);
@@ -28,10 +31,15 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/jobs/open/");
+      const response = await withTimeout(api.get("/jobs/open/"));
       setJobs(response.data);
     } catch (err: any) {
-      setError(err.message || "Failed to load jobs");
+      Toast.show({
+        type: "error",
+        text1: "Cannot fetch the tasks",
+        text2:
+          err.response?.data?.error || "Please check your internet connection",
+      });
     } finally {
       setLoading(false);
     }
@@ -102,9 +110,7 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
 
-      {loading ? (
-        <Text style={styles.loadingText}>Loading jobs...</Text>
-      ) : error ? (
+      {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : (
         <FlatList

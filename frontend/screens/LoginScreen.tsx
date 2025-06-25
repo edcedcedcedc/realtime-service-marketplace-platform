@@ -18,13 +18,12 @@ import { loginSchema } from "../validation/validationSchema";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Toast from "react-native-toast-message";
+import { withTimeout } from "../utils/withTimeout";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
   const scrollRef = useRef<any>(null);
-  const [isUsername, setIsUsername] = useState(false);
-  const [isPassword, setIsPassword] = useState(false);
-
+  const { setAuth, setLoading } = useStore.getState();
   useEffect(() => {
     console.log("Auth state changed:", auth);
   }, [auth]);
@@ -50,20 +49,28 @@ export default function LoginScreen({ navigation }: any) {
   });
 
   const handleLogin = async (data: { username: string; password: string }) => {
-    const { setAuth } = useStore.getState();
     console.log("Form data:", data);
+
     try {
-      const res = await api.post("/login/", {
-        username: data.username,
-        password: data.password,
-      });
+      setLoading(true);
+
+      const res = await withTimeout(
+        api.post("/login/", {
+          username: data.username,
+          password: data.password,
+        }),
+        5000,
+        "Request timed out. Please try again"
+      );
+
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
+
       Toast.show({
         type: "success",
         text1: "Login Successful",
-        text2: "Welcome back!",
+        /*  text2: "Welcome back!", */
       });
       navigation.replace("Jobsfeed");
     } catch (err: any) {
@@ -72,8 +79,10 @@ export default function LoginScreen({ navigation }: any) {
         text1: "Login Failed",
         text2:
           err.response?.data?.error ||
-          "Please check your username and password and try again.",
+          "Please check your credentials and internet connection",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

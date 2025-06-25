@@ -21,9 +21,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
     <Stack.Navigator initialRouteName="Start">
-      {/*  <Stack.Screen name="Loading" component={FancyLoadingScreen} /> */}
       <Stack.Screen name="Start" component={AuthScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Jobsfeed" component={JobsFeedScreen} />
     </Stack.Navigator>
   );

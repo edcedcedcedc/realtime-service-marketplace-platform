@@ -17,8 +17,10 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
+import { withTimeout } from "../utils/withTimeout";
 
 export default function RegisterScreen({ navigation }: any) {
+  const { setAuth, setLoading } = useStore.getState();
   const {
     control,
     handleSubmit,
@@ -37,12 +39,15 @@ export default function RegisterScreen({ navigation }: any) {
 
   const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
     try {
-      const res = await api.post("/register/", {
-        email: data.email,
-        username: data.username,
-        password: data.password,
-        role: data.role,
-      });
+      setLoading(true);
+      const res = await withTimeout(
+        api.post("/register/", {
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          role: data.role,
+        })
+      );
       useStore
         .getState()
         .setAuth(
@@ -53,13 +58,15 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace("Home");
+      navigation.replace("Jobsfeed");
     } catch (err: any) {
       Toast.show({
         type: "error",
         text1: "Registration Failed",
         text2: err.response?.data?.error,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
