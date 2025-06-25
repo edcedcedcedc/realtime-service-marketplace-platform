@@ -8,9 +8,27 @@ interface User {
   email: string;
   role: string;
 }
-interface Job {
+export interface Job {
   id: number;
   title: string;
+  description: string;
+  budget: number;
+  location: string;
+  status:
+    | "open"
+    | "accepted"
+    | "in-progress"
+    | "completed"
+    | "confirmed"
+    | "cancelled"
+    | "expired";
+  urgency: "now" | "soon" | "flexible";
+  must_start_by: string | null;
+  expires_from_feed: string | null;
+  created_at: string;
+  updated_at: string | null;
+  client: number;
+  worker: number | null;
 }
 interface Jwt {
   access: string | null;
@@ -24,12 +42,12 @@ interface State {
   workers: User[];
   clients: User[];
   jobs: Job[];
-
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
   addClient: (client: User) => void;
   addJob: (job: Job) => void;
+  setJobs: (jobs: Job[]) => void;
 }
 
 const useStore = create<State>()(
@@ -58,6 +76,7 @@ const useStore = create<State>()(
         })),
       addJob: (job: Job) =>
         set((state: { jobs: Job[] }) => ({ jobs: [...state.jobs, job] })),
+      setJobs: (jobs: Job[]) => set({ jobs }),
     }),
     {
       name: "my-app-storage",

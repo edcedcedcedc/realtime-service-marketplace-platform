@@ -1,33 +1,28 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   TextInput,
-  Button,
   Alert,
-  Image,
   StyleSheet,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
-  TouchableOpacity,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { RadioButton } from "react-native-paper";
 import useStore from "../store/useStore";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
-import { StackActions } from "@react-navigation/native";
 
 export default function RegisterScreen({ navigation }: any) {
   const {
     control,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<Yup.InferType<typeof registerSchema>>({
     resolver: yupResolver(registerSchema),
     reValidateMode: "onChange",
@@ -52,7 +47,7 @@ export default function RegisterScreen({ navigation }: any) {
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       Toast.show({
         type: "success",
@@ -63,10 +58,8 @@ export default function RegisterScreen({ navigation }: any) {
       Toast.show({
         type: "error",
         text1: "Registration Failed",
-        text2: err.response.data.error,
+        text2: err.response?.data?.error,
       });
-
-      /* Alert.alert("Registration Failed", JSON.stringify(err.response)); */
     }
   };
 
@@ -74,32 +67,34 @@ export default function RegisterScreen({ navigation }: any) {
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
       enableOnAndroid={true}
-      extraScrollHeight={20}
+      extraHeight={0}
+      extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View>
+        <View style={{ width: "100%" }}>
           <Text style={styles.title}>Create Account</Text>
 
           {/* Email */}
           <Controller
             control={control}
             name="email"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value, onBlur } }) => (
               <>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.email && styles.inputError]}
                   placeholder="Email"
                   value={value}
                   onChangeText={onChange}
+                  onBlur={onBlur}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  placeholderTextColor="#999"
+                  selectionColor="#388E3C"
                 />
                 {errors.email && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
-                    {errors.email.message}
-                  </Text>
+                  <Text style={styles.errorText}>{errors.email.message}</Text>
                 )}
               </>
             )}
@@ -109,18 +104,21 @@ export default function RegisterScreen({ navigation }: any) {
           <Controller
             control={control}
             name="username"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value, onBlur } }) => (
               <>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.username && styles.inputError]}
                   placeholder="Username"
                   value={value}
                   onChangeText={onChange}
+                  onBlur={onBlur}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  placeholderTextColor="#999"
+                  selectionColor="#388E3C"
                 />
                 {errors.username && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
+                  <Text style={styles.errorText}>
                     {errors.username.message}
                   </Text>
                 )}
@@ -132,17 +130,20 @@ export default function RegisterScreen({ navigation }: any) {
           <Controller
             control={control}
             name="password"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value, onBlur } }) => (
               <>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.password && styles.inputError]}
                   placeholder="Password"
                   value={value}
                   onChangeText={onChange}
+                  onBlur={onBlur}
                   secureTextEntry
+                  placeholderTextColor="#999"
+                  selectionColor="#388E3C"
                 />
                 {errors.password && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
+                  <Text style={styles.errorText}>
                     {errors.password.message}
                   </Text>
                 )}
@@ -154,17 +155,23 @@ export default function RegisterScreen({ navigation }: any) {
           <Controller
             control={control}
             name="confirmPassword"
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value, onBlur } }) => (
               <>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.confirmPassword && styles.inputError,
+                  ]}
                   placeholder="Confirm Password"
                   value={value}
                   onChangeText={onChange}
+                  onBlur={onBlur}
                   secureTextEntry
+                  placeholderTextColor="#999"
+                  selectionColor="#388E3C"
                 />
                 {errors.confirmPassword && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
+                  <Text style={styles.errorText}>
                     {errors.confirmPassword.message}
                   </Text>
                 )}
@@ -172,28 +179,58 @@ export default function RegisterScreen({ navigation }: any) {
             )}
           />
 
-          {/* Role */}
+          {/* Role Selector */}
           <Controller
             control={control}
             name="role"
             render={({ field: { onChange, value } }) => (
               <>
-                <Text>Register as:</Text>
-                <RadioButton.Group onValueChange={onChange} value={value}>
-                  <RadioButton.Item label="Client" value="client" />
-                  <RadioButton.Item label="Worker" value="worker" />
-                </RadioButton.Group>
+                <Text style={styles.roleLabel}>Register as:</Text>
+                <View style={styles.roleToggleContainer}>
+                  {["client", "worker"].map((role, idx) => {
+                    const selected = value === role;
+                    return (
+                      <TouchableOpacity
+                        key={role}
+                        onPress={() => onChange(role)}
+                        style={[
+                          styles.roleToggleButton,
+                          selected
+                            ? role === "client"
+                              ? styles.roleToggleButtonSelectedClient
+                              : styles.roleToggleButtonSelectedWorker
+                            : styles.roleToggleButtonUnselected,
+                          idx === 0 ? { marginRight: 5 } : { marginLeft: 5 },
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.roleToggleText,
+                            selected && styles.roleToggleTextSelected,
+                          ]}
+                        >
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
                 {errors.role && (
-                  <Text style={{ color: "red", marginBottom: 10 }}>
-                    {errors.role.message}
-                  </Text>
+                  <Text style={styles.errorText}>{errors.role.message}</Text>
                 )}
               </>
             )}
           />
 
           <View style={styles.buttonsContainer}>
-            <Button title="Register" onPress={handleSubmit(handleRegister)} />
+            <TouchableOpacity
+              style={[styles.button, styles.registerButton]}
+              onPress={handleSubmit(handleRegister)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonText}>Register</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -205,33 +242,107 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 30,
+    alignItems: "center",
+    paddingHorizontal: 24,
     backgroundColor: "#fff",
   },
-  logo: {
-    width: 120,
-    height: 120,
-    alignSelf: "center",
-    marginBottom: 20,
-    resizeMode: "contain",
-  },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 30,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 32,
+    color: "#212121",
   },
   input: {
-    height: 45,
-    borderColor: "#ccc",
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 15,
-    borderRadius: 6,
-    paddingHorizontal: 10,
+    borderColor: "#BDBDBD",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    fontSize: 16,
+    color: "#212121",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  inputError: {
+    borderColor: "#D32F2F",
+  },
+  errorText: {
+    color: "#D32F2F",
+    marginTop: -12,
+    marginBottom: 12,
+    fontSize: 13,
   },
   buttonsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 20,
+    width: "100%",
+    marginBottom: 24,
+  },
+  button: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20.84,
+  },
+  registerButton: {
+    backgroundColor: "#388E3C",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  roleLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#212121",
+  },
+  roleToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+    width: "100%",
+  },
+  roleToggleButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleToggleButtonSelectedClient: {
+    backgroundColor: "#FF6F00", // Orange 800
+    borderColor: "#FF6F00",
+  },
+  roleToggleButtonSelectedWorker: {
+    backgroundColor: "#FF6F00", // Deep Purple 700 "#512DA8"
+    borderColor: "#FF6F00",
+  },
+  roleToggleButtonUnselected: {
+    backgroundColor: "#fff",
+    borderColor: "#BDBDBD",
+  },
+  roleToggleText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212121",
+  },
+  roleToggleTextSelected: {
+    color: "#fff",
   },
 });
