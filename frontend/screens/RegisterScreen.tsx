@@ -17,6 +17,7 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
+import { withTimeout } from "../utils/withTimeout";
 
 export default function RegisterScreen({ navigation }: any) {
   const { setAuth, setLoading } = useStore.getState();
@@ -39,12 +40,14 @@ export default function RegisterScreen({ navigation }: any) {
   const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
     try {
       setLoading(true);
-      const res = await api.post("/register/", {
-        email: data.email,
-        username: data.username,
-        password: data.password,
-        role: data.role,
-      });
+      const res = await withTimeout(
+        api.post("/register/", {
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          role: data.role,
+        })
+      );
       useStore
         .getState()
         .setAuth(
