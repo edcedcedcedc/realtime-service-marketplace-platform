@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,9 @@ import Toast from "react-native-toast-message";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
+  const scrollRef = useRef<any>(null);
+  const [isUsername, setIsUsername] = useState(false);
+  const [isPassword, setIsPassword] = useState(false);
 
   useEffect(() => {
     console.log("Auth state changed:", auth);
@@ -78,7 +81,8 @@ export default function LoginScreen({ navigation }: any) {
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
       enableOnAndroid={true}
-      extraScrollHeight={20}
+      extraHeight={0}
+      extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -97,7 +101,6 @@ export default function LoginScreen({ navigation }: any) {
                   placeholder="Username"
                   value={value}
                   onChangeText={onChange}
-                  onBlur={onBlur}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -124,7 +127,6 @@ export default function LoginScreen({ navigation }: any) {
                   placeholder="Password"
                   value={value}
                   onChangeText={onChange}
-                  onBlur={onBlur}
                   secureTextEntry
                   placeholderTextColor="#999"
                   selectionColor="#2962FF"

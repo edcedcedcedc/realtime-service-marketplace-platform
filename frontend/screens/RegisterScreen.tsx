@@ -12,7 +12,6 @@ import {
 import Toast from "react-native-toast-message";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { RadioButton } from "react-native-paper";
 import useStore from "../store/useStore";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -59,7 +58,7 @@ export default function RegisterScreen({ navigation }: any) {
       Toast.show({
         type: "error",
         text1: "Registration Failed",
-        text2: err.response.data.error,
+        text2: err.response?.data?.error,
       });
     }
   };
@@ -68,7 +67,8 @@ export default function RegisterScreen({ navigation }: any) {
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
       enableOnAndroid={true}
-      extraScrollHeight={20}
+      extraHeight={0}
+      extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -179,17 +179,43 @@ export default function RegisterScreen({ navigation }: any) {
             )}
           />
 
-          {/* Role */}
+          {/* Role Selector */}
           <Controller
             control={control}
             name="role"
             render={({ field: { onChange, value } }) => (
               <>
                 <Text style={styles.roleLabel}>Register as:</Text>
-                <RadioButton.Group onValueChange={onChange} value={value}>
-                  <RadioButton.Item label="Client" value="client" />
-                  <RadioButton.Item label="Worker" value="worker" />
-                </RadioButton.Group>
+                <View style={styles.roleToggleContainer}>
+                  {["client", "worker"].map((role, idx) => {
+                    const selected = value === role;
+                    return (
+                      <TouchableOpacity
+                        key={role}
+                        onPress={() => onChange(role)}
+                        style={[
+                          styles.roleToggleButton,
+                          selected
+                            ? role === "client"
+                              ? styles.roleToggleButtonSelectedClient
+                              : styles.roleToggleButtonSelectedWorker
+                            : styles.roleToggleButtonUnselected,
+                          idx === 0 ? { marginRight: 5 } : { marginLeft: 5 },
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.roleToggleText,
+                            selected && styles.roleToggleTextSelected,
+                          ]}
+                        >
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
                 {errors.role && (
                   <Text style={styles.errorText}>{errors.role.message}</Text>
                 )}
@@ -238,12 +264,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     color: "#212121",
-    // Shadow for iOS
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    // Elevation for Android
     elevation: 2,
   },
   inputError: {
@@ -268,7 +292,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 3,
-    // Shadow iOS
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -287,5 +310,39 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 8,
     color: "#212121",
+  },
+  roleToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+    width: "100%",
+  },
+  roleToggleButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleToggleButtonSelectedClient: {
+    backgroundColor: "#FF6F00", // Orange 800
+    borderColor: "#FF6F00",
+  },
+  roleToggleButtonSelectedWorker: {
+    backgroundColor: "#FF6F00", // Deep Purple 700 "#512DA8"
+    borderColor: "#FF6F00",
+  },
+  roleToggleButtonUnselected: {
+    backgroundColor: "#fff",
+    borderColor: "#BDBDBD",
+  },
+  roleToggleText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#212121",
+  },
+  roleToggleTextSelected: {
+    color: "#fff",
   },
 });

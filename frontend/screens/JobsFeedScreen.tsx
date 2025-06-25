@@ -9,39 +9,20 @@ import {
   Dimensions,
 } from "react-native";
 import api from "../services/api";
-
+import useStore, { Job } from "../store/useStore";
 const { width } = Dimensions.get("window");
 
-interface Job {
-  id: number;
-  title: string;
-  description: string;
-  budget: number;
-  location: string;
-  status:
-    | "open"
-    | "accepted"
-    | "in-progress"
-    | "completed"
-    | "confirmed"
-    | "cancelled"
-    | "expired";
-  urgency: "now" | "soon" | "flexible";
-  must_start_by: string | null;
-  expires_from_feed: string | null;
-  created_at: string;
-  updated_at: string | null;
-  client: number;
-  worker: number | null;
-}
-
 export default function JobsFeedScreen({ navigation }: { navigation: any }) {
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const jobs = useStore((state) => state.jobs);
+  const setJobs = useStore((state) => state.setJobs);
   useEffect(() => {
     fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    console.log(jobs);
   }, []);
 
   const fetchJobs = async () => {
