@@ -1,31 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
 } from "react-native";
 import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
-const { width } = Dimensions.get("window");
 import { withTimeout } from "../utils/withTimeout";
 
+const { width } = Dimensions.get("window");
+const HEADER_HEIGHT = 120; // approx header + logout button height
+const COOLDOWN_MS = 10000; // 10 seconds cooldown
+
 export default function JobsFeedScreen({ navigation }: { navigation: any }) {
-  const { setAuth, setLoading } = useStore.getState();
-  const [error, setError] = useState("");
+  const { setLoading } = useStore.getState();
   const jobs = useStore((state) => state.jobs);
   const setJobs = useStore((state) => state.setJobs);
+  const loading = useStore((state) => state.loading);
+  const lastRefreshRef = useRef(0);
+  const [hasPulled, setHasPulled] = useState(false);
 
   useEffect(() => {
     fetchJobs();
-  }, []);
-
-  useEffect(() => {
-    console.log(jobs);
   }, []);
 
   const fetchJobs = async () => {
@@ -42,6 +42,7 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
       });
     } finally {
       setLoading(false);
+      setHasPulled(false);
     }
   };
 
@@ -52,8 +53,22 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   };
 
   const onButtonPress = (job: Job, action: string) => {
-    // Placeholder for other button actions
     alert(`${action} pressed for job: ${job.title}`);
+  };
+
+  const onScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const now = Date.now();
+    if (
+      offsetY < -80 &&
+      !hasPulled &&
+      !loading &&
+      now - lastRefreshRef.current > COOLDOWN_MS
+    ) {
+      setHasPulled(true);
+      lastRefreshRef.current = now;
+      fetchJobs();
+    }
   };
 
   const renderJob = ({ item }: { item: Job }) => (
@@ -103,25 +118,28 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Jobs Feed</Text>
+    <View style={styles.container}>
+      {/* Fixed Header */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Jobs Feed</Text>
+        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
-
-      {error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : (
-        <FlatList
-          data={jobs}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderJob}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          scrollEnabled={false} // Disable nested scroll, since inside ScrollView
-        />
-      )}
-    </ScrollView>
+      <FlatList
+        data={jobs}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderJob}
+        contentContainerStyle={{
+          paddingTop: HEADER_HEIGHT,
+          paddingBottom: 80,
+        }}
+        scrollEventThrottle={300}
+        onScroll={onScroll}
+        scrollEnabled={!loading}
+      />
+    </View>
   );
 }
 
@@ -137,42 +155,41 @@ const statusColors: Record<string, object> = {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 40,
+    flex: 1,
     backgroundColor: "#fff",
+  },
+  headerContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_HEIGHT,
+    backgroundColor: "#fff",
+    zIndex: 10,
+    elevation: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 40, // status bar height padding
   },
   header: {
     fontWeight: "700",
     fontSize: 28,
-    textAlign: "center",
-    marginBottom: 24,
     color: "#222",
   },
   logoutButton: {
-    alignSelf: "center",
-    borderColor: "#6200ee", // Same as login/register
+    position: "absolute",
+    right: 16,
+    bottom: 10,
+    borderColor: "#6200ee", // same as login/register
     borderWidth: 1.5,
     paddingHorizontal: 30,
     paddingVertical: 10,
     borderRadius: 6,
-    marginBottom: 20,
   },
   logoutButtonText: {
     color: "#6200ee",
     fontWeight: "600",
     fontSize: 16,
-  },
-  loadingText: {
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 18,
-    color: "#999",
-  },
-  errorText: {
-    textAlign: "center",
-    marginTop: 20,
-    color: "#d32f2f",
-    fontWeight: "600",
   },
   card: {
     backgroundColor: "#f5f5f5",
