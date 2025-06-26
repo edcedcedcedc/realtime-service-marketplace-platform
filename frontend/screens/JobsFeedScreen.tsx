@@ -14,7 +14,7 @@ import { withTimeout } from "../utils/withTimeout";
 
 const { width } = Dimensions.get("window");
 const HEADER_HEIGHT = 120; // approx header + logout button height
-const COOLDOWN_MS = 10000; // 10 seconds cooldown
+const COOLDOWN_MS = 5000; // 5 seconds cooldown
 
 export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   const { setLoading } = useStore.getState();
