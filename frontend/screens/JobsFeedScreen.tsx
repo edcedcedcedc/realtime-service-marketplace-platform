@@ -23,6 +23,7 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   const loading = useStore((state) => state.loading);
   const lastRefreshRef = useRef(0);
   const [hasPulled, setHasPulled] = useState(false);
+  const scrollOffsetRef = useRef(0);
 
   useEffect(() => {
     fetchJobs();
@@ -57,7 +58,12 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   };
 
   const onScroll = (event: any) => {
+    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+  };
+  const onScrollEndDrag = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
+    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+
     const now = Date.now();
     if (
       offsetY < -80 &&
@@ -137,6 +143,7 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
         }}
         scrollEventThrottle={300}
         onScroll={onScroll}
+        onScrollEndDrag={onScrollEndDrag}
         scrollEnabled={!loading}
       />
     </View>
