@@ -186,6 +186,8 @@ Message ◄──│ (JobFeedConsumer)        │
   ```
 
 ---
+## how to run redis server 
+if on windows install wsl2-ubuntu then from bash 'wsl' then sudo apt install redis-sever redis-cli
 
 ## Running Common Commands
 
