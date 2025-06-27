@@ -33,56 +33,6 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
     fetchJobs();
   }, []);
 
-  useEffect(() => {
-    let reconnectTimeout: NodeJS.Timeout;
-
-    const connectWebSocket = () => {
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log("✅ WebSocket connected");
-        ws.send(JSON.stringify({ type: "subscribe", channel: "jobsfeed" }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("📡 WebSocket message:", data);
-          addJob(data);
-        } catch (err) {
-          Toast.show({
-            type: "error",
-            text1: "WebSocket Error",
-            text2: "Could not parse incoming data",
-          });
-        }
-      };
-
-      ws.onerror = (error) => {
-        Toast.show({
-          type: "error",
-          text1: "WebSocket Error",
-        });
-      };
-
-      ws.onclose = (event) => {
-        /*  reconnectTimeout = setTimeout(connectWebSocket, 3000); */
-        // try again after 3 seconds
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      //clearTimeout(reconnectTimeout);
-    };
-  }, []);
-
   const fetchJobs = async () => {
     try {
       setLoading(true);
@@ -132,7 +82,6 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
   };
 
   const renderJob = ({ item }: { item: Job }) => {
-    console.log("Render job", "ITEM ID", item.id, item.updated_at);
     return (
       <View style={styles.card}>
         <Text style={styles.title}>{item.title}</Text>
