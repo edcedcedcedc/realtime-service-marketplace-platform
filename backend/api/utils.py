@@ -5,11 +5,14 @@ from .serializers import JobSerializer
 
 def jobsfeed_broadcast(job_instance):
     channel_layer = get_channel_layer()
-    data = JobSerializer(job_instance).data
+    message = {
+        "type": "job:new",  # the event type your frontend listens for
+        "payload": JobSerializer(job_instance).data,  # the actual job data
+    }
     async_to_sync(channel_layer.group_send)(
-        "jobsfeed",
+        "jobfeed",
         {
-            "type": "jobsfeed_update",
-            "data": data,
+            "type": "update",
+            "data": message,
         },
     )

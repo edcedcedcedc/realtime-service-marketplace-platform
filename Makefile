@@ -13,7 +13,7 @@ start-server-hws:
 start-server-r:
 	wsl -- bash -c "redis-server --daemonize yes && redis-cli ping"
 stop-server-r:
-	wsl -- bash -c "redis-cli shutdown && echo Redis server was shut down"
+	wsl -- bash -c "redis-cli shutdown && echo server-r shut down"
 install-server:
 	@cd backend && \
 	echo "Checking backend dependencies..." && \

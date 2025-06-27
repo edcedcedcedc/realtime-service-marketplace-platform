@@ -8,7 +8,6 @@ export function startSocket(onMessage: (job: Job) => void) {
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    console.log("data from socket")
     onMessage(data);
   };
 }

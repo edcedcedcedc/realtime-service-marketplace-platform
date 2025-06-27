@@ -6,25 +6,38 @@ import ToastConfig from "./config/ToastConfig";
 import useStore, { Job } from "./store/useStore";
 import GlobalLoading from "./screens/GlobalLoading";
 import { closeSocket, startSocket } from "./utils/sockets";
+import { socketManager } from "./utils/socketManager";
+import { WS_URL } from "./services/api";
 
 export default function App() {
-  console.log("test");
+  const addJob = useStore((state) => state.addJob);
+  const logged = useStore((state) => Boolean(state.auth.jwt?.access));
+  const loading = useStore((state) => state.loading);
+
   useEffect(() => {
-    startSocket((newJob: Job) => {
+    /*   if (!logged) {
+      socketManager.disconnect();
+      return;
+    }
+  */
+    socketManager.connect(WS_URL);
+
+    const handleNewJob = (newJob: Job) => {
       Toast.show({
         type: "success",
         text1: "New task received",
       });
-      console.log("New job received", newJob);
-      useStore.getState().addJob(newJob); // update Zustand store with the new job
-    });
 
-    return () => {
-      closeSocket();
+      addJob(newJob);
     };
-  }, []);
 
-  const loading = useStore((state) => state.loading);
+    socketManager.on("job:new", handleNewJob);
+    return () => {
+      socketManager.off("job:new", handleNewJob);
+      socketManager.disconnect();
+    };
+  }, [logged, addJob]);
+
   return (
     <>
       <NavigationContainer>

@@ -85,7 +85,7 @@ const useStore = create<State>()(
         })),
       addJob: (job: Job) =>
         set((state: { jobs: Job[] }) => ({ jobs: sortJobsByDate([...state.jobs, job]) })),
-      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) }),
+      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) })
     }),
     {
       name: "my-app-storage",

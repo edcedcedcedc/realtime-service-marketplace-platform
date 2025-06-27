@@ -11,7 +11,6 @@ import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
-import { WS_URL } from "../services/api";
 
 const { width } = Dimensions.get("window");
 const HEADER_HEIGHT = 120; // approx header + logout button height
