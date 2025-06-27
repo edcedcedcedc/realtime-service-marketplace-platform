@@ -11,22 +11,76 @@ import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
+import { WS_URL } from "../services/api";
 
 const { width } = Dimensions.get("window");
 const HEADER_HEIGHT = 120; // approx header + logout button height
-const COOLDOWN_MS = 5000; // 5 seconds cooldown
+const COOLDOWN_MS = 5000;
 
 export default function JobsFeedScreen({ navigation }: { navigation: any }) {
-  const { setLoading } = useStore.getState();
   const jobs = useStore((state) => state.jobs);
   const setJobs = useStore((state) => state.setJobs);
+  const addJob = useStore((state) => state.addJob);
   const loading = useStore((state) => state.loading);
+  const setLoading = useStore((state) => state.setLoading);
   const lastRefreshRef = useRef(0);
   const [hasPulled, setHasPulled] = useState(false);
   const scrollOffsetRef = useRef(0);
+  const wsRef = useRef<WebSocket | null>(null);
 
+  console.log("🌀 UI rerendered, jobs length:", jobs.length);
   useEffect(() => {
     fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    let reconnectTimeout: NodeJS.Timeout;
+
+    const connectWebSocket = () => {
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("✅ WebSocket connected");
+        ws.send(JSON.stringify({ type: "subscribe", channel: "jobsfeed" }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("📡 WebSocket message:", data);
+          addJob(data);
+        } catch (err) {
+          Toast.show({
+            type: "error",
+            text1: "WebSocket Error",
+            text2: "Could not parse incoming data",
+          });
+        }
+      };
+
+      ws.onerror = (error) => {
+        Toast.show({
+          type: "error",
+          text1: "WebSocket Error",
+        });
+      };
+
+      ws.onclose = (event) => {
+        /*  reconnectTimeout = setTimeout(connectWebSocket, 3000); */
+        // try again after 3 seconds
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      //clearTimeout(reconnectTimeout);
+    };
   }, []);
 
   const fetchJobs = async () => {
@@ -77,51 +131,54 @@ export default function JobsFeedScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const renderJob = ({ item }: { item: Job }) => (
-    <View style={styles.card}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description} numberOfLines={3}>
-        {item.description}
-      </Text>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.infoText}>
-          Budget: ${Number(item.budget).toFixed(2)}
+  const renderJob = ({ item }: { item: Job }) => {
+    console.log("Render job", "ITEM ID", item.id, item.updated_at);
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.description} numberOfLines={3}>
+          {item.description}
         </Text>
-        <Text style={styles.infoText}>Urgency: {item.urgency}</Text>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoText}>
+            Budget: ${Number(item.budget).toFixed(2)}
+          </Text>
+          <Text style={styles.infoText}>Urgency: {item.urgency}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoText}>Location: {item.location}</Text>
+          <Text style={[styles.status, statusColors[item.status] || {}]}>
+            {item.status.toUpperCase()}
+          </Text>
+        </View>
+
+        <View style={styles.buttonsRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.blueButton]}
+            onPress={() => onViewDetails(item)}
+          >
+            <Text style={styles.buttonText}>View Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.yellowButton]}
+            onPress={() => onButtonPress(item, "Action 1")}
+          >
+            <Text style={styles.buttonText}>Action 1</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.greenButton]}
+            onPress={() => onButtonPress(item, "Action 2")}
+          >
+            <Text style={styles.buttonText}>Action 2</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.infoText}>Location: {item.location}</Text>
-        <Text style={[styles.status, statusColors[item.status] || {}]}>
-          {item.status.toUpperCase()}
-        </Text>
-      </View>
-
-      <View style={styles.buttonsRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.blueButton]}
-          onPress={() => onViewDetails(item)}
-        >
-          <Text style={styles.buttonText}>View Details</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.yellowButton]}
-          onPress={() => onButtonPress(item, "Action 1")}
-        >
-          <Text style={styles.buttonText}>Action 1</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.greenButton]}
-          onPress={() => onButtonPress(item, "Action 2")}
-        >
-          <Text style={styles.buttonText}>Action 2</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>

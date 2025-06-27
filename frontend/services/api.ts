@@ -2,6 +2,7 @@ import axios from "axios";
 import useStore from "../store/useStore";
 
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
+export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
