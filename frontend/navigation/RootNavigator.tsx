@@ -6,6 +6,7 @@ import HomeScreen from "../screens/HomeScreen";
 import FancyLoadingScreen from "../screens/LoadingScreen";
 import AuthScreen from "../screens/AuthScreen";
 import JobsFeedScreen from "../screens/JobsFeedScreen";
+import JobDetailsScreen from "../screens/JobDetailsScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -14,6 +15,7 @@ export type RootStackParamList = {
   Home: undefined;
   Start: undefined;
   Jobsfeed: undefined;
+  JobDetails: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -23,6 +25,7 @@ export default function RootNavigator() {
     <Stack.Navigator initialRouteName="Start">
       <Stack.Screen name="Start" component={AuthScreen} />
       <Stack.Screen name="Jobsfeed" component={JobsFeedScreen} />
+      <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
     </Stack.Navigator>
   );
 }
