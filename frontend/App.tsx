@@ -31,7 +31,15 @@ export default function App() {
       addJob(newJob);
     };
 
+    const handleSocketOnOpen = () =>
+      Toast.show({
+        type: "success",
+        text1: "Websocket connected!",
+      });
+
     socketManager.on("job:new", handleNewJob);
+    socketManager.on("socket:onopen", handleSocketOnOpen);
+
     return () => {
       socketManager.off("job:new", handleNewJob);
       socketManager.disconnect();

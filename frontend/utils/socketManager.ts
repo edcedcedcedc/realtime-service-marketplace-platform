@@ -18,6 +18,7 @@ class SocketManager {
 
     this.socket.onopen = () => {
       console.log("WebSocket connected to", url);
+      this.emit("socket:onopen", null);
     };
 
     this.socket.onmessage = (e) => {
