@@ -165,8 +165,9 @@ class JobBroadcastIntegrationTests(TransactionTestCase):
 
         response = await communicator.receive_from()
         data = json.loads(response)
-        self.assertEqual(data["title"], job.title)
-        self.assertEqual(data["description"], job.description)
-        self.assertEqual(data["status"], job.status)
+        print(data, "data")
+        self.assertEqual(data["payload"]["title"], job.title)
+        self.assertEqual(data["payload"]["description"], job.description)
+        self.assertEqual(data["payload"]["status"], job.status)
 
         await communicator.disconnect()

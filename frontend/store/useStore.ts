@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { sortJobsByDate } from "../utils/sortJobs";
 
 interface User {
   id: number;
@@ -13,6 +14,7 @@ export interface Job {
   title: string;
   description: string;
   budget: number;
+  urgency: "now" | "soon" | "flexible";
   location: string;
   status:
     | "open"
@@ -22,13 +24,14 @@ export interface Job {
     | "confirmed"
     | "cancelled"
     | "expired";
-  urgency: "now" | "soon" | "flexible";
-  must_start_by: string | null;
+  client_username: string;
+  worker_username: string | null; 
+  worker_id: number | null;
   expires_from_feed: string | null;
+  must_start_by: string | null;
   created_at: string;
   updated_at: string | null;
-  client: number;
-  worker: number | null;
+
 }
 interface Jwt {
   access: string | null;
@@ -81,8 +84,8 @@ const useStore = create<State>()(
           clients: [...state.clients, client],
         })),
       addJob: (job: Job) =>
-        set((state: { jobs: Job[] }) => ({ jobs: [...state.jobs, job] })),
-      setJobs: (jobs: Job[]) => set({ jobs }),
+        set((state: { jobs: Job[] }) => ({ jobs: sortJobsByDate([...state.jobs, job]) })),
+      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) })
     }),
     {
       name: "my-app-storage",
