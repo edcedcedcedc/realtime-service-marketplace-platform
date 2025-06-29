@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -18,12 +18,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
 import { withTimeout } from "../utils/withTimeout";
+import { SPACING } from "../utils/spacings";
 
 export default function RegisterScreen({ navigation }: any) {
   const { setAuth, setLoading } = useStore.getState();
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<Yup.InferType<typeof registerSchema>>({
     resolver: yupResolver(registerSchema),
@@ -37,6 +39,10 @@ export default function RegisterScreen({ navigation }: any) {
     },
   });
 
+  useEffect(() => {
+    return () => reset();
+  }, []);
+
   const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
     try {
       setLoading(true);
@@ -46,13 +52,13 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        })
+        }),
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user
+          res.data.user,
         );
       Toast.show({
         type: "success",
@@ -250,7 +256,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
   },
   title: {

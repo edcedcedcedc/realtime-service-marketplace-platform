@@ -9,35 +9,34 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
-  Platform,
 } from "react-native";
 import api from "../services/api";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore from "../store/useStore";
 import { loginSchema } from "../validation/validationSchema";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, set } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
+import { SPACING } from "../utils/spacings";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
   const scrollRef = useRef<any>(null);
   const { setAuth, setLoading } = useStore.getState();
+
   useEffect(() => {
     console.log("Auth state changed:", auth);
   }, [auth]);
 
   useEffect(() => {
-    console.log("Login Mounted");
-    return () => {
-      console.log("Login Unmounted");
-    };
+    return () => reset();
   }, []);
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(loginSchema),
@@ -53,26 +52,28 @@ export default function LoginScreen({ navigation }: any) {
 
     try {
       setLoading(true);
-
       const res = await withTimeout(
         api.post("/login/", {
           username: data.username,
           password: data.password,
         }),
         5000,
-        "Request timed out. Please try again"
+        "Request timed out. Please try again",
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-
       Toast.show({
         type: "success",
         text1: "Login Successful",
         /*  text2: "Welcome back!", */
       });
-      navigation.replace("JobPost");
+      if (user.role == "client") {
+        navigation.replace("JobPost");
+      } else {
+        navigation.replace("JobFeed");
+      }
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
   },
   logo: {

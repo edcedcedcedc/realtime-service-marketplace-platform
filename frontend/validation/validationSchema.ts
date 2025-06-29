@@ -6,7 +6,7 @@ export const usernameSchema = Yup.string()
   .max(32, "Username can't be over 32 characters")
   .matches(
     /^(?!.*[\s@#$%^&*!?\/\\])(?!.*[._]{2})[a-zA-Z0-9][a-zA-Z0-9._-]{1,30}[a-zA-Z0-9]$/,
-    "Username must start and end with a letter and contain only English letters, numbers, or underscores"
+    "Username must start and end with a letter and contain only English letters, numbers, or underscores",
   );
 
 export const passwordSchema = Yup.string()

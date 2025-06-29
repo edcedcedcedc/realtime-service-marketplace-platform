@@ -1,6 +1,5 @@
-
 type ServerMessage = {
-  type: string;        // e.g. "job:new", "chat:message"
+  type: string; // e.g. "job:new", "chat:message"
   payload: any;
 };
 
@@ -53,7 +52,9 @@ class SocketManager {
 
   off(eventType: string, handler: MessageHandler) {
     if (!this.listeners[eventType]) return;
-    this.listeners[eventType] = this.listeners[eventType].filter(h => h !== handler);
+    this.listeners[eventType] = this.listeners[eventType].filter(
+      (h) => h !== handler,
+    );
   }
 
   emit(eventType: string, data: any) {

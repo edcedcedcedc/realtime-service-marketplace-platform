@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import useStore from "../store/useStore";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SPACING } from "../utils/spacings";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#d32f2f" }, // red
@@ -20,7 +21,10 @@ const urgencyOptions = [
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
-  const { control, handleSubmit, setValue, watch } = useForm({
+  const setLoading = useStore((state) => state.setLoading);
+  const loading = useStore((state) => state.loading);
+  let timeout: any = null;
+  const { control, handleSubmit, setValue, watch, reset } = useForm({
     defaultValues: {
       title: "",
       description: "",
@@ -30,13 +34,24 @@ export default function JobPostScreen({ navigation }: any) {
     },
   });
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeout);
+      setLoading(false);
+      reset();
+    };
+  }, []);
+
   const urgency = watch("urgency");
 
   const onSubmit = (data: any) => {
     setTempJobData(data);
     navigation.navigate("SearchScreen");
   };
-  const logout = () => navigation.replace("Start");
+  const logout = () => {
+    setLoading(true);
+    timeout = setTimeout(() => navigation.replace("Start"), 10);
+  };
 
   return (
     <KeyboardAwareScrollView
@@ -157,9 +172,10 @@ export default function JobPostScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
   },
   heading: {

@@ -34,7 +34,7 @@ export interface Job {
     | "cancelled"
     | "expired";
   client_username: string;
-  worker_username: string | null; 
+  worker_username: string | null;
   worker_id: number | null;
   expires_from_feed: string | null;
   must_start_by: string | null;
@@ -46,7 +46,7 @@ interface Jwt {
   refresh: string | null;
 }
 interface Loading {
-  loading: boolean
+  loading: boolean;
 }
 interface State {
   auth: {
@@ -96,8 +96,10 @@ const useStore = create<State>()(
           clients: [...state.clients, client],
         })),
       addJob: (job: Job) =>
-        set((state: { jobs: Job[] }) => ({ jobs: sortJobsByDate([...state.jobs, job]) })),
-      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) })
+        set((state: { jobs: Job[] }) => ({
+          jobs: sortJobsByDate([...state.jobs, job]),
+        })),
+      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) }),
     }),
     {
       name: "my-app-storage",
