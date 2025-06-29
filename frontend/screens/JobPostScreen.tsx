@@ -1,102 +1,153 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
+  TextInput,
+  Keyboard,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import useStore from "../store/useStore";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import Toast from "react-native-toast-message";
-import useStore, { Job, JobFormInput } from "../store/useStore";
-import { withTimeout } from "../utils/withTimeout";
-import api from "../services/api";
 
-export default function PostJobScreen({ navigation }: { navigation: any }) {
-  const setLoading = useStore((state) => state.setLoading);
+const urgencyOptions = [
+  { label: "Now", value: "now", color: "#d32f2f" }, // red
+  { label: "Soon", value: "soon", color: "#fbc02d" }, // yellow
+  { label: "Flexible", value: "flexible", color: "#388e3c" }, // green
+];
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<JobFormInput>({
+export default function JobPostScreen({ navigation }: any) {
+  const setTempJobData = useStore((state) => state.setTempJobData);
+  const { control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       title: "",
       description: "",
-      location: "",
-      category: "",
       budget: "",
+      location: "",
       urgency: "now",
     },
   });
 
-  const fields = [
-    "title",
-    "description",
-    "location",
-    "category",
-    "budget",
-    "urgency",
-  ] as const;
+  const urgency = watch("urgency");
 
-  const onSubmit = async (data: JobFormInput) => {
-    try {
-      setLoading(true);
-      await withTimeout(api.post("/jobs/create/", data));
-      Toast.show({
-        type: "success",
-        text1: "Job Posted Successfully",
-      });
-      //navigation.goBack();
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Error Posting Job",
-        text2: err.response?.data?.error || "Try again later",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit = (data: any) => {
+    setTempJobData(data);
+    navigation.navigate("SearchScreen");
   };
+  const logout = () => navigation.replace("Start");
 
   return (
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
-      enableOnAndroid
+      enableOnAndroid={true}
+      extraHeight={0}
+      extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{ width: "100%" }}>
-          <Text style={styles.title}>Post a Job</Text>
+          <Text style={styles.heading}>What do you need?</Text>
 
-          {fields.map((field) => (
-            <Controller
-              key={field}
-              control={control}
-              name={field}
-              render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[styles.input, errors[field] && styles.inputError]}
-                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholderTextColor="#999"
-                  selectionColor="#2962FF"
-                />
-              )}
-            />
-          ))}
+          {/* Title */}
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={styles.input}
+                placeholder="Job Title"
+                value={value}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          {/* Description - multiline */}
+          <Controller
+            control={control}
+            name="description"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[styles.input, styles.descriptionInput]}
+                placeholder="Description (tell us more)"
+                value={value}
+                onChangeText={onChange}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            )}
+          />
+
+          {/* Budget */}
+          <Controller
+            control={control}
+            name="budget"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={styles.input}
+                placeholder="Budget"
+                value={value}
+                onChangeText={onChange}
+                keyboardType="numeric"
+              />
+            )}
+          />
+
+          {/* Location */}
+          <Controller
+            control={control}
+            name="location"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={styles.input}
+                placeholder="Location"
+                value={value}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          {/* Urgency selector */}
+          <Text style={styles.label}>Urgency</Text>
+          <View style={styles.urgencyContainer}>
+            {urgencyOptions.map(({ label, value, color }) => {
+              const selected = urgency === value;
+              return (
+                <TouchableOpacity
+                  key={value}
+                  style={[
+                    styles.urgencyButton,
+                    { borderColor: color },
+                    selected && { backgroundColor: color },
+                  ]}
+                  onPress={() => setValue("urgency", value)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.urgencyText,
+                      selected && { color: "white", fontWeight: "700" },
+                      !selected && { color: color },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <TouchableOpacity
-            style={[styles.button, styles.postButton]}
+            style={styles.searchButton}
             onPress={handleSubmit(onSubmit)}
-            activeOpacity={0.7}
           >
-            <Text style={styles.buttonText}>Post Job</Text>
+            <Text style={styles.searchButtonText}>Find Worker Now</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.searchButton} onPress={logout}>
+            <Text style={styles.searchButtonText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
@@ -106,56 +157,64 @@ export default function PostJobScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
+    padding: 24,
     backgroundColor: "#fff",
   },
-  title: {
-    fontSize: 30,
+  heading: {
+    fontSize: 28,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 32,
-    color: "#212121",
+    marginBottom: 24,
+    color: "#222",
   },
   input: {
-    width: "100%",
     height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderColor: "#BDBDBD",
-    paddingHorizontal: 16,
+    borderRadius: 8,
     marginBottom: 16,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: "#212121",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
-  inputError: {
-    borderColor: "#D32F2F",
+  descriptionInput: {
+    height: 100, // taller for multiline
+    paddingTop: 12,
   },
-  button: {
-    height: 50,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  postButton: {
-    backgroundColor: "#388E3C",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
+  label: {
     fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#444",
+  },
+  urgencyContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  urgencyButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  urgencyText: {
+    fontSize: 16,
+  },
+  searchButton: {
+    backgroundColor: "#2962FF",
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
   },
 });

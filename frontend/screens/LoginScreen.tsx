@@ -72,7 +72,7 @@ export default function LoginScreen({ navigation }: any) {
         text1: "Login Successful",
         /*  text2: "Welcome back!", */
       });
-      navigation.replace("Client");
+      navigation.replace("JobPost");
     } catch (err: any) {
       Toast.show({
         type: "error",

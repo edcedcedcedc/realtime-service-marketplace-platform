@@ -4,7 +4,6 @@ import AuthScreen from "../screens/AuthScreen";
 import JobsFeedScreen from "../screens/JobsFeedScreen";
 import JobDetailsScreen from "../screens/JobDetailsScreen";
 import JobPostScreen from "../screens/JobPostScreen";
-import ClientScreen from "../screens/ClientScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -26,7 +25,6 @@ export default function RootNavigator() {
       <Stack.Screen name="Jobsfeed" component={JobsFeedScreen} />
       <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
       <Stack.Screen name="JobPost" component={JobPostScreen} />
-      <Stack.Screen name="Client" component={ClientScreen} />
     </Stack.Navigator>
   );
 }
