@@ -14,6 +14,8 @@ import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore from "../store/useStore";
 import { SPACING } from "../utils/spacings";
+import { LatLng } from "react-native-maps";
+import JobLocationScreen from "./JobLocationScreen";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -25,6 +27,7 @@ export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   let timeout: any = null;
@@ -37,6 +40,7 @@ export default function JobPostScreen({ navigation }: any) {
       urgency: "now",
     },
   });
+  const location = watch("location");
 
   useEffect(() => {
     return () => {
@@ -136,7 +140,7 @@ export default function JobPostScreen({ navigation }: any) {
               render={({ field: { onChange, value } }) => (
                 <TextInput
                   style={styles.input}
-                  placeholder="Job Title"
+                  placeholder="Task Title"
                   placeholderTextColor="#999"
                   value={value}
                   onChangeText={onChange}
@@ -180,13 +184,18 @@ export default function JobPostScreen({ navigation }: any) {
               control={control}
               name="location"
               render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Location"
-                  placeholderTextColor="#999"
-                  value={value}
-                  onChangeText={onChange}
-                />
+                <View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Location"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                  />
+                  <JobLocationScreen
+                    address={value || "Chisinau, Mihai Kogalniceau"}
+                  />
+                </View>
               )}
             />
 
