@@ -64,12 +64,14 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace("Jobsfeed");
+      navigation.replace(res.data.user === "client" ? "JobPost" : "JobFeed");
     } catch (err: any) {
       Toast.show({
         type: "error",
         text1: "Registration Failed",
-        text2: err.response?.data?.error,
+        text2:
+          err.response?.data?.error ||
+          "Something got wrong, please check your internet connection",
       });
     } finally {
       setLoading(false);

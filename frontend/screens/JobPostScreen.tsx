@@ -1,28 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  Keyboard,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  Keyboard,
+  Animated,
+  Easing,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
-import useStore from "../store/useStore";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import useStore from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 
 const urgencyOptions = [
-  { label: "Now", value: "now", color: "#d32f2f" }, // red
-  { label: "Soon", value: "soon", color: "#fbc02d" }, // yellow
-  { label: "Flexible", value: "flexible", color: "#388e3c" }, // green
+  { label: "Now", value: "now", color: "#ff3b30" },
+  { label: "Soon", value: "soon", color: "#ff9500" },
+  { label: "Flexible", value: "flexible", color: "#34c759" },
 ];
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
   const setLoading = useStore((state) => state.setLoading);
-  const loading = useStore((state) => state.loading);
+  const [isSearching, setIsSearching] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   let timeout: any = null;
   const { control, handleSubmit, setValue, watch, reset } = useForm({
     defaultValues: {
@@ -46,191 +50,333 @@ export default function JobPostScreen({ navigation }: any) {
 
   const onSubmit = (data: any) => {
     setTempJobData(data);
-    navigation.navigate("SearchScreen");
+    setIsSearching(true);
+    animatePulse();
   };
+
+  const animatePulse = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.5,
+          duration: 1000,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.in(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  const cancelSearch = () => {
+    setIsSearching(false);
+    pulseAnim.stopAnimation();
+  };
+
   const logout = () => {
     setLoading(true);
     timeout = setTimeout(() => navigation.replace("Start"), 10);
   };
 
-  return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid={true}
-      extraHeight={0}
-      extraScrollHeight={30}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ width: "100%" }}>
-          <Text style={styles.heading}>What do you need?</Text>
-
-          {/* Title */}
-          <Controller
-            control={control}
-            name="title"
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                style={styles.input}
-                placeholder="Job Title"
-                value={value}
-                onChangeText={onChange}
-              />
-            )}
-          />
-
-          {/* Description - multiline */}
-          <Controller
-            control={control}
-            name="description"
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                style={[styles.input, styles.descriptionInput]}
-                placeholder="Description (tell us more)"
-                value={value}
-                onChangeText={onChange}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            )}
-          />
-
-          {/* Budget */}
-          <Controller
-            control={control}
-            name="budget"
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                style={styles.input}
-                placeholder="Budget"
-                value={value}
-                onChangeText={onChange}
-                keyboardType="numeric"
-              />
-            )}
-          />
-
-          {/* Location */}
-          <Controller
-            control={control}
-            name="location"
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                style={styles.input}
-                placeholder="Location"
-                value={value}
-                onChangeText={onChange}
-              />
-            )}
-          />
-
-          {/* Urgency selector */}
-          <Text style={styles.label}>Urgency</Text>
-          <View style={styles.urgencyContainer}>
-            {urgencyOptions.map(({ label, value, color }) => {
-              const selected = urgency === value;
-              return (
-                <TouchableOpacity
-                  key={value}
-                  style={[
-                    styles.urgencyButton,
-                    { borderColor: color },
-                    selected && { backgroundColor: color },
-                  ]}
-                  onPress={() => setValue("urgency", value)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.urgencyText,
-                      selected && { color: "white", fontWeight: "700" },
-                      !selected && { color: color },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+  if (isSearching) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.overlay}>
+          <Text style={styles.searchingText}>Searching nearby workers...</Text>
+          <View style={styles.infoFields}>
+            <View style={styles.infoField}>
+              <Text style={styles.infoLabel}>Taskers in your area</Text>
+              <Text style={styles.infoValue}>12</Text>
+            </View>
+            <View style={styles.infoField}>
+              <Text style={styles.infoLabel}>Estimated waiting time</Text>
+              <Text style={styles.infoValue}>5 min</Text>
+            </View>
           </View>
+          <Animated.View
+            style={[
+              styles.pulseCircle,
+              {
+                transform: [{ scale: pulseAnim }],
+              },
+            ]}
+          />
 
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={handleSubmit(onSubmit)}
-          >
-            <Text style={styles.searchButtonText}>Find Worker Now</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.searchButton} onPress={logout}>
-            <Text style={styles.searchButtonText}>Logout</Text>
+          {/* New dynamic info fields */}
+
+          <TouchableOpacity style={styles.cancelButton} onPress={cancelSearch}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAwareScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        extraHeight={250}
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View>
+            <Text style={styles.heading}>What do you need?</Text>
+
+            {/* Fields */}
+            <Controller
+              control={control}
+              name="title"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Job Title"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="description"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[styles.input, styles.descriptionInput]}
+                  placeholder="Description"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="budget"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Budget"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="numeric"
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="location"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Location"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              )}
+            />
+
+            <Text style={styles.label}>Urgency</Text>
+            <View style={styles.urgencyContainer}>
+              {urgencyOptions.map(({ label, value, color }) => {
+                const selected = urgency === value;
+                return (
+                  <TouchableOpacity
+                    key={value}
+                    style={styles.urgencyButton}
+                    onPress={() => setValue("urgency", value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.urgencyText,
+                        selected
+                          ? { color: color, fontWeight: "600" }
+                          : { color: "#888" },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleSubmit(onSubmit)}
+              style={styles.searchButton}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.searchButtonText}>Find</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={logout}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingHorizontal: SPACING.md,
+  },
+  scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    backgroundColor: "#fff",
+    alignItems: "stretch",
+    paddingVertical: SPACING.md,
   },
   heading: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 24,
-    color: "#222",
-  },
-  input: {
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    marginBottom: 32,
     color: "#212121",
   },
+  input: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BDBDBD",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    fontSize: 16,
+    color: "#212121",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   descriptionInput: {
-    height: 100, // taller for multiline
-    paddingTop: 12,
+    height: 110,
+    paddingTop: 10,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#444",
+    fontSize: 14,
+    fontWeight: "400",
+    marginBottom: 10,
+    color: "#666",
   },
   urgencyContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
+    justifyContent: "space-around",
+    marginBottom: 40,
   },
   urgencyButton: {
-    flex: 1,
-    marginHorizontal: 4,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderRadius: 8,
-    alignItems: "center",
+    borderBottomWidth: 2,
+    borderColor: "transparent",
+    paddingVertical: 6,
   },
   urgencyText: {
     fontSize: 16,
   },
   searchButton: {
     backgroundColor: "#2962FF",
-    paddingVertical: 16,
     borderRadius: 8,
+    paddingVertical: 14,
+    height: 50,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 3,
   },
   searchButtonText: {
-    color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
+    color: "#fff",
+  },
+  logoutButton: {
+    alignItems: "center",
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    color: "#757575",
+    textDecorationLine: "underline",
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  searchingText: {
+    fontSize: 18,
+    marginBottom: 30,
+    color: "#333",
+    fontWeight: "600",
+  },
+  infoFields: {
+    width: "100%",
+    flexDirection: "column",
+    justifyContent: "space-around",
+    marginBottom: 40,
+    paddingHorizontal: 10,
+  },
+  infoField: {
+    justifyContent: "space-around",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 6,
+    fontWeight: "600",
+  },
+  infoValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#212121",
+  },
+  pulseCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#ff3b30",
+    opacity: 0.6,
+    marginBottom: 40,
+  },
+  cancelButton: {
+    backgroundColor: "#ff3b30",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
