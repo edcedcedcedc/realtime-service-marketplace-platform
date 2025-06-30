@@ -52,13 +52,13 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        }),
+        })
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       Toast.show({
         type: "success",
@@ -77,14 +77,16 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid={true}
-      extraHeight={0}
-      extraScrollHeight={30}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid={true}
+        keyboardShouldPersistTaps="handled"
+        extraHeight={250}
+        keyboardOpeningTime={10000}
+        scrollEventThrottle={250}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ width: "100%" }}>
           <Text style={styles.title}>Create Account</Text>
 
@@ -246,18 +248,22 @@ export default function RegisterScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAwareScrollView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    flex: 1,
     paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "stretch",
+    paddingVertical: SPACING.md,
   },
   title: {
     fontSize: 30,
