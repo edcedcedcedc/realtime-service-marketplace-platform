@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,37 +7,31 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Platform,
 } from "react-native";
 import api from "../services/api";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore from "../store/useStore";
 import { loginSchema } from "../validation/validationSchema";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
+import { SPACING } from "../utils/spacings";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
-  const scrollRef = useRef<any>(null);
   const { setAuth, setLoading } = useStore.getState();
-  useEffect(() => {
-    console.log("Auth state changed:", auth);
-  }, [auth]);
+  const usernameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    console.log("Login Mounted");
-    return () => {
-      console.log("Login Unmounted");
-    };
+    return () => reset();
   }, []);
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(loginSchema),
@@ -49,11 +43,8 @@ export default function LoginScreen({ navigation }: any) {
   });
 
   const handleLogin = async (data: { username: string; password: string }) => {
-    console.log("Form data:", data);
-
     try {
       setLoading(true);
-
       const res = await withTimeout(
         api.post("/login/", {
           username: data.username,
@@ -66,13 +57,11 @@ export default function LoginScreen({ navigation }: any) {
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-
       Toast.show({
         type: "success",
         text1: "Login Successful",
-        /*  text2: "Welcome back!", */
       });
-      navigation.replace("Jobsfeed");
+      navigation.replace(user.role === "client" ? "JobPost" : "JobFeed");
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -87,109 +76,104 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid={true}
-      extraHeight={0}
-      extraScrollHeight={30}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ width: "100%" }}>
-          <Image source={require("../assets/icon.png")} style={styles.logo} />
-          <Text style={styles.title}>Your App Name</Text>
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid
+        extraHeight={250}
+        keyboardOpeningTime={10000}
+        scrollEventThrottle={250}
+        showsVerticalScrollIndicator={false}
+      >
+        <Image source={require("../assets/icon.png")} style={styles.logo} />
+        <Text style={styles.title}>Your App Name</Text>
 
-          {/* Username */}
-          <Controller
-            control={control}
-            name="username"
-            render={({ field: { onChange, value, onBlur } }) => (
-              <>
-                <TextInput
-                  style={[styles.input, errors.username && styles.inputError]}
-                  placeholder="Username"
-                  value={value}
-                  onChangeText={onChange}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholderTextColor="#999"
-                  selectionColor="#2962FF"
-                />
-                {errors.username && (
-                  <Text style={styles.errorText}>
-                    {errors.username.message}
-                  </Text>
-                )}
-              </>
-            )}
-          />
+        {/* Username */}
+        <Controller
+          control={control}
+          name="username"
+          render={({ field: { onChange, value } }) => (
+            <>
+              <TextInput
+                ref={usernameRef}
+                style={[styles.input, errors.username && styles.inputError]}
+                placeholder="Username"
+                value={value}
+                onChangeText={onChange}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor="#999"
+                selectionColor="#2962FF"
+              />
+              {errors.username && (
+                <Text style={styles.errorText}>{errors.username.message}</Text>
+              )}
+            </>
+          )}
+        />
 
-          {/* Password */}
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, value, onBlur } }) => (
-              <>
-                <TextInput
-                  style={[styles.input, errors.password && styles.inputError]}
-                  placeholder="Password"
-                  value={value}
-                  onChangeText={onChange}
-                  secureTextEntry
-                  placeholderTextColor="#999"
-                  selectionColor="#2962FF"
-                />
-                {errors.password && (
-                  <Text style={styles.errorText}>
-                    {errors.password.message}
-                  </Text>
-                )}
-              </>
-            )}
-          />
+        {/* Password */}
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, value } }) => (
+            <>
+              <TextInput
+                ref={passwordRef}
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="Password"
+                value={value}
+                onChangeText={onChange}
+                secureTextEntry
+                placeholderTextColor="#999"
+                selectionColor="#2962FF"
+              />
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password.message}</Text>
+              )}
+            </>
+          )}
+        />
 
-          {/* Buttons */}
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.loginButton]}
-              onPress={handleSubmit(handleLogin)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-
-            {/*  <TouchableOpacity
-              style={[styles.button, styles.registerButton]}
-              onPress={() => navigation.navigate("Register")}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonText}>Register</Text>
-            </TouchableOpacity> */}
-          </View>
-
-          {/* Terms */}
+        {/* Buttons */}
+        <View style={styles.buttonsContainer}>
           <TouchableOpacity
-            onPress={() =>
-              Alert.alert("Terms and Conditions", "Display your terms here")
-            }
-            style={{ alignSelf: "center", marginTop: 10 }}
+            style={[styles.button, styles.loginButton]}
+            onPress={handleSubmit(handleLogin)}
+            activeOpacity={0.7}
           >
-            <Text style={styles.terms}>Terms and Conditions</Text>
+            <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAwareScrollView>
+
+        {/* Terms */}
+        <TouchableOpacity
+          onPress={() =>
+            Alert.alert("Terms and Conditions", "Display your terms here")
+          }
+          style={{ alignSelf: "center", marginTop: 10 }}
+        >
+          <Text style={styles.terms}>Terms and Conditions</Text>
+        </TouchableOpacity>
+      </KeyboardAwareScrollView>
+      {/*  </ScrollView> */}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingHorizontal: SPACING.md,
+  },
+  scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    backgroundColor: "#fff",
+    alignItems: "stretch",
+    paddingVertical: SPACING.md,
   },
   logo: {
     width: 100,
@@ -216,12 +200,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     color: "#212121",
-    // Shadow for iOS
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    // Elevation for Android
     elevation: 2,
   },
   inputError: {
@@ -248,7 +230,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 3,
-    // Shadow iOS
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -256,9 +237,6 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: "#2962FF",
-  },
-  registerButton: {
-    backgroundColor: "#388E3C",
   },
   buttonText: {
     color: "white",

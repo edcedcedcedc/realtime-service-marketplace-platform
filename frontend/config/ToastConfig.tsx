@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Layout } from "react-native-reanimated";
 
 const ToastConfig = {
   success: ({ text1, text2 }: any) => (
@@ -30,6 +31,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     flexDirection: "column",
     justifyContent: "center",
+  },
+  Layout: {
+    zIndex: 1000,
+    elevation: 1000,
   },
   success: {
     backgroundColor: "#388E3C", // Material Green 700

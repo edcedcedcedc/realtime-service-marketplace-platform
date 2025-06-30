@@ -11,12 +11,13 @@ import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
+import { SPACING } from "../utils/spacings";
 
 const { width } = Dimensions.get("window");
 const HEADER_HEIGHT = 120; // approx header + logout button height
 const COOLDOWN_MS = 5000;
 
-export default function JobsFeedScreen({ navigation }: { navigation: any }) {
+export default function JobFeedScreen({ navigation }: { navigation: any }) {
   const jobs = useStore((state) => state.jobs);
   const setJobs = useStore((state) => state.setJobs);
   const addJob = useStore((state) => state.addJob);
@@ -167,7 +168,10 @@ const statusColors: Record<string, object> = {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
   },
   headerContainer: {

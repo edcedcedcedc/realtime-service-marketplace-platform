@@ -9,6 +9,15 @@ interface User {
   email: string;
   role: string;
 }
+
+export type JobFormInput = {
+  title: string;
+  description: string;
+  location: string;
+  category: string;
+  budget: string; // still string, convert before submit
+  urgency: "now" | "soon" | "flexible";
+};
 export interface Job {
   id: number;
   title: string;
@@ -25,20 +34,19 @@ export interface Job {
     | "cancelled"
     | "expired";
   client_username: string;
-  worker_username: string | null; 
+  worker_username: string | null;
   worker_id: number | null;
   expires_from_feed: string | null;
   must_start_by: string | null;
   created_at: string;
   updated_at: string | null;
-
 }
 interface Jwt {
   access: string | null;
   refresh: string | null;
 }
 interface Loading {
-  loading: boolean
+  loading: boolean;
 }
 interface State {
   auth: {
@@ -49,6 +57,7 @@ interface State {
   clients: User[];
   jobs: Job[];
   loading: boolean;
+  tempJobData: JobFormInput | null;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
@@ -56,6 +65,7 @@ interface State {
   addJob: (job: Job) => void;
   setJobs: (jobs: Job[]) => void;
   setLoading: (value: boolean) => void;
+  setTempJobData: (data: JobFormInput | null) => void;
 }
 
 const useStore = create<State>()(
@@ -72,6 +82,8 @@ const useStore = create<State>()(
       clients: [],
       jobs: [],
       loading: false,
+      tempJobData: null,
+      setTempJobData: (data) => set({ tempJobData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
       clearAuth: () => set({ auth: { jwt: null, user: null } }),
@@ -84,8 +96,10 @@ const useStore = create<State>()(
           clients: [...state.clients, client],
         })),
       addJob: (job: Job) =>
-        set((state: { jobs: Job[] }) => ({ jobs: sortJobsByDate([...state.jobs, job]) })),
-      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) })
+        set((state: { jobs: Job[] }) => ({
+          jobs: sortJobsByDate([...state.jobs, job]),
+        })),
+      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) }),
     }),
     {
       name: "my-app-storage",
