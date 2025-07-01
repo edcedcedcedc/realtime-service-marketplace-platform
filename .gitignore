@@ -65,3 +65,4 @@ frontend/expo-env.d.ts
 
 
 dump.rdb
+.env

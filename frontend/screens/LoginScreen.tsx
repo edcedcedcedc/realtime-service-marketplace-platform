@@ -61,7 +61,9 @@ export default function LoginScreen({ navigation }: any) {
         type: "success",
         text1: "Login Successful",
       });
-      navigation.replace(user.role === "client" ? "JobPost" : "JobFeed");
+      navigation.replace(
+        user.role === "client" ? "Search a tasker" : "Task feed"
+      );
     } catch (err: any) {
       Toast.show({
         type: "error",
