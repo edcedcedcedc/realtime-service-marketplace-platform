@@ -10,6 +10,10 @@ interface User {
   role: string;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
 
 export interface Region {
   latitude: number
@@ -71,6 +75,8 @@ interface State {
   tempJobData: JobFormInput | null;
   selectedRegion: Region | null;
   selectedLatLng: LatLng | null;
+  markerPoint: Point | null;
+  setMarkerPoint: (point: Point | null) => void;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
@@ -101,7 +107,8 @@ const useStore = create<State>()(
       tempJobData: null,
       selectedRegion: null,
       selectedLatLng: null, 
-      
+      markerPoint: null,
+      setMarkerPoint: (point) => set({ markerPoint: point }),
       setSelectedRegion: (region) => set({ selectedRegion: region }),
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
       setTempJobData: (data) => set({ tempJobData: data }),

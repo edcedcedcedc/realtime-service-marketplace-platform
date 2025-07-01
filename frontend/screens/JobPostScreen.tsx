@@ -10,6 +10,7 @@ import {
   Animated,
   Easing,
   Modal,
+  Button,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -34,6 +35,7 @@ const defaultRegion: Region = {
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
+  const setSelectedRegion = useStore((state) => state.setSelectedRegion);
   const selectedRegion = useStore((state) => state.selectedRegion);
   const [isFullMapVisible, setIsFullMapVisible] = useState(false);
   const [address, setAddress] = useState("Chisinau");
@@ -62,40 +64,12 @@ export default function JobPostScreen({ navigation }: any) {
     };
   }, []);
 
-  useEffect(() => {
-    if (selectedRegion) {
-      setValue(
-        "location",
-        `${selectedRegion.latitude}, ${selectedRegion.longitude}`
-      );
-    }
-  }, [selectedRegion]);
-
   const urgency = watch("urgency");
 
   const onSubmit = (data: any) => {
+    setIsSearching(true);
     setTempJobData(data);
     setIsSearching(true);
-    animatePulse();
-  };
-
-  const animatePulse = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.5,
-          duration: 1000,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   };
 
   const cancelSearch = () => {
@@ -107,40 +81,6 @@ export default function JobPostScreen({ navigation }: any) {
     setLoading(true);
     timeout = setTimeout(() => navigation.replace("Start"), 10);
   };
-
-  if (isSearching) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.overlay}>
-          <Text style={styles.searchingText}>Searching nearby workers...</Text>
-          <View style={styles.infoFields}>
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>Taskers in your area</Text>
-              <Text style={styles.infoValue}>12</Text>
-            </View>
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>Estimated waiting time</Text>
-              <Text style={styles.infoValue}>5 min</Text>
-            </View>
-          </View>
-          <Animated.View
-            style={[
-              styles.pulseCircle,
-              {
-                transform: [{ scale: pulseAnim }],
-              },
-            ]}
-          />
-
-          {/* New dynamic info fields */}
-
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelSearch}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -218,11 +158,18 @@ export default function JobPostScreen({ navigation }: any) {
                       onLocationFetched={(coords: any) => {
                         const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
                         onChange(locationString);
+                        setSelectedRegion({
+                          latitude: coords.latitude,
+                          longitude: coords.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        });
                       }}
                     />
                     <MiniMapScreen
                       address={value || ""}
                       onDoubleTap={() => setIsFullMapVisible(true)}
+                      isSearching={isSearching}
                     />
                     <Modal visible={isFullMapVisible} animationType="slide">
                       <FullMapScreen
@@ -235,39 +182,76 @@ export default function JobPostScreen({ navigation }: any) {
               )}
             />
 
-            <Text style={styles.label}>Urgency</Text>
-            <View style={styles.urgencyContainer}>
-              {urgencyOptions.map(({ label, value, color }) => {
-                const selected = urgency === value;
-                return (
-                  <TouchableOpacity
-                    key={value}
-                    style={styles.urgencyButton}
-                    onPress={() => setValue("urgency", value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.urgencyText,
-                        selected
-                          ? { color: color, fontWeight: "600" }
-                          : { color: "#888" },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {!isSearching ? (
+              <>
+                <Text style={styles.label}>Urgency</Text>
+                <View style={styles.urgencyContainer}>
+                  {urgencyOptions.map(({ label, value, color }) => {
+                    const selected = urgency === value;
+                    return (
+                      <TouchableOpacity
+                        key={value}
+                        style={styles.urgencyButton}
+                        onPress={() => setValue("urgency", value)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.urgencyText,
+                            selected
+                              ? { color: color, fontWeight: "600" }
+                              : { color: "#888" },
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.infoFieldsRow}>
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Workers in your area</Text>
+                    <Text style={styles.infoValue}>12</Text>
+                  </View>
 
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              style={styles.searchButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.searchButtonText}>Find</Text>
-            </TouchableOpacity>
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Estimated wait</Text>
+                    <Text style={styles.infoValue}>5 min</Text>
+                  </View>
+                </View>
+                <View style={styles.infoFieldsRow}>
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Incoming requests</Text>
+                    <Text style={styles.infoValue}>5 </Text>
+                  </View>
+                  <View style={{ display: "flex", alignContent: "center" }}>
+                    <Button title="Inspect Requests" onPress={() => {}} />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {!isSearching ? (
+              <TouchableOpacity
+                onPress={handleSubmit(onSubmit)}
+                style={styles.searchButtonFind}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.searchButtonText}>Find</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={cancelSearch}
+                style={styles.searchButtonStop}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.searchButtonText}>Stop</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.logoutButton}
@@ -284,6 +268,35 @@ export default function JobPostScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  infoFieldsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    width: "100%", // make sure it stretches full width
+  },
+
+  infoField: {
+    flexDirection: "row", // horizontal row
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "400",
+    lineHeight: 18,
+    // Remove width: "50%"
+    // Remove textAlign
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#212121",
+    lineHeight: 18,
+    marginLeft: 8, // Add margin to separate value from label
+    // Remove width and textAlign
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -332,7 +345,7 @@ const styles = StyleSheet.create({
   urgencyContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: 40,
+    marginBottom: 10,
   },
   urgencyButton: {
     borderBottomWidth: 2,
@@ -342,8 +355,21 @@ const styles = StyleSheet.create({
   urgencyText: {
     fontSize: 16,
   },
-  searchButton: {
+  searchButtonFind: {
     backgroundColor: "#2962FF",
+    borderRadius: 8,
+    paddingVertical: 14,
+    height: 50,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  searchButtonStop: {
+    backgroundColor: "#F44336",
     borderRadius: 8,
     paddingVertical: 14,
     height: 50,
@@ -388,22 +414,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     marginBottom: 40,
     paddingHorizontal: 10,
-  },
-  infoField: {
-    justifyContent: "space-around",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 6,
-    fontWeight: "600",
-  },
-  infoValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#212121",
   },
   pulseCircle: {
     width: 100,
