@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import useStore from "../store/useStore";
+import AnimatedCircle from "./AnimatedCircle";
 
 type Props = {
   address: string;
@@ -20,17 +21,23 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !selectedRegion || !mapReady) return;
-
-    mapRef.current
-      .pointForCoordinate(selectedRegion)
-      .then((point) => {
-        setMarkerPoint(point);
-      })
-      .catch((error) => {
-        console.warn("Failed to get point for coordinate:", error);
-      });
+    if (!mapRef.current || !selectedRegion || !mapReady) {
+      return;
+    } else {
+      mapRef.current
+        .pointForCoordinate(selectedRegion)
+        .then((point) => {
+          setMarkerPoint(point);
+        })
+        .catch((error) => {
+          console.warn("Failed to get point for coordinate:", error);
+        });
+    }
   }, [selectedRegion, mapReady]);
+
+  useEffect(() => {
+    console.log("📍 markerPoint:", markerPoint);
+  }, [markerPoint]);
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -108,15 +115,18 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
 
       {/* Dot overlay on marker coordinate */}
       {markerPoint && (
-        <View
-          style={[
-            styles.dot,
-            {
-              left: markerPoint.x - 6,
-              top: markerPoint.y - 26, // shifted up by ~20px more than before
-            },
-          ]}
-        />
+        <>
+          <AnimatedCircle x={markerPoint.x} y={markerPoint.y} />
+          <View
+            style={[
+              styles.dot,
+              {
+                left: markerPoint.x - 6,
+                top: markerPoint.y - 26,
+              },
+            ]}
+          />
+        </>
       )}
 
       <Pressable
@@ -143,6 +153,15 @@ const styles = StyleSheet.create({
   map: {
     width: "100%",
     height: "100%",
+  },
+  pulseRing: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 59, 48, 0.4)", // red with transparency
+    zIndex: 5,
+    pointerEvents: "none", // allows touches to pass through
   },
   infoText: {
     textAlign: "center",
