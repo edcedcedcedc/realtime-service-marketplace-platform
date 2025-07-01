@@ -10,6 +10,14 @@ interface User {
   role: string;
 }
 
+
+export interface LatLng {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
 export type JobFormInput = {
   title: string;
   description: string;
@@ -58,6 +66,7 @@ interface State {
   jobs: Job[];
   loading: boolean;
   tempJobData: JobFormInput | null;
+  selectedRegion: LatLng | null;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
   addWorker: (worker: User) => void;
@@ -66,6 +75,8 @@ interface State {
   setJobs: (jobs: Job[]) => void;
   setLoading: (value: boolean) => void;
   setTempJobData: (data: JobFormInput | null) => void;
+  setSelectedRegion: (region: LatLng | null) => void;
+
 }
 
 const useStore = create<State>()(
@@ -83,6 +94,8 @@ const useStore = create<State>()(
       jobs: [],
       loading: false,
       tempJobData: null,
+      selectedRegion: null,
+      setSelectedRegion: (region) => set({ selectedRegion: region }),
       setTempJobData: (data) => set({ tempJobData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
