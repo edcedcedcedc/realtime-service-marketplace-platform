@@ -16,7 +16,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import useStore, { Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import MiniMapScreen from "./MiniMapScreen";
-import LocationAlertButton from "./LocationAlertButton";
+import MyLocationScreen from "./MyLocationScreen";
 import FullMapScreen from "./FullMapScreen";
 
 const urgencyOptions = [
@@ -214,7 +214,7 @@ export default function JobPostScreen({ navigation }: any) {
                     onChangeText={onChange}
                   />
                   <View>
-                    <LocationAlertButton
+                    <MyLocationScreen
                       onLocationFetched={(coords: any) => {
                         const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
                         onChange(locationString);

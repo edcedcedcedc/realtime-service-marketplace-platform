@@ -6,7 +6,7 @@ type Props = {
   onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
 };
 
-export default function LocationAlertButton({ onLocationFetched }: Props) {
+export default function MyLocationScreen({ onLocationFetched }: Props) {
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
 
