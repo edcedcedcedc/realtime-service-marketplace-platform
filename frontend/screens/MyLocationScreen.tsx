@@ -44,7 +44,6 @@ export default function MyLocationScreen({ onLocationFetched }: Props) {
           <Button title="Use My Location" onPress={handleGetLocation} />
         </View>
       </View>
-
       <Text style={styles.helperText}>
         You can choose your location manually if you don't prefer exact
         location, just double tap the mini map.

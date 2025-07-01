@@ -46,6 +46,7 @@ export default function JobPostScreen({ navigation }: any) {
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
+  const [intermmitLocation, setIntermmitLocation] = useState("");
 
   let timeout: any = null;
   const { control, handleSubmit, setValue, watch, reset } = useForm({
@@ -160,13 +161,17 @@ export default function JobPostScreen({ navigation }: any) {
                         onLocationFetched={(coords: LatLng) => {
                           const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
                           onChange(locationString);
+                          setIntermmitLocation(locationString);
                         }}
                       />
 
                       <MapSelector
                         address={value || ""}
                         isSearching={isSearching}
-                        onChangeLocationField={onChange}
+                        onLocationFetched={() => onChange(intermmitLocation)}
+                        onDoubleTap={() => {
+                          console.log(intermmitLocation, "intermited location");
+                        }}
                       />
                     </View>
                   </View>

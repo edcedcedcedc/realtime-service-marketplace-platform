@@ -18,14 +18,14 @@ type Props = {
   address: string;
   isSearching: boolean;
   onDoubleTap?: () => void;
-  onChangeLocationField: (location: string) => void;
+  onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
 };
 
 export default function MapSelector({
   address,
   isSearching,
   onDoubleTap,
-  onChangeLocationField,
+  onLocationFetched,
 }: Props) {
   const miniMapReady = useStore((s) => s.miniMapReady);
   const fullMapReady = useStore((s) => s.fullMapReady);
@@ -51,10 +51,7 @@ export default function MapSelector({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log(
-      onChangeLocationField,
-      "onChangeLocationField from MapSelector"
-    );
+    console.log(onLocationFetched, "onLocation from MapSelector");
   });
 
   // Geocode text input
@@ -93,6 +90,7 @@ export default function MapSelector({
 
   // Update marker point (screen position) when region or mapReady changes
   useEffect(() => {
+    console.log("render");
     if (
       miniMapRef.current &&
       selectedRegion &&
@@ -116,7 +114,13 @@ export default function MapSelector({
         .then(setMarkerPointFull)
         .catch((err) => console.warn("FullMap error:", err));
     }
-  }, [selectedRegion, miniMapReady, fullMapReady, isFullMapVisible]);
+  }, [
+    selectedRegion,
+    miniMapReady,
+    fullMapReady,
+    isFullMapVisible,
+    onLocationFetched,
+  ]);
 
   const handleDoubleTap = () => {
     const now = Date.now();
