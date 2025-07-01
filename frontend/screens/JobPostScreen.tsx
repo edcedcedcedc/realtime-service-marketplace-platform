@@ -23,6 +23,7 @@ import FullMapScreen from "./FullMapScreen";
 import Toast from "react-native-toast-message";
 import MapSelector from "../utils/MapSelector";
 import * as Location from "expo-location";
+import { LatLng } from "react-native-maps";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -195,16 +196,13 @@ export default function JobPostScreen({ navigation }: any) {
                       onChangeText={onChange}
                     />
                     <View>
-                      <View style={styles.myLocation}>
-                        <Button
-                          title="Use My Location"
-                          onPress={handleUseMyLocation}
-                        />
-                      </View>
-                      <Text style={styles.helperText}>
-                        You can choose your location manually if you don't
-                        prefer exact location, just double tap the mini map.
-                      </Text>
+                      <MyLocationScreen
+                        onLocationFetched={(coords: LatLng) => {
+                          const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+                          onChange(locationString);
+                        }}
+                      />
+
                       <MapSelector
                         address={value || ""}
                         isSearching={isSearching}

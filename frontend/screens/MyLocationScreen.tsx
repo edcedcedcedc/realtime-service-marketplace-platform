@@ -24,7 +24,6 @@ export default function MyLocationScreen({ onLocationFetched }: Props) {
     const { latitude, longitude } = location.coords;
 
     onLocationFetched({ latitude, longitude });
-
     setSelectedRegion({
       latitude,
       longitude,
