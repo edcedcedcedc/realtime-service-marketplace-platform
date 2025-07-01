@@ -36,7 +36,7 @@ export default function AnimatedCircle({ x, y }: Props) {
         styles.circle,
         {
           left: x - 20,
-          top: y - 40,
+          top: y - 39, //was 40
           transform: [{ scale: pulseAnim }],
           opacity: pulseAnim.interpolate({
             inputRange: [1, 2.5],
