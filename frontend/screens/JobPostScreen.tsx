@@ -66,7 +66,7 @@ export default function JobPostScreen({ navigation }: any) {
     if (selectedRegion) {
       setValue(
         "location",
-        `${selectedRegion.latitude.toFixed(5)}, ${selectedRegion.longitude.toFixed(5)}`
+        `${selectedRegion.latitude}, ${selectedRegion.longitude}`
       );
     }
   }, [selectedRegion]);
