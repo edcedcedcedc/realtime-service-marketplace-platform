@@ -36,8 +36,6 @@ export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
   const setSelectedRegion = useStore((state) => state.setSelectedRegion);
   const selectedRegion = useStore((state) => state.selectedRegion);
-  const markerPoint = useStore((state) => state.markerPoint);
-  const setMarkerPoint = useStore((state) => state.setMarkerPoint);
   const [isFullMapVisible, setIsFullMapVisible] = useState(false);
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
@@ -65,40 +63,12 @@ export default function JobPostScreen({ navigation }: any) {
     };
   }, []);
 
-  /*  useEffect(() => {
-    if (selectedRegion) {
-      setValue(
-        "location",
-        `${selectedRegion.latitude}, ${selectedRegion.longitude}`
-      );
-    }
-  }, [selectedRegion]); */
-
   const urgency = watch("urgency");
 
   const onSubmit = (data: any) => {
+    setIsSearching(true);
     setTempJobData(data);
     setIsSearching(true);
-    animatePulse();
-  };
-
-  const animatePulse = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.5,
-          duration: 1000,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   };
 
   const cancelSearch = () => {
@@ -110,40 +80,6 @@ export default function JobPostScreen({ navigation }: any) {
     setLoading(true);
     timeout = setTimeout(() => navigation.replace("Start"), 10);
   };
-
-  if (isSearching) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.overlay}>
-          <Text style={styles.searchingText}>Searching nearby workers...</Text>
-          <View style={styles.infoFields}>
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>Taskers in your area</Text>
-              <Text style={styles.infoValue}>12</Text>
-            </View>
-            <View style={styles.infoField}>
-              <Text style={styles.infoLabel}>Estimated waiting time</Text>
-              <Text style={styles.infoValue}>5 min</Text>
-            </View>
-          </View>
-          <Animated.View
-            style={[
-              styles.pulseCircle,
-              {
-                transform: [{ scale: pulseAnim }],
-              },
-            ]}
-          />
-
-          {/* New dynamic info fields */}
-
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelSearch}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -232,6 +168,7 @@ export default function JobPostScreen({ navigation }: any) {
                     <MiniMapScreen
                       address={value || ""}
                       onDoubleTap={() => setIsFullMapVisible(true)}
+                      isSearching={isSearching}
                     />
                     <Modal visible={isFullMapVisible} animationType="slide">
                       <FullMapScreen
@@ -270,13 +207,23 @@ export default function JobPostScreen({ navigation }: any) {
               })}
             </View>
 
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              style={styles.searchButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.searchButtonText}>Find</Text>
-            </TouchableOpacity>
+            {!isSearching ? (
+              <TouchableOpacity
+                onPress={handleSubmit(onSubmit)}
+                style={styles.searchButtonFind}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.searchButtonText}>Find</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={cancelSearch}
+                style={styles.searchButtonStop}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.searchButtonText}>Stop</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.logoutButton}
@@ -351,8 +298,21 @@ const styles = StyleSheet.create({
   urgencyText: {
     fontSize: 16,
   },
-  searchButton: {
+  searchButtonFind: {
     backgroundColor: "#2962FF",
+    borderRadius: 8,
+    paddingVertical: 14,
+    height: 50,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  searchButtonStop: {
+    backgroundColor: "#F44336",
     borderRadius: 8,
     paddingVertical: 14,
     height: 50,

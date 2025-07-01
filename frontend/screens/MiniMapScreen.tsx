@@ -8,9 +8,14 @@ import AnimatedCircle from "./AnimatedCircle";
 type Props = {
   address: string;
   onDoubleTap?: () => void;
+  isSearching: boolean;
 };
 
-export default function MiniMapScreen({ address, onDoubleTap }: Props) {
+export default function MiniMapScreen({
+  address,
+  onDoubleTap,
+  isSearching,
+}: Props) {
   const selectedRegion = useStore((state) => state.selectedRegion);
   const [mapReady, setMapReady] = useState(false);
   const setSelectedRegion = useStore((state) => state.setSelectedRegion);
@@ -21,9 +26,7 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !selectedRegion || !mapReady) {
-      return;
-    } else {
+    if (mapRef.current && selectedRegion && mapReady) {
       mapRef.current
         .pointForCoordinate(selectedRegion)
         .then((point) => {
@@ -114,7 +117,7 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
       </MapView>
 
       {/* Dot overlay on marker coordinate */}
-      {markerPoint && (
+      {isSearching && markerPoint && (
         <>
           <AnimatedCircle x={markerPoint.x} y={markerPoint.y} />
           <View
