@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import useStore from "../store/useStore";
 
 type Props = {
   address: string;
@@ -16,7 +17,9 @@ type LatLng = {
 };
 
 export default function MapScreen({ address, onDoubleTap }: Props) {
-  const [region, setRegion] = useState<LatLng | null>(null);
+  const selectedRegion = useStore((state) => state.selectedRegion);
+  const setSelectedRegion = useStore((state) => state.setSelectedRegion);
+  console.log(selectedRegion, "selected Region");
   const [loading, setLoading] = useState(false);
   const lastTap = useRef<number>(0);
 
@@ -31,7 +34,7 @@ export default function MapScreen({ address, onDoubleTap }: Props) {
 
   useEffect(() => {
     if (!address) {
-      setRegion(null);
+      setSelectedRegion(null);
       return;
     }
 
@@ -43,17 +46,17 @@ export default function MapScreen({ address, onDoubleTap }: Props) {
         const geocoded = await Location.geocodeAsync(address);
         if (geocoded.length > 0 && active) {
           const { latitude, longitude } = geocoded[0];
-          setRegion({
+          setSelectedRegion({
             latitude,
             longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           });
         } else if (active) {
-          setRegion(null);
+          setSelectedRegion(null);
         }
       } catch {
-        if (active) setRegion(null);
+        if (active) setSelectedRegion(null);
       } finally {
         if (active) setLoading(false);
       }
@@ -74,7 +77,7 @@ export default function MapScreen({ address, onDoubleTap }: Props) {
     return <Text style={styles.infoText}>Loading map preview...</Text>;
   }
 
-  if (!region) {
+  if (!selectedRegion) {
     return <Text style={styles.infoText}>Invalid location</Text>;
   }
 
@@ -82,14 +85,14 @@ export default function MapScreen({ address, onDoubleTap }: Props) {
     <View style={styles.mapWrapper}>
       <MapView
         style={styles.map}
-        region={region}
+        region={selectedRegion}
         scrollEnabled={false}
         zoomEnabled={false}
         pitchEnabled={false}
         rotateEnabled={false}
         pointerEvents="none"
       >
-        <Marker coordinate={region} title="Selected Location" />
+        <Marker coordinate={selectedRegion} title="Selected Location" />
       </MapView>
       <Pressable
         style={StyleSheet.absoluteFill}
