@@ -25,6 +25,7 @@ export default function MapSelector({
   address,
   isSearching,
   onDoubleTap,
+  onChangeLocationField,
 }: Props) {
   const miniMapReady = useStore((s) => s.miniMapReady);
   const fullMapReady = useStore((s) => s.fullMapReady);
@@ -48,6 +49,13 @@ export default function MapSelector({
 
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    console.log(
+      onChangeLocationField,
+      "onChangeLocationField from MapSelector"
+    );
+  });
 
   // Geocode text input
   useEffect(() => {

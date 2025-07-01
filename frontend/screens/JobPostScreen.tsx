@@ -146,46 +146,6 @@ export default function JobPostScreen({ navigation }: any) {
               control={control}
               name="location"
               render={({ field: { onChange, value } }) => {
-                const handleUseMyLocation = async () => {
-                  console.log("handleUseMyLocation called");
-                  const { status } =
-                    await Location.requestForegroundPermissionsAsync();
-                  console.log("Permission status:", status);
-
-                  if (status !== "granted") {
-                    Alert.alert(
-                      "Permission Denied",
-                      "Location permission is required to fetch your position."
-                    );
-                    return;
-                  }
-
-                  try {
-                    const location = await Location.getCurrentPositionAsync({});
-                    const { latitude, longitude } = location.coords;
-                    console.log("Got location coords:", latitude, longitude);
-
-                    setSelectedRegion({
-                      latitude,
-                      longitude,
-                      ...DEFAULT_DELTA,
-                    });
-
-                    const locationString = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-                    console.log(
-                      "Setting form location field to:",
-                      locationString
-                    );
-                    onChange(locationString);
-                  } catch (error) {
-                    console.error("Error getting location:", error);
-                    Alert.alert(
-                      "Error",
-                      "Failed to get your current location."
-                    );
-                  }
-                };
-
                 return (
                   <View>
                     <TextInput
