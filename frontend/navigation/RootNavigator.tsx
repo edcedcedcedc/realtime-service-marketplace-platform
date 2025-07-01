@@ -10,9 +10,9 @@ export type RootStackParamList = {
   Loading: undefined;
   Register: undefined;
   Start: undefined;
-  JobFeed: undefined;
-  JobDetails: undefined;
-  JobPost: undefined;
+  "Task feed": undefined;
+  "Task details": undefined;
+  "Search a tasker": undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,9 +21,9 @@ export default function RootNavigator() {
   return (
     <Stack.Navigator initialRouteName="Start">
       <Stack.Screen name="Start" component={AuthScreen} />
-      <Stack.Screen name="JobFeed" component={JobFeedScreen} />
-      <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
-      <Stack.Screen name="JobPost" component={JobPostScreen} />
+      <Stack.Screen name="Task feed" component={JobFeedScreen} />
+      <Stack.Screen name="Task details" component={JobDetailsScreen} />
+      <Stack.Screen name="Search a tasker" component={JobPostScreen} />
     </Stack.Navigator>
   );
 }

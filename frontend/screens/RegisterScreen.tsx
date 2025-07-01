@@ -64,7 +64,9 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace(res.data.user === "client" ? "JobPost" : "JobFeed");
+      navigation.replace(
+        res.data.user === "client" ? "Search a tasker" : "Task feed"
+      );
     } catch (err: any) {
       Toast.show({
         type: "error",

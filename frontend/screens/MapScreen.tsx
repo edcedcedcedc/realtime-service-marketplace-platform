@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 
 type Props = {
   address: string;
+  onDoubleTap?: () => void;
 };
 
 type LatLng = {
@@ -14,12 +15,19 @@ type LatLng = {
   longitudeDelta: number;
 };
 
-export default function JobLocationScreen({ address }: Props) {
+export default function MapScreen({ address, onDoubleTap }: Props) {
   const [region, setRegion] = useState<LatLng | null>(null);
   const [loading, setLoading] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(
-    null
-  );
+  const lastTap = useRef<number>(0);
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (lastTap.current && now - lastTap.current < 300) {
+      console.log("🫰 Double tap detected");
+      onDoubleTap?.();
+    }
+    lastTap.current = now;
+  };
 
   useEffect(() => {
     if (!address) {
@@ -44,7 +52,7 @@ export default function JobLocationScreen({ address }: Props) {
         } else if (active) {
           setRegion(null);
         }
-      } catch (e) {
+      } catch {
         if (active) setRegion(null);
       } finally {
         if (active) setLoading(false);
@@ -71,23 +79,42 @@ export default function JobLocationScreen({ address }: Props) {
   }
 
   return (
-    <MapView
-      style={styles.map}
-      region={region}
-      scrollEnabled={false}
-      zoomEnabled={false}
-    >
-      <Marker coordinate={region} title="Selected Location" />
-    </MapView>
+    <View style={styles.mapWrapper}>
+      <MapView
+        style={styles.map}
+        region={region}
+        scrollEnabled={false}
+        zoomEnabled={false}
+        pitchEnabled={false}
+        rotateEnabled={false}
+        pointerEvents="none"
+      >
+        <Marker coordinate={region} title="Selected Location" />
+      </MapView>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={handleDoubleTap}
+        android_ripple={{ color: "transparent" }}
+      >
+        {/* invisible but pressable layer */}
+        <View />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  map: {
+  mapWrapper: {
+    position: "relative",
     width: "100%",
     height: 150,
     borderRadius: 8,
+    overflow: "hidden",
     marginBottom: 16,
+  },
+  map: {
+    width: "100%",
+    height: "100%",
   },
   infoText: {
     textAlign: "center",

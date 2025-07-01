@@ -9,13 +9,16 @@ import {
   Keyboard,
   Animated,
   Easing,
+  Modal,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import { LatLng } from "react-native-maps";
-import JobLocationScreen from "./JobLocationScreen";
+import MapScreen from "./MapScreen";
+import LocationAlertButton from "./LocationAlertButton";
+import FullMapScreen from "./FullMapScreen";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -25,6 +28,12 @@ const urgencyOptions = [
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [isFullMapVisible, setIsFullMapVisible] = useState(false);
+  const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -140,7 +149,7 @@ export default function JobPostScreen({ navigation }: any) {
               render={({ field: { onChange, value } }) => (
                 <TextInput
                   style={styles.input}
-                  placeholder="Task Title"
+                  placeholder="Task title (be short and concrete)"
                   placeholderTextColor="#999"
                   value={value}
                   onChangeText={onChange}
@@ -192,9 +201,37 @@ export default function JobPostScreen({ navigation }: any) {
                     value={value}
                     onChangeText={onChange}
                   />
-                  <JobLocationScreen
-                    address={value || "Chisinau, Mihai Kogalniceau"}
-                  />
+                  <View>
+                    <LocationAlertButton
+                      onLocationFetched={(coords: any) => {
+                        const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+                        onChange(locationString);
+                      }}
+                    />
+                    <MapScreen
+                      address={value || ""}
+                      onDoubleTap={() => setIsFullMapVisible(true)}
+                    />
+                    <Modal visible={isFullMapVisible} animationType="slide">
+                      <FullMapScreen
+                        initialRegion={{
+                          latitude: selectedLocation?.latitude || 37.78825,
+                          longitude: selectedLocation?.longitude || -122.4324,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }}
+                        onClose={() => setIsFullMapVisible(false)}
+                        onLocationSelect={(location) => {
+                          setSelectedLocation(location);
+                          setValue(
+                            "location",
+                            `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`
+                          );
+                          setIsFullMapVisible(false);
+                        }}
+                      />
+                    </Modal>
+                  </View>
                 </View>
               )}
             />
