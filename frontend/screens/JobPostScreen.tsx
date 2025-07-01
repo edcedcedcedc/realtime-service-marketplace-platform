@@ -11,15 +11,18 @@ import {
   Easing,
   Modal,
   Button,
+  Alert,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore, { Region } from "../store/useStore";
+import useStore, { DEFAULT_DELTA, Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import MiniMapScreen from "./MiniMapScreen";
 import MyLocationScreen from "./MyLocationScreen";
 import FullMapScreen from "./FullMapScreen";
 import Toast from "react-native-toast-message";
+import MapSelector from "../utils/MapSelector";
+import * as Location from "expo-location";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -76,7 +79,6 @@ export default function JobPostScreen({ navigation }: any) {
   const onSubmit = (data: any) => {
     setIsSearching(true);
     setTempJobData(data);
-    setIsSearching(true);
   };
 
   const cancelSearch = () => {
@@ -142,46 +144,79 @@ export default function JobPostScreen({ navigation }: any) {
                 />
               )}
             />
-
             <Controller
               control={control}
               name="location"
-              render={({ field: { onChange, value } }) => (
-                <View>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Location"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                  />
+              render={({ field: { onChange, value } }) => {
+                const handleUseMyLocation = async () => {
+                  console.log("handleUseMyLocation called");
+                  const { status } =
+                    await Location.requestForegroundPermissionsAsync();
+                  console.log("Permission status:", status);
+
+                  if (status !== "granted") {
+                    Alert.alert(
+                      "Permission Denied",
+                      "Location permission is required to fetch your position."
+                    );
+                    return;
+                  }
+
+                  try {
+                    const location = await Location.getCurrentPositionAsync({});
+                    const { latitude, longitude } = location.coords;
+                    console.log("Got location coords:", latitude, longitude);
+
+                    setSelectedRegion({
+                      latitude,
+                      longitude,
+                      ...DEFAULT_DELTA,
+                    });
+
+                    const locationString = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    console.log(
+                      "Setting form location field to:",
+                      locationString
+                    );
+                    onChange(locationString);
+                  } catch (error) {
+                    console.error("Error getting location:", error);
+                    Alert.alert(
+                      "Error",
+                      "Failed to get your current location."
+                    );
+                  }
+                };
+
+                return (
                   <View>
-                    <MyLocationScreen
-                      onLocationFetched={(coords: any) => {
-                        const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                        onChange(locationString);
-                        setSelectedRegion({
-                          latitude: coords.latitude,
-                          longitude: coords.longitude,
-                          latitudeDelta: 0.01,
-                          longitudeDelta: 0.01,
-                        });
-                      }}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Location"
+                      placeholderTextColor="#999"
+                      value={value}
+                      onChangeText={onChange}
                     />
-                    <MiniMapScreen
-                      address={value || ""}
-                      onDoubleTap={() => setIsFullMapVisible(true)}
-                      isSearching={isSearching}
-                    />
-                    <Modal visible={isFullMapVisible} animationType="slide">
-                      <FullMapScreen
-                        initialRegion={selectedRegion ?? defaultRegion}
-                        onClose={() => setIsFullMapVisible(false)}
+                    <View>
+                      <View style={styles.myLocation}>
+                        <Button
+                          title="Use My Location"
+                          onPress={handleUseMyLocation}
+                        />
+                      </View>
+                      <Text style={styles.helperText}>
+                        You can choose your location manually if you don't
+                        prefer exact location, just double tap the mini map.
+                      </Text>
+                      <MapSelector
+                        address={value || ""}
+                        isSearching={isSearching}
+                        onChangeLocationField={onChange}
                       />
-                    </Modal>
+                    </View>
                   </View>
-                </View>
-              )}
+                );
+              }}
             />
 
             {!isSearching ? (
@@ -268,12 +303,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: "100%", // make sure it stretches full width
   },
+  myLocation: {
+    alignItems: "center",
+  },
 
   infoField: {
     flexDirection: "row", // horizontal row
     alignItems: "center",
     flex: 1,
     marginHorizontal: 8,
+  },
+  helperText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#777",
+    textAlign: "center",
+    marginBottom: 16,
   },
   infoLabel: {
     fontSize: 14,

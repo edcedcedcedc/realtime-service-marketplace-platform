@@ -1,12 +1,14 @@
 import React from "react";
 import { View, Text, Button, StyleSheet, Alert } from "react-native";
 import * as Location from "expo-location";
+import useStore, { DEFAULT_DELTA } from "../store/useStore";
 
 type Props = {
   onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
 };
 
 export default function MyLocationScreen({ onLocationFetched }: Props) {
+  const setSelectedRegion = useStore((s) => s.setSelectedRegion);
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -20,7 +22,14 @@ export default function MyLocationScreen({ onLocationFetched }: Props) {
 
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
+
     onLocationFetched({ latitude, longitude });
+
+    setSelectedRegion({
+      latitude,
+      longitude,
+      ...DEFAULT_DELTA,
+    });
   };
 
   return (

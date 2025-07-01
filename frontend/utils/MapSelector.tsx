@@ -7,27 +7,51 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
+  Animated,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import useStore from "../store/useStore";
-import AnimatedCircle from "./AnimatedCircle";
-
+import AnimatedCircle from "../screens/AnimatedCircle";
+import { DEFAULT_DELTA } from "../store/useStore";
 type Props = {
   address: string;
   isSearching: boolean;
+  onDoubleTap?: () => void;
+  onChangeLocationField: (location: string) => void;
 };
 
-export default function MapSelector({ address, isSearching }: Props) {
-  const [isFullMapVisible, setIsFullMapVisible] = useState(false);
+export default function MapSelector({
+  address,
+  isSearching,
+  onDoubleTap,
+}: Props) {
+  const miniMapReady = useStore((s) => s.miniMapReady);
+  const fullMapReady = useStore((s) => s.fullMapReady);
+  const isFullMapVisible = useStore((s) => s.isFullMapVisible);
+  const setMiniMapReady = useStore((s) => s.setMiniMapReady);
+  const setFullMapReady = useStore((s) => s.setFullMapReady);
+  const setIsFullMapVisible = useStore((s) => s.setIsFullMapVisible);
   const selectedRegion = useStore((s) => s.selectedRegion);
   const setSelectedRegion = useStore((s) => s.setSelectedRegion);
-  const markerPoint = useStore((s) => s.markerPoint);
-  const setMarkerPoint = useStore((s) => s.setMarkerPoint);
-  const [mapReady, setMapReady] = useState(false);
-  const mapRef = useRef<MapView | null>(null);
+  const miniMapRef = useRef<MapView | null>(null);
+  const fullMapRef = useRef<MapView | null>(null);
+
+  const [markerPointMini, setMarkerPointMini] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [markerPointFull, setMarkerPointFull] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
+  console.log(
+    selectedRegion,
+    "selected Region from Map Selector while clicking in MY Location Screen"
+  );
 
   // Geocode text input
   useEffect(() => {
@@ -46,8 +70,7 @@ export default function MapSelector({ address, isSearching }: Props) {
           setSelectedRegion({
             latitude,
             longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
+            ...DEFAULT_DELTA,
           });
         } else if (active) {
           setSelectedRegion(null);
@@ -66,15 +89,30 @@ export default function MapSelector({ address, isSearching }: Props) {
 
   // Update marker point (screen position) when region or mapReady changes
   useEffect(() => {
-    if (mapRef.current && selectedRegion && mapReady) {
-      mapRef.current
+    if (
+      miniMapRef.current &&
+      selectedRegion &&
+      miniMapReady &&
+      !isFullMapVisible
+    ) {
+      miniMapRef.current
         .pointForCoordinate(selectedRegion)
-        .then(setMarkerPoint)
-        .catch((err) =>
-          console.warn("Failed to get point for coordinate:", err)
-        );
+        .then(setMarkerPointMini)
+        .catch((err) => console.warn("MiniMap error:", err));
     }
-  }, [selectedRegion, mapReady]);
+
+    if (
+      fullMapRef.current &&
+      selectedRegion &&
+      fullMapReady &&
+      isFullMapVisible
+    ) {
+      fullMapRef.current
+        .pointForCoordinate(selectedRegion)
+        .then(setMarkerPointFull)
+        .catch((err) => console.warn("FullMap error:", err));
+    }
+  }, [selectedRegion, miniMapReady, fullMapReady, isFullMapVisible]);
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -88,8 +126,7 @@ export default function MapSelector({ address, isSearching }: Props) {
     const { coordinate } = event.nativeEvent;
     setSelectedRegion({
       ...coordinate,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
+      ...DEFAULT_DELTA,
     });
   };
 
@@ -112,8 +149,8 @@ export default function MapSelector({ address, isSearching }: Props) {
       {/* MiniMap */}
       <View style={styles.mapWrapper}>
         <MapView
-          ref={mapRef}
-          onMapReady={() => setMapReady(true)}
+          ref={miniMapRef}
+          onMapReady={() => setMiniMapReady(true)}
           style={styles.mapMini}
           region={selectedRegion}
           scrollEnabled={false}
@@ -125,8 +162,8 @@ export default function MapSelector({ address, isSearching }: Props) {
           <Marker coordinate={selectedRegion} title="Selected Location" />
         </MapView>
 
-        {isSearching && markerPoint && (
-          <AnimatedCircle x={markerPoint.x} y={markerPoint.y} />
+        {isSearching && markerPointMini && (
+          <AnimatedCircle x={markerPointMini.x} y={markerPointMini.y} />
         )}
 
         <Pressable
@@ -142,19 +179,21 @@ export default function MapSelector({ address, isSearching }: Props) {
       <Modal visible={isFullMapVisible} animationType="slide">
         <View style={styles.fullContainer}>
           <MapView
-            ref={mapRef}
+            ref={fullMapRef}
             initialRegion={selectedRegion}
             style={styles.mapFull}
-            onMapReady={() => setMapReady(true)}
+            onMapReady={() => setFullMapReady(true)}
             onPress={handleMapPress}
+            zoomEnabled={false}
+            scrollEnabled={false}
           >
             {selectedRegion && (
               <Marker coordinate={selectedRegion} title="Selected Location" />
             )}
           </MapView>
 
-          {isSearching && markerPoint && (
-            <AnimatedCircle x={markerPoint.x} y={markerPoint.y} />
+          {isSearching && markerPointFull && (
+            <AnimatedCircle x={markerPointFull.x} y={markerPointFull.y} />
           )}
 
           <TouchableOpacity
@@ -168,6 +207,7 @@ export default function MapSelector({ address, isSearching }: Props) {
     </>
   );
 }
+
 const styles = StyleSheet.create({
   mapWrapper: {
     position: "relative",

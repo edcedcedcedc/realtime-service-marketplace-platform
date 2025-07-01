@@ -15,6 +15,12 @@ interface Point {
   y: number;
 }
 
+
+export const DEFAULT_DELTA = {
+  latitudeDelta: 0.01,
+  longitudeDelta: 0.01,
+};
+
 export interface Region {
   latitude: number
   longitude: number;
@@ -76,6 +82,12 @@ interface State {
   selectedRegion: Region | null;
   selectedLatLng: LatLng | null;
   markerPoint: Point | null;
+  miniMapReady: boolean;
+  fullMapReady: boolean;
+  isFullMapVisible: boolean;
+  setMiniMapReady: (ready: boolean) => void;
+  setFullMapReady: (ready: boolean) => void;
+  setIsFullMapVisible: (visible: boolean) => void;
   setMarkerPoint: (point: Point | null) => void;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
@@ -108,6 +120,12 @@ const useStore = create<State>()(
       selectedRegion: null,
       selectedLatLng: null, 
       markerPoint: null,
+      miniMapReady: false,
+      fullMapReady: false,
+      isFullMapVisible: false,
+      setMiniMapReady: (ready) => set({ miniMapReady: ready }),
+      setFullMapReady: (ready) => set({ fullMapReady: ready }),
+      setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
       setMarkerPoint: (point) => set({ markerPoint: point }),
       setSelectedRegion: (region) => set({ selectedRegion: region }),
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
