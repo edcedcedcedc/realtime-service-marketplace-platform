@@ -74,6 +74,30 @@ export default function MapSelector({
     }
   }, [isFullMapVisible, selectedRegion]);
 
+  useEffect(() => {
+    if (!isFullMapVisible && miniMapRef.current && selectedRegion) {
+      const calculatePoint = async () => {
+        try {
+          const point =
+            await miniMapRef.current?.pointForCoordinate(selectedRegion);
+          if (point) setMarkerPointMini(point);
+        } catch (err) {
+          console.warn("Point calculation failed, retrying...", err);
+          // Retry after delay
+          setTimeout(() => {
+            if (miniMapRef.current) {
+              miniMapRef.current
+                .pointForCoordinate(selectedRegion)
+                .then(setMarkerPointMini)
+                .catch(console.warn);
+            }
+          }, 300);
+        }
+      };
+      calculatePoint();
+    }
+  }, [!isFullMapVisible, selectedRegion]);
+
   // Geocode text input
   useEffect(() => {
     if (!address) {
@@ -109,7 +133,7 @@ export default function MapSelector({
   }, [address]);
 
   // Update marker point (screen position) when region or mapReady changes
-  useEffect(() => {
+  /*  useEffect(() => {
     console.log("render");
     if (
       miniMapRef.current &&
@@ -140,7 +164,7 @@ export default function MapSelector({
     fullMapReady,
     isFullMapVisible,
     onLocationFetched,
-  ]);
+  ]); */
 
   const handleDoubleTap = () => {
     const now = Date.now();

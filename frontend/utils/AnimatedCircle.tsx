@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 59, 48, 0.4)",
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 59, 48, 0.5)",
     zIndex: 5,
   },
 });
