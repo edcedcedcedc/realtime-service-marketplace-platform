@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
+  InteractionManager,
+  Keyboard,
 } from "react-native";
 import api from "../services/api";
 import useStore from "../store/useStore";
@@ -17,6 +19,7 @@ import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../utils/spacings";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
@@ -24,8 +27,14 @@ export default function LoginScreen({ navigation }: any) {
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
+  const scrollRef = useRef<KeyboardAwareScrollView>(null);
+
   useEffect(() => {
-    return () => reset();
+    scrollRef.current?.scrollToPosition(0, 0, false);
+    return () => {
+      Keyboard.dismiss();
+      scrollRef.current?.scrollToPosition(0, 0, false);
+    };
   }, []);
 
   const {
@@ -57,10 +66,7 @@ export default function LoginScreen({ navigation }: any) {
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-      Toast.show({
-        type: "success",
-        text1: "Login Successful",
-      });
+
       navigation.replace(
         user.role === "client" ? "Search a tasker" : "Task feed"
       );

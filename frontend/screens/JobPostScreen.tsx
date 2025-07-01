@@ -19,6 +19,7 @@ import { SPACING } from "../utils/spacings";
 import MiniMapScreen from "./MiniMapScreen";
 import MyLocationScreen from "./MyLocationScreen";
 import FullMapScreen from "./FullMapScreen";
+import Toast from "react-native-toast-message";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -57,6 +58,12 @@ export default function JobPostScreen({ navigation }: any) {
   const location = watch("location");
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      Toast.show({
+        type: "success",
+        text1: "Login Successful",
+      });
+    }, 50);
     return () => {
       clearTimeout(timeout);
       setLoading(false);
