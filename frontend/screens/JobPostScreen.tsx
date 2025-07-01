@@ -77,11 +77,6 @@ export default function JobPostScreen({ navigation }: any) {
     pulseAnim.stopAnimation();
   };
 
-  const logout = () => {
-    setLoading(true);
-    timeout = setTimeout(() => navigation.replace("Start"), 10);
-  };
-
   return (
     <View style={styles.container}>
       <KeyboardAwareScrollView
@@ -252,14 +247,6 @@ export default function JobPostScreen({ navigation }: any) {
                 <Text style={styles.searchButtonText}>Stop</Text>
               </TouchableOpacity>
             )}
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={logout}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAwareScrollView>
