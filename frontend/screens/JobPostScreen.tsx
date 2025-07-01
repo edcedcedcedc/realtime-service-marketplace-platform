@@ -10,6 +10,7 @@ import {
   Animated,
   Easing,
   Modal,
+  Button,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -181,31 +182,58 @@ export default function JobPostScreen({ navigation }: any) {
               )}
             />
 
-            <Text style={styles.label}>Urgency</Text>
-            <View style={styles.urgencyContainer}>
-              {urgencyOptions.map(({ label, value, color }) => {
-                const selected = urgency === value;
-                return (
-                  <TouchableOpacity
-                    key={value}
-                    style={styles.urgencyButton}
-                    onPress={() => setValue("urgency", value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.urgencyText,
-                        selected
-                          ? { color: color, fontWeight: "600" }
-                          : { color: "#888" },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {!isSearching ? (
+              <>
+                <Text style={styles.label}>Urgency</Text>
+                <View style={styles.urgencyContainer}>
+                  {urgencyOptions.map(({ label, value, color }) => {
+                    const selected = urgency === value;
+                    return (
+                      <TouchableOpacity
+                        key={value}
+                        style={styles.urgencyButton}
+                        onPress={() => setValue("urgency", value)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.urgencyText,
+                            selected
+                              ? { color: color, fontWeight: "600" }
+                              : { color: "#888" },
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.infoFieldsRow}>
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Workers in your area</Text>
+                    <Text style={styles.infoValue}>12</Text>
+                  </View>
+
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Estimated wait</Text>
+                    <Text style={styles.infoValue}>5 min</Text>
+                  </View>
+                </View>
+                <View style={styles.infoFieldsRow}>
+                  <View style={styles.infoField}>
+                    <Text style={styles.infoLabel}>Incoming requests</Text>
+                    <Text style={styles.infoValue}>5 </Text>
+                  </View>
+                  <View style={{ display: "flex", alignContent: "center" }}>
+                    <Button title="Inspect Requests" onPress={() => {}} />
+                  </View>
+                </View>
+              </>
+            )}
 
             {!isSearching ? (
               <TouchableOpacity
@@ -240,6 +268,35 @@ export default function JobPostScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  infoFieldsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    width: "100%", // make sure it stretches full width
+  },
+
+  infoField: {
+    flexDirection: "row", // horizontal row
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "400",
+    lineHeight: 18,
+    // Remove width: "50%"
+    // Remove textAlign
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#212121",
+    lineHeight: 18,
+    marginLeft: 8, // Add margin to separate value from label
+    // Remove width and textAlign
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -288,7 +345,7 @@ const styles = StyleSheet.create({
   urgencyContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: 40,
+    marginBottom: 10,
   },
   urgencyButton: {
     borderBottomWidth: 2,
@@ -357,22 +414,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     marginBottom: 40,
     paddingHorizontal: 10,
-  },
-  infoField: {
-    justifyContent: "space-around",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 6,
-    fontWeight: "600",
-  },
-  infoValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#212121",
   },
   pulseCircle: {
     width: 100,
