@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import useStore from "../store/useStore";
 
 type LatLng = {
   latitude: number;
@@ -21,28 +22,26 @@ type Props = {
     longitudeDelta: number;
   };
   onClose: () => void;
-  onLocationSelect: (location: LatLng) => void;
 };
 
-export default function FullMapScreen({
-  initialRegion,
-  onClose,
-  onLocationSelect,
-}: Props) {
+export default function FullMapScreen({ initialRegion, onClose }: Props) {
+  const selectedRegion = useStore((state) => state.selectedRegion);
+  const setSelectedRegion = useStore((state) => state.setSelectedRegion);
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
+
+  useEffect(() => {
+    // Keep local selectedLocation in sync with global selectedRegion
+    setSelectedLocation(selectedRegion);
+  }, [selectedRegion]);
 
   const handleMapPress = (event: any) => {
     const { coordinate } = event.nativeEvent;
     setSelectedLocation(coordinate);
-  };
-
-  const handleConfirm = () => {
-    if (selectedLocation) {
-      onLocationSelect(selectedLocation);
-      onClose();
-    } else {
-      alert("Please tap on the map to select a location.");
-    }
+    setSelectedRegion({
+      ...coordinate,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
   };
 
   return (
@@ -52,8 +51,8 @@ export default function FullMapScreen({
         initialRegion={initialRegion}
         onPress={handleMapPress}
       >
-        {selectedLocation && (
-          <Marker coordinate={selectedLocation} title="Selected Location" />
+        {selectedRegion && (
+          <Marker coordinate={selectedRegion} title="Selected Location" />
         )}
       </MapView>
 

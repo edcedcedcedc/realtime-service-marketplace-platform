@@ -13,13 +13,11 @@ import {
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore from "../store/useStore";
+import useStore, { Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
-import { LatLng } from "react-native-maps";
-import MapScreen from "./MiniMapScreen";
-//mport LocationAlertButton from "./LocationAlertButton";
-import FullMapScreen from "./FullMapScreen";
+import MiniMapScreen from "./MiniMapScreen";
 import LocationAlertButton from "./LocationAlertButton";
+import FullMapScreen from "./FullMapScreen";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -27,12 +25,16 @@ const urgencyOptions = [
   { label: "Flexible", value: "flexible", color: "#34c759" },
 ];
 
+const defaultRegion: Region = {
+  latitude: 37.78825, // default latitude (e.g., San Francisco)
+  longitude: -122.4324, // default longitude
+  latitudeDelta: 0.01, // zoom level (adjust as needed)
+  longitudeDelta: 0.01, // zoom level
+};
+
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
-  const [selectedLocation, setSelectedLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const selectedRegion = useStore((state) => state.selectedRegion);
   const [isFullMapVisible, setIsFullMapVisible] = useState(false);
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
@@ -59,6 +61,15 @@ export default function JobPostScreen({ navigation }: any) {
       reset();
     };
   }, []);
+
+  useEffect(() => {
+    if (selectedRegion) {
+      setValue(
+        "location",
+        `${selectedRegion.latitude.toFixed(5)}, ${selectedRegion.longitude.toFixed(5)}`
+      );
+    }
+  }, [selectedRegion]);
 
   const urgency = watch("urgency");
 
@@ -209,27 +220,14 @@ export default function JobPostScreen({ navigation }: any) {
                         onChange(locationString);
                       }}
                     />
-                    <MapScreen
+                    <MiniMapScreen
                       address={value || ""}
                       onDoubleTap={() => setIsFullMapVisible(true)}
                     />
                     <Modal visible={isFullMapVisible} animationType="slide">
                       <FullMapScreen
-                        initialRegion={{
-                          latitude: selectedLocation?.latitude || 37.78825,
-                          longitude: selectedLocation?.longitude || -122.4324,
-                          latitudeDelta: 0.01,
-                          longitudeDelta: 0.01,
-                        }}
+                        initialRegion={selectedRegion ?? defaultRegion}
                         onClose={() => setIsFullMapVisible(false)}
-                        onLocationSelect={(location) => {
-                          setSelectedLocation(location);
-                          setValue(
-                            "location",
-                            `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`
-                          );
-                          setIsFullMapVisible(false);
-                        }}
                       />
                     </Modal>
                   </View>
