@@ -118,13 +118,13 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
         <>
           <AnimatedCircle x={markerPoint.x} y={markerPoint.y} />
           <View
-            style={[
+          /* style={[
               styles.dot,
               {
                 left: markerPoint.x - 6,
                 top: markerPoint.y - 26,
               },
-            ]}
+            ]} */
           />
         </>
       )}

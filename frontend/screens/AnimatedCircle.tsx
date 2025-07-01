@@ -15,12 +15,12 @@ export default function AnimatedCircle({ x, y }: Props) {
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 2.5,
-          duration: 1200,
+          duration: 900,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1200,
+          duration: 900,
           useNativeDriver: true,
         }),
       ])
