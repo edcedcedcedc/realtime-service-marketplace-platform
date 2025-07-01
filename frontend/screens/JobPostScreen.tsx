@@ -46,8 +46,6 @@ export default function JobPostScreen({ navigation }: any) {
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
   let timeout: any = null;
   const { control, handleSubmit, setValue, watch, reset } = useForm({
     defaultValues: {
@@ -83,7 +81,6 @@ export default function JobPostScreen({ navigation }: any) {
 
   const cancelSearch = () => {
     setIsSearching(false);
-    pulseAnim.stopAnimation();
   };
 
   return (

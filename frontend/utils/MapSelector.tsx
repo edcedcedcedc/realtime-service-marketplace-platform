@@ -48,10 +48,6 @@ export default function MapSelector({
 
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
-  console.log(
-    selectedRegion,
-    "selected Region from Map Selector while clicking in MY Location Screen"
-  );
 
   // Geocode text input
   useEffect(() => {
