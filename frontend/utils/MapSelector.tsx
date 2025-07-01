@@ -51,8 +51,28 @@ export default function MapSelector({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log(onLocationFetched, "onLocation from MapSelector");
-  });
+    if (isFullMapVisible && fullMapRef.current && selectedRegion) {
+      const calculatePoint = async () => {
+        try {
+          const point =
+            await fullMapRef.current?.pointForCoordinate(selectedRegion);
+          if (point) setMarkerPointFull(point);
+        } catch (err) {
+          console.warn("Point calculation failed, retrying...", err);
+          // Retry after delay
+          setTimeout(() => {
+            if (fullMapRef.current) {
+              fullMapRef.current
+                .pointForCoordinate(selectedRegion)
+                .then(setMarkerPointFull)
+                .catch(console.warn);
+            }
+          }, 300);
+        }
+      };
+      calculatePoint();
+    }
+  }, [isFullMapVisible, selectedRegion]);
 
   // Geocode text input
   useEffect(() => {
@@ -126,6 +146,11 @@ export default function MapSelector({
     const now = Date.now();
     if (lastTap.current && now - lastTap.current < 300) {
       setIsFullMapVisible(true);
+      console.log("Current state:", {
+        fullMapReady,
+        selectedRegion,
+        isFullMapVisible,
+      });
     }
     lastTap.current = now;
   };
@@ -170,7 +195,7 @@ export default function MapSelector({
           <Marker coordinate={selectedRegion} title="Selected Location" />
         </MapView>
 
-        {isSearching && markerPointMini && (
+        {isSearching && markerPointMini && miniMapReady && (
           <AnimatedCircle x={markerPointMini.x} y={markerPointMini.y} />
         )}
 
