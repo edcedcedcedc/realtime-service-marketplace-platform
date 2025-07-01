@@ -65,14 +65,14 @@ export default function JobPostScreen({ navigation }: any) {
     };
   }, []);
 
-  useEffect(() => {
+  /*  useEffect(() => {
     if (selectedRegion) {
       setValue(
         "location",
         `${selectedRegion.latitude}, ${selectedRegion.longitude}`
       );
     }
-  }, [selectedRegion]);
+  }, [selectedRegion]); */
 
   const urgency = watch("urgency");
 
@@ -219,14 +219,15 @@ export default function JobPostScreen({ navigation }: any) {
                   <View>
                     <MyLocationScreen
                       onLocationFetched={(coords: any) => {
-                        const locationString = `${coords.latitude}, ${coords.longitude}`;
+                        const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+                        /* setValue("location", locationString); */
                         onChange(locationString);
-                        setSelectedRegion({
+                        /* setSelectedRegion({
                           latitude: coords.latitude,
                           longitude: coords.longitude,
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
-                        });
+                        }); */
                       }}
                     />
                     <MiniMapScreen
