@@ -220,14 +220,13 @@ export default function JobPostScreen({ navigation }: any) {
                     <MyLocationScreen
                       onLocationFetched={(coords: any) => {
                         const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                        /* setValue("location", locationString); */
                         onChange(locationString);
-                        /* setSelectedRegion({
+                        setSelectedRegion({
                           latitude: coords.latitude,
                           longitude: coords.longitude,
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
-                        }); */
+                        });
                       }}
                     />
                     <MiniMapScreen

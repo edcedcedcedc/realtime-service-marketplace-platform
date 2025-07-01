@@ -20,17 +20,16 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
-    console.log(selectedRegion, "selected region");
-    /* if (!mapRef.current || !selectedRegion || !mapReady) return; */
-    /* mapRef.current
+    if (!mapRef.current || !selectedRegion || !mapReady) return;
+
+    mapRef.current
       .pointForCoordinate(selectedRegion)
       .then((point) => {
-        console.log("Marker screen coordinates:", point);
         setMarkerPoint(point);
       })
       .catch((error) => {
         console.warn("Failed to get point for coordinate:", error);
-      }); */
+      });
   }, [selectedRegion, mapReady]);
 
   const handleDoubleTap = () => {
@@ -106,6 +105,20 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
       >
         <Marker coordinate={selectedRegion} title="Selected Location" />
       </MapView>
+
+      {/* Dot overlay on marker coordinate */}
+      {markerPoint && (
+        <View
+          style={[
+            styles.dot,
+            {
+              left: markerPoint.x - 6,
+              top: markerPoint.y - 26, // shifted up by ~20px more than before
+            },
+          ]}
+        />
+      )}
+
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={handleDoubleTap}
@@ -135,5 +148,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#666",
     marginBottom: 16,
+  },
+  dot: {
+    position: "absolute",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "red",
+    borderWidth: 2,
+    borderColor: "#fff",
+    zIndex: 10,
   },
 });
