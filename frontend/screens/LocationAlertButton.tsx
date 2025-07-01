@@ -25,7 +25,18 @@ export default function LocationAlertButton({ onLocationFetched }: Props) {
 
   return (
     <View style={styles.wrapper}>
-      <Button title="Use My Location" onPress={handleGetLocation} />
+      <View style={{ display: "flex", alignItems: "center" }}>
+        <View
+          style={{
+            width: 200,
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+        >
+          <Button title="Use My Location" onPress={handleGetLocation} />
+        </View>
+      </View>
+
       <Text style={styles.helperText}>
         You can choose your location manually if you don't prefer exact
         location, just double tap the mini map.
