@@ -12,7 +12,7 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import useStore from "../store/useStore";
-import AnimatedCircle from "../screens/AnimatedCircle";
+import AnimatedCircle from "../utils/AnimatedCircle";
 import { DEFAULT_DELTA } from "../store/useStore";
 type Props = {
   address: string;
