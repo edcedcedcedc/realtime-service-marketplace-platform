@@ -16,7 +16,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import useStore from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import { LatLng } from "react-native-maps";
-import MapScreen from "./MapScreen";
+import MapScreen from "./MiniMapScreen";
 //mport LocationAlertButton from "./LocationAlertButton";
 import FullMapScreen from "./FullMapScreen";
 import LocationAlertButton from "./LocationAlertButton";

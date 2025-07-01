@@ -9,14 +9,7 @@ type Props = {
   onDoubleTap?: () => void;
 };
 
-type LatLng = {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-};
-
-export default function MapScreen({ address, onDoubleTap }: Props) {
+export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   const selectedRegion = useStore((state) => state.selectedRegion);
   const setSelectedRegion = useStore((state) => state.setSelectedRegion);
   console.log(selectedRegion, "selected Region");
