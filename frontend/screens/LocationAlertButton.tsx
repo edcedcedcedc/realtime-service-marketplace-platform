@@ -27,8 +27,8 @@ export default function LocationAlertButton({ onLocationFetched }: Props) {
     <View style={styles.wrapper}>
       <Button title="Use My Location" onPress={handleGetLocation} />
       <Text style={styles.helperText}>
-        You choose your location manually if you don't prefer exact location,
-        just dont tap 'Use My Location'
+        You can choose your location manually if you don't prefer exact
+        location, just double tap the mini map.
       </Text>
     </View>
   );
