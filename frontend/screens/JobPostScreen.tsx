@@ -34,7 +34,10 @@ const defaultRegion: Region = {
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
+  const setSelectedRegion = useStore((state) => state.setSelectedRegion);
   const selectedRegion = useStore((state) => state.selectedRegion);
+  const markerPoint = useStore((state) => state.markerPoint);
+  const setMarkerPoint = useStore((state) => state.setMarkerPoint);
   const [isFullMapVisible, setIsFullMapVisible] = useState(false);
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
@@ -216,8 +219,14 @@ export default function JobPostScreen({ navigation }: any) {
                   <View>
                     <MyLocationScreen
                       onLocationFetched={(coords: any) => {
-                        const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+                        const locationString = `${coords.latitude}, ${coords.longitude}`;
                         onChange(locationString);
+                        setSelectedRegion({
+                          latitude: coords.latitude,
+                          longitude: coords.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        });
                       }}
                     />
                     <MiniMapScreen

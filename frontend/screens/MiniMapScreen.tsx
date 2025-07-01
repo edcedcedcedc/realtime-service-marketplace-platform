@@ -11,10 +11,27 @@ type Props = {
 
 export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   const selectedRegion = useStore((state) => state.selectedRegion);
+  const [mapReady, setMapReady] = useState(false);
   const setSelectedRegion = useStore((state) => state.setSelectedRegion);
-  console.log(selectedRegion, "selected Region");
+  const setMarkerPoint = useStore((state) => state.setMarkerPoint);
+  const markerPoint = useStore((state) => state.markerPoint);
   const [loading, setLoading] = useState(false);
   const lastTap = useRef<number>(0);
+  const mapRef = useRef<MapView | null>(null);
+
+  useEffect(() => {
+    console.log(selectedRegion, "selected region");
+    /* if (!mapRef.current || !selectedRegion || !mapReady) return; */
+    /* mapRef.current
+      .pointForCoordinate(selectedRegion)
+      .then((point) => {
+        console.log("Marker screen coordinates:", point);
+        setMarkerPoint(point);
+      })
+      .catch((error) => {
+        console.warn("Failed to get point for coordinate:", error);
+      }); */
+  }, [selectedRegion, mapReady]);
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -77,6 +94,8 @@ export default function MiniMapScreen({ address, onDoubleTap }: Props) {
   return (
     <View style={styles.mapWrapper}>
       <MapView
+        ref={mapRef}
+        onMapReady={() => setMapReady(true)}
         style={styles.map}
         region={selectedRegion}
         scrollEnabled={false}
