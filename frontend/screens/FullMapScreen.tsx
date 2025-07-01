@@ -56,14 +56,11 @@ export default function FullMapScreen({
           <Marker coordinate={selectedLocation} title="Selected Location" />
         )}
       </MapView>
-      <View style={styles.buttons}>
-        <TouchableOpacity onPress={onClose} style={styles.button}>
-          <Text style={styles.buttonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleConfirm} style={styles.button}>
-          <Text style={styles.buttonText}>Confirm Location</Text>
-        </TouchableOpacity>
-      </View>
+
+      {/* Single Exit button top right */}
+      <TouchableOpacity onPress={onClose} style={styles.exitButton}>
+        <Text style={styles.buttonText}>Exit</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -76,20 +73,15 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
   },
-  buttons: {
+  exitButton: {
     position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingHorizontal: 20,
-  },
-  button: {
+    top: 50,
+    right: 20,
     backgroundColor: "#2962FF",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
+    zIndex: 10,
   },
   buttonText: {
     color: "#fff",
