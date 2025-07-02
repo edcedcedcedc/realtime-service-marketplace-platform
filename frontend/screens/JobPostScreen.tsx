@@ -15,19 +15,16 @@ import {
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore, { DEFAULT_DELTA, Region } from "../store/useStore";
+import useStore, { DEFAULT_DELTA, Job, Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import MyLocationScreen from "./MyLocationScreen";
 import Toast from "react-native-toast-message";
 import MapSelector from "./MapSelectorScreen";
 import * as Location from "expo-location";
 import { LatLng } from "react-native-maps";
-
-const urgencyOptions = [
-  { label: "Now", value: "now", color: "#ff3b30" },
-  { label: "Soon", value: "soon", color: "#ff9500" },
-  { label: "Flexible", value: "flexible", color: "#34c759" },
-];
+import { Urgency, JobFormInput } from "../store/useStore";
+import { withTimeout } from "../utils/withTimeout";
+import api from "../services/api";
 
 const defaultRegion: Region = {
   latitude: 37.78825, // default latitude (e.g., San Francisco)
@@ -41,18 +38,25 @@ export default function JobPostScreen({ navigation }: any) {
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
+  const selectedRegion = useStore((s) => s.selectedLatLng);
+  let timeout: any = null; //timeout before posting in case user cancels
 
-  let timeout: any = null;
-  const { control, handleSubmit, setValue, watch, reset } = useForm({
-    defaultValues: {
-      title: "",
-      description: "",
-      budget: "",
-      location: "",
-      urgency: "now",
-    },
-  });
-  const location = watch("location");
+  const urgencyOptions: { label: string; value: Urgency; color: string }[] = [
+    { label: "Now", value: "now", color: "#ff3b30" },
+    { label: "Soon", value: "soon", color: "#ff9500" },
+    { label: "Flexible", value: "flexible", color: "#34c759" },
+  ];
+
+  const { control, handleSubmit, watch, reset, setValue } =
+    useForm<JobFormInput>({
+      defaultValues: {
+        title: "",
+        description: "",
+        budget: "",
+        location: "",
+        urgency: "now",
+      },
+    });
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -70,13 +74,47 @@ export default function JobPostScreen({ navigation }: any) {
 
   const urgency = watch("urgency");
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (formData: JobFormInput) => {
     setIsSearching(true);
-    setTempJobData(data);
+    setTempJobData(formData);
+
+    const coordinates = useStore.getState().selectedLatLng;
+
+    timeout = await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    if (!isSearching) {
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      latitude: coordinates?.latitude,
+      longitude: coordinates?.longitude,
+    };
+
+    try {
+      const res = await withTimeout(
+        api.post("/jobs/create/", payload),
+        50,
+        "Request timed out. Please try again"
+      );
+      //do something with res
+    } catch (err: any) {
+      console.error(err);
+      Toast.show({
+        type: "error",
+        text1: "Failed to post a task",
+        text2:
+          err.response?.data?.detail ||
+          "Something went wrong. Please check your internet connection.",
+      });
+      setIsSearching(false);
+    }
   };
 
   const cancelSearch = () => {
     setIsSearching(false);
+    clearTimeout(timeout);
   };
 
   return (
@@ -152,9 +190,9 @@ export default function JobPostScreen({ navigation }: any) {
                     />
                     <View>
                       <MyLocationScreen
-                        onLocationFetched={(coords: LatLng) => {
-                          const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                          onChange(locationString);
+                        onLocationFetched={(region: Region) => {
+                          const latlng = `${region.latitude.toFixed(6)}, ${region.longitude.toFixed(6)}`;
+                          onChange(latlng);
                         }}
                       />
 
@@ -162,7 +200,11 @@ export default function JobPostScreen({ navigation }: any) {
                         key={value}
                         address={value || ""}
                         isSearching={isSearching}
-                        onLocationFetched={() => {}}
+                        /*  onLocationFetched={() => {}} */
+                        onExit={(region: Region) => {
+                          const latlng = `${region.latitude.toFixed(6)}, ${region.longitude.toFixed(6)}`;
+                          setValue("location", latlng);
+                        }}
                       />
                     </View>
                   </View>
@@ -186,9 +228,7 @@ export default function JobPostScreen({ navigation }: any) {
                         <Text
                           style={[
                             styles.urgencyText,
-                            selected
-                              ? { color: color, fontWeight: "600" }
-                              : { color: "#888" },
+                            selected ? { color: color } : { color: "#888" },
                           ]}
                         >
                           {label}
@@ -216,7 +256,7 @@ export default function JobPostScreen({ navigation }: any) {
                     <Text style={styles.infoLabel}>Incoming requests</Text>
                     <Text style={styles.infoValue}>5 </Text>
                   </View>
-                  <View style={{ display: "flex", alignContent: "center" }}>
+                  <View>
                     <Button title="Inspect Requests" onPress={() => {}} />
                   </View>
                 </View>
@@ -251,7 +291,7 @@ const styles = StyleSheet.create({
   infoFieldsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 7.5,
     width: "100%", // make sure it stretches full width
   },
   myLocation: {
@@ -259,10 +299,10 @@ const styles = StyleSheet.create({
   },
 
   infoField: {
-    flexDirection: "row", // horizontal row
+    flexDirection: "row",
+    justifyContent: "space-around", // horizontal row
     alignItems: "center",
-    flex: 1,
-    marginHorizontal: 8,
+    width: "50%",
   },
   helperText: {
     marginTop: 6,

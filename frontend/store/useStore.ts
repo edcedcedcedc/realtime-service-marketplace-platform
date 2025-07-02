@@ -15,14 +15,13 @@ interface Point {
   y: number;
 }
 
-
 export const DEFAULT_DELTA = {
   latitudeDelta: 0.01,
   longitudeDelta: 0.01,
 };
 
 export interface Region {
-  latitude: number
+  latitude: number;
   longitude: number;
   latitudeDelta: number;
   longitudeDelta: number;
@@ -31,13 +30,14 @@ export interface LatLng {
   latitude: number;
   longitude: number;
 }
+export type Urgency = "now" | "soon" | "flexible";
 export type JobFormInput = {
   title: string;
   description: string;
   location: string;
-  category: string;
+  /* category: string; */
   budget: string; // still string, convert before submit
-  urgency: "now" | "soon" | "flexible";
+  urgency: Urgency;
 };
 export interface Job {
   id: number;
@@ -99,7 +99,6 @@ interface State {
   setTempJobData: (data: JobFormInput | null) => void;
   setSelectedRegion: (region: Region | null) => void;
   setSelectedLatLng: (latLng: LatLng | null) => void;
-
 }
 
 const useStore = create<State>()(
@@ -118,7 +117,7 @@ const useStore = create<State>()(
       loading: false,
       tempJobData: null,
       selectedRegion: null,
-      selectedLatLng: null, 
+      selectedLatLng: null,
       markerPoint: null,
       miniMapReady: false,
       fullMapReady: false,
@@ -132,7 +131,13 @@ const useStore = create<State>()(
       setTempJobData: (data) => set({ tempJobData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
-      clearAuth: () => set({ auth: { jwt: null, user: null } }),
+      clearAuth: () =>
+        set((state) => ({
+          auth: {
+            jwt: { access: null, refresh: null },
+            user: state.auth.user, // keep user info if you want
+          },
+        })),
       addWorker: (worker: User) =>
         set((state: { workers: User[] }) => ({
           workers: [...state.workers, worker],
