@@ -80,41 +80,37 @@ export default function JobPostScreen({ navigation }: any) {
 
     const coordinates = useStore.getState().selectedLatLng;
 
-    timeout = await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    if (!isSearching) {
-      return;
-    }
-
     const payload = {
       ...formData,
+      budget: parseFloat(formData.budget),
       latitude: coordinates?.latitude,
       longitude: coordinates?.longitude,
     };
 
+    Keyboard.dismiss();
+
     try {
-      const res = await withTimeout(
-        api.post("/jobs/create/", payload),
-        50,
-        "Request timed out. Please try again"
-      );
-      //do something with res
+      const res = await api.post("/jobs/create/", payload);
+      Toast.show({
+        type: "success",
+        text1: `Status: ${JSON.stringify(res.status)}`,
+        text2: JSON.stringify(res.data),
+      });
     } catch (err: any) {
       console.error(err);
       Toast.show({
         type: "error",
         text1: "Failed to post a task",
         text2:
-          err.response?.data?.detail ||
+          err.response?.data ||
           "Something went wrong. Please check your internet connection.",
       });
-      setIsSearching(false);
     }
   };
 
   const cancelSearch = () => {
     setIsSearching(false);
-    clearTimeout(timeout);
+    //clearTimeout(timeout);
   };
 
   return (
@@ -191,7 +187,7 @@ export default function JobPostScreen({ navigation }: any) {
                     <View>
                       <MyLocationScreen
                         onLocationFetched={(region: Region) => {
-                          const latlng = `${region.latitude.toFixed(6)}, ${region.longitude.toFixed(6)}`;
+                          const latlng = `${region.latitude}, ${region.longitude}`;
                           onChange(latlng);
                         }}
                       />

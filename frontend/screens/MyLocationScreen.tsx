@@ -10,6 +10,7 @@ type Props = {
 
 export default function MyLocationScreen({ onLocationFetched }: Props) {
   const setSelectedRegion = useStore((s) => s.setSelectedRegion);
+  const selectedLatLng = useStore((s) => s.selectedLatLng);
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -24,10 +25,15 @@ export default function MyLocationScreen({ onLocationFetched }: Props) {
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
 
-    onLocationFetched({ latitude, longitude, ...DEFAULT_DELTA });
     setSelectedRegion({
       latitude,
       longitude,
+      ...DEFAULT_DELTA,
+    });
+
+    onLocationFetched({
+      latitude: selectedLatLng!.latitude,
+      longitude: selectedLatLng!.longitude,
       ...DEFAULT_DELTA,
     });
   };

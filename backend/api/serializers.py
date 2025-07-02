@@ -26,6 +26,8 @@ class JobSerializer(serializers.ModelSerializer):
             "must_start_by",
             "created_at",
             "updated_at",
+            "latitude",
+            "longitude",
         ]
 
     def create(self, validated_data):
@@ -37,3 +39,9 @@ class JobSerializer(serializers.ModelSerializer):
 
     def get_worker_id(self, obj):
         return obj.worker.id if obj.worker else None
+
+    def validate_latitude(self, value):
+        return value
+
+    def validate_longitude(self, value):
+        return value
