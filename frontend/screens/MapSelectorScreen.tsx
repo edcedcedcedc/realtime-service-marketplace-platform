@@ -14,6 +14,7 @@ import * as Location from "expo-location";
 import useStore from "../store/useStore";
 import AnimatedCircle from "../utils/AnimatedCircle";
 import { DEFAULT_DELTA } from "../store/useStore";
+import TinySpinner from "../utils/TinySpinner";
 type Props = {
   address: string;
   isSearching: boolean;
@@ -21,7 +22,7 @@ type Props = {
   onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
 };
 
-export default function MapSelector({
+export default function MapSelectorScreen({
   address,
   isSearching,
   onDoubleTap,
@@ -132,40 +133,6 @@ export default function MapSelector({
     };
   }, [address]);
 
-  // Update marker point (screen position) when region or mapReady changes
-  /*  useEffect(() => {
-    console.log("render");
-    if (
-      miniMapRef.current &&
-      selectedRegion &&
-      miniMapReady &&
-      !isFullMapVisible
-    ) {
-      miniMapRef.current
-        .pointForCoordinate(selectedRegion)
-        .then(setMarkerPointMini)
-        .catch((err) => console.warn("MiniMap error:", err));
-    }
-
-    if (
-      fullMapRef.current &&
-      selectedRegion &&
-      fullMapReady &&
-      isFullMapVisible
-    ) {
-      fullMapRef.current
-        .pointForCoordinate(selectedRegion)
-        .then(setMarkerPointFull)
-        .catch((err) => console.warn("FullMap error:", err));
-    }
-  }, [
-    selectedRegion,
-    miniMapReady,
-    fullMapReady,
-    isFullMapVisible,
-    onLocationFetched,
-  ]); */
-
   const handleDoubleTap = () => {
     const now = Date.now();
     if (lastTap.current && now - lastTap.current < 300) {
@@ -194,7 +161,7 @@ export default function MapSelector({
   }
 
   if (loading) {
-    return <Text style={styles.infoText}>Loading map preview…</Text>;
+    return <TinySpinner message="Loading map preview…" />;
   }
 
   if (!selectedRegion) {

@@ -19,7 +19,7 @@ import useStore, { DEFAULT_DELTA, Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import MyLocationScreen from "./MyLocationScreen";
 import Toast from "react-native-toast-message";
-import MapSelector from "../utils/MapSelector";
+import MapSelector from "./MapSelectorScreen";
 import * as Location from "expo-location";
 import { LatLng } from "react-native-maps";
 
