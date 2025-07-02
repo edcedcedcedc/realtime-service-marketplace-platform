@@ -23,7 +23,7 @@ export default function AnimatedCircle({ x, y }: Props) {
           duration: 900,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
 
     pulse.start();
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 25,
-    backgroundColor: "rgba(255, 59, 48, 0.5)",
+    backgroundColor: "rgba(255, 59, 48, 0.55)",
     zIndex: 5,
   },
 });

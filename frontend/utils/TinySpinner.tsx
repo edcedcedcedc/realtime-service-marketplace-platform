@@ -11,7 +11,7 @@ const TinySpinner = ({ message = "Loading…" }: { message?: string }) => {
         duration: 800,
         useNativeDriver: true,
         easing: Easing.linear,
-      })
+      }),
     ).start();
   }, []);
 

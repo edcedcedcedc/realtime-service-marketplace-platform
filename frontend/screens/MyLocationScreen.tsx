@@ -2,9 +2,10 @@ import React from "react";
 import { View, Text, Button, StyleSheet, Alert } from "react-native";
 import * as Location from "expo-location";
 import useStore, { DEFAULT_DELTA } from "../store/useStore";
+import { Region } from "react-native-maps";
 
 type Props = {
-  onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
+  onLocationFetched: (region: Region) => void;
 };
 
 export default function MyLocationScreen({ onLocationFetched }: Props) {
@@ -23,7 +24,7 @@ export default function MyLocationScreen({ onLocationFetched }: Props) {
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
 
-    onLocationFetched({ latitude, longitude });
+    onLocationFetched({ latitude, longitude, ...DEFAULT_DELTA });
     setSelectedRegion({
       latitude,
       longitude,

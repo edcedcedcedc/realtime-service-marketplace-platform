@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import useStore from "../store/useStore";
+import useStore, { Region } from "../store/useStore";
 import AnimatedCircle from "../utils/AnimatedCircle";
 import { DEFAULT_DELTA } from "../store/useStore";
 import TinySpinner from "../utils/TinySpinner";
@@ -19,14 +19,13 @@ type Props = {
   address: string;
   isSearching: boolean;
   onDoubleTap?: () => void;
-  onLocationFetched: (coords: { latitude: number; longitude: number }) => void;
+  onExit: (region: Region) => void;
 };
 
 export default function MapSelectorScreen({
   address,
   isSearching,
-  onDoubleTap,
-  onLocationFetched,
+  onExit,
 }: Props) {
   const miniMapReady = useStore((s) => s.miniMapReady);
   const fullMapReady = useStore((s) => s.fullMapReady);
@@ -51,16 +50,67 @@ export default function MapSelectorScreen({
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
 
+  const handleMapPress = (event: any) => {
+    if (isSearching) {
+      return;
+    }
+    const { coordinate } = event.nativeEvent;
+    setSelectedRegion({
+      ...coordinate,
+      ...DEFAULT_DELTA,
+    });
+  };
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (lastTap.current && now - lastTap.current < 300) {
+      setIsFullMapVisible(true);
+      console.log("Current state:", {
+        fullMapReady,
+        selectedRegion,
+        isFullMapVisible,
+      });
+    }
+    lastTap.current = now;
+  };
+
+  /*   const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout | null = null;
+    return (...args: any[]) => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }; */
+
+  /* const updatePosition = useRef(
+    debounce(async () => {
+      if (!fullMapRef.current || !selectedRegion) return;
+      try {
+        const point =
+          await fullMapRef.current.pointForCoordinate(selectedRegion);
+        setMarkerPointFull(point);
+      } catch {
+        setMarkerPointFull(lastValidPositionRef.current);
+      }
+    }, 16)
+  ).current; */
+
   useEffect(() => {
-    if (isFullMapVisible && fullMapRef.current && selectedRegion) {
+    if (
+      isFullMapVisible &&
+      fullMapRef.current &&
+      selectedRegion &&
+      fullMapReady
+    ) {
       const calculatePoint = async () => {
         try {
           const point =
             await fullMapRef.current?.pointForCoordinate(selectedRegion);
-          if (point) setMarkerPointFull(point);
+          if (point) {
+            setMarkerPointFull(point);
+          }
         } catch (err) {
           console.warn("Point calculation failed, retrying...", err);
-          // Retry after delay
           setTimeout(() => {
             if (fullMapRef.current) {
               fullMapRef.current
@@ -73,7 +123,7 @@ export default function MapSelectorScreen({
       };
       calculatePoint();
     }
-  }, [isFullMapVisible, selectedRegion]);
+  }, [isFullMapVisible, handleDoubleTap]);
 
   useEffect(() => {
     if (!isFullMapVisible && miniMapRef.current && selectedRegion) {
@@ -84,7 +134,6 @@ export default function MapSelectorScreen({
           if (point) setMarkerPointMini(point);
         } catch (err) {
           console.warn("Point calculation failed, retrying...", err);
-          // Retry after delay
           setTimeout(() => {
             if (miniMapRef.current) {
               miniMapRef.current
@@ -97,7 +146,7 @@ export default function MapSelectorScreen({
       };
       calculatePoint();
     }
-  }, [!isFullMapVisible, selectedRegion]);
+  }, [isFullMapVisible]);
 
   // Geocode text input
   useEffect(() => {
@@ -133,27 +182,6 @@ export default function MapSelectorScreen({
     };
   }, [address]);
 
-  const handleDoubleTap = () => {
-    const now = Date.now();
-    if (lastTap.current && now - lastTap.current < 300) {
-      setIsFullMapVisible(true);
-      console.log("Current state:", {
-        fullMapReady,
-        selectedRegion,
-        isFullMapVisible,
-      });
-    }
-    lastTap.current = now;
-  };
-
-  const handleMapPress = (event: any) => {
-    const { coordinate } = event.nativeEvent;
-    setSelectedRegion({
-      ...coordinate,
-      ...DEFAULT_DELTA,
-    });
-  };
-
   if (!address) {
     return (
       <Text style={styles.infoText}>Enter a location to preview the map</Text>
@@ -167,6 +195,11 @@ export default function MapSelectorScreen({
   if (!selectedRegion) {
     return <Text style={styles.infoText}>Invalid location</Text>;
   }
+
+  const handleExit = () => {
+    setIsFullMapVisible(false);
+    onExit(selectedRegion);
+  };
 
   return (
     <>
@@ -207,9 +240,11 @@ export default function MapSelectorScreen({
             initialRegion={selectedRegion}
             style={styles.mapFull}
             onMapReady={() => setFullMapReady(true)}
+            /*  onRegionChange={updatePosition}
+            onRegionChangeComplete={updatePosition} */
             onPress={handleMapPress}
             zoomEnabled={false}
-            scrollEnabled={false}
+            scrollEnabled={true}
           >
             {selectedRegion && (
               <Marker coordinate={selectedRegion} title="Selected Location" />
@@ -220,10 +255,7 @@ export default function MapSelectorScreen({
             <AnimatedCircle x={markerPointFull.x} y={markerPointFull.y} />
           )}
 
-          <TouchableOpacity
-            style={styles.exitButton}
-            onPress={() => setIsFullMapVisible(false)}
-          >
+          <TouchableOpacity style={styles.exitButton} onPress={handleExit}>
             <Text style={styles.buttonText}>Exit</Text>
           </TouchableOpacity>
         </View>
