@@ -11,15 +11,17 @@ import {
   Easing,
   Modal,
   Button,
+  Alert,
 } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore, { Region } from "../store/useStore";
+import useStore, { DEFAULT_DELTA, Region } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
-import MiniMapScreen from "./MiniMapScreen";
 import MyLocationScreen from "./MyLocationScreen";
-import FullMapScreen from "./FullMapScreen";
 import Toast from "react-native-toast-message";
+import MapSelector from "./MapSelectorScreen";
+import * as Location from "expo-location";
+import { LatLng } from "react-native-maps";
 
 const urgencyOptions = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -36,14 +38,9 @@ const defaultRegion: Region = {
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore((state) => state.setTempJobData);
-  const setSelectedRegion = useStore((state) => state.setSelectedRegion);
-  const selectedRegion = useStore((state) => state.selectedRegion);
-  const [isFullMapVisible, setIsFullMapVisible] = useState(false);
   const [address, setAddress] = useState("Chisinau");
   const setLoading = useStore((state) => state.setLoading);
   const [isSearching, setIsSearching] = useState(false);
-
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   let timeout: any = null;
   const { control, handleSubmit, setValue, watch, reset } = useForm({
@@ -76,12 +73,10 @@ export default function JobPostScreen({ navigation }: any) {
   const onSubmit = (data: any) => {
     setIsSearching(true);
     setTempJobData(data);
-    setIsSearching(true);
   };
 
   const cancelSearch = () => {
     setIsSearching(false);
-    pulseAnim.stopAnimation();
   };
 
   return (
@@ -142,46 +137,37 @@ export default function JobPostScreen({ navigation }: any) {
                 />
               )}
             />
-
             <Controller
               control={control}
               name="location"
-              render={({ field: { onChange, value } }) => (
-                <View>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Location"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                  />
+              render={({ field: { onChange, value } }) => {
+                return (
                   <View>
-                    <MyLocationScreen
-                      onLocationFetched={(coords: any) => {
-                        const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                        onChange(locationString);
-                        setSelectedRegion({
-                          latitude: coords.latitude,
-                          longitude: coords.longitude,
-                          latitudeDelta: 0.01,
-                          longitudeDelta: 0.01,
-                        });
-                      }}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Location"
+                      placeholderTextColor="#999"
+                      value={value}
+                      onChangeText={onChange}
                     />
-                    <MiniMapScreen
-                      address={value || ""}
-                      onDoubleTap={() => setIsFullMapVisible(true)}
-                      isSearching={isSearching}
-                    />
-                    <Modal visible={isFullMapVisible} animationType="slide">
-                      <FullMapScreen
-                        initialRegion={selectedRegion ?? defaultRegion}
-                        onClose={() => setIsFullMapVisible(false)}
+                    <View>
+                      <MyLocationScreen
+                        onLocationFetched={(coords: LatLng) => {
+                          const locationString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+                          onChange(locationString);
+                        }}
                       />
-                    </Modal>
+
+                      <MapSelector
+                        key={value}
+                        address={value || ""}
+                        isSearching={isSearching}
+                        onLocationFetched={() => {}}
+                      />
+                    </View>
                   </View>
-                </View>
-              )}
+                );
+              }}
             />
 
             {!isSearching ? (
@@ -268,12 +254,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: "100%", // make sure it stretches full width
   },
+  myLocation: {
+    alignItems: "center",
+  },
 
   infoField: {
     flexDirection: "row", // horizontal row
     alignItems: "center",
     flex: 1,
     marginHorizontal: 8,
+  },
+  helperText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#777",
+    textAlign: "center",
+    marginBottom: 16,
   },
   infoLabel: {
     fontSize: 14,

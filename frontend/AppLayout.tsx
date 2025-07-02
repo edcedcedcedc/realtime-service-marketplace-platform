@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import useStore from "./store/useStore";
 import Toast from "react-native-toast-message";
-import GlobalLoading from "./screens/GlobalLoading";
+import GlobalLoading from "./utils/GlobalLoading";
 import ToastConfig from "./config/ToastConfig";
 import { SPACING } from "./utils/spacings";
 import { useWindowDimensions } from "react-native";
