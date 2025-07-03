@@ -4,7 +4,6 @@ import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
 
-
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
 export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
 
@@ -81,14 +80,14 @@ api.interceptors.response.use(
                       const response = await api(originalRequest);
                       resolve(response);
                     } catch (loginError) {
-                       const store = useStore.getState();
-                        store.clearAuth();
-                        navigationRef.current?.dispatch(
-                          CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: "Start" }],
-                          }),
-                        );
+                      const store = useStore.getState();
+                      store.clearAuth();
+                      navigationRef.current?.dispatch(
+                        CommonActions.reset({
+                          index: 0,
+                          routes: [{ name: "Start" }],
+                        }),
+                      );
                       reject(loginError);
                     }
                   },

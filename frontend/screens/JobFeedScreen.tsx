@@ -51,8 +51,6 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const logout = () => navigation.replace("Start");
-
   const onViewDetails = (job: Job) => {
     navigation.navigate("JobDetails", { jobId: job.id });
   };

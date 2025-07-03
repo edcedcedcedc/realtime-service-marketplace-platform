@@ -25,7 +25,6 @@ import { jobPostSchema } from "../validation/validationSchema";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import * as Location from "expo-location";
-import { withTimeout } from "../utils/withTimeout";
 
 const defaultRegion: Region = {
   latitude: 37.78825,
@@ -37,9 +36,13 @@ const defaultRegion: Region = {
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore().setTempJobData;
   const tempJobData = useStore((state) => state.tempJobData);
-  const setLoading = useStore((state) => state.setLoading);
+  const addJob = useStore().addJob;
+  const jobs = useStore().jobs;
+  const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
   const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [jobToBeCancelledId, setJobToBeCancelledId] = useState(null);
+  const jobToBeCancelledIdRef = useRef<number | null>(null);
   const urgencyOptions: {
     label: string;
     value: string;
@@ -65,60 +68,7 @@ export default function JobPostScreen({ navigation }: any) {
       urgency: "now",
     },
   });
-
-  useEffect(() => {
-    setTempJobData(null);
-    return () => {
-      reset();
-      setLoading(false);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!tempJobData) return;
-
-    if (jobCreationTimeout.current) {
-      clearTimeout(jobCreationTimeout.current);
-    }
-    console.log("log from use effect ");
-    jobCreationTimeout.current = setTimeout(async () => {
-      setLoading(true);
-      console.log("log from use effect ");
-      try {
-        const coordinates = useStore.getState().selectedLatLng;
-        const payload = {
-          ...tempJobData,
-          latitude: coordinates?.latitude,
-          longitude: coordinates?.longitude,
-        };
-        const res = await api.post("/jobs/create/", payload);
-        console.log(res.data, "res.data");
-        Toast.show({
-          type: "success",
-          text1: `Job created!`,
-          text2: `Job ID: ${res.data.id}`,
-        });
-      } catch (err: any) {
-        Toast.show({
-          type: "error",
-          text1: "Failed to post a task",
-          text2:
-            err.response?.data ||
-            "Something went wrong. Please check your internet connection.",
-        });
-      } finally {
-        setLoading(false);
-        jobCreationTimeout.current = null;
-      }
-    }, 5000);
-
-    return () => {
-      if (jobCreationTimeout.current) {
-        clearTimeout(jobCreationTimeout.current);
-        jobCreationTimeout.current = null;
-      }
-    };
-  }, [tempJobData]);
+  const urgency = watch("urgency");
 
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -136,67 +86,57 @@ export default function JobPostScreen({ navigation }: any) {
     setValue("location", latlng);
   };
 
-  const urgency = watch("urgency");
-
-  const onSubmit: SubmitHandler<JobFormInput> = async (formData) => {
-    const current = useStore.getState().tempJobData;
-    if (JSON.stringify(current) === JSON.stringify(formData)) return;
-    setIsSearching(true);
-    setTempJobData(formData);
-
-    /* const coordinates = useStore.getState().selectedLatLng;
-    const payload = {
-      ...formData,
-      budget: formData.budget,
-      latitude: coordinates?.latitude,
-      longitude: coordinates?.longitude,
-    };
-    Keyboard.dismiss();
-    try {
-      const res = await api.post("/jobs/create/", payload);
-      Toast.show({
-        type: "success",
-        text1: `Status: ${res.status}`,
-        text2: JSON.stringify(res.data),
-      });
-    } catch (err: any) {
-      console.error(err);
-      Toast.show({
-        type: "error",
-        text1: "Failed to post a task",
-        text2:
-          err.response?.data ||
-          "Something went wrong. Please check your internet connection.",
-      });
-    } */
-  };
-
-  const deleteJobById = async (jobId: number) => {
-    try {
-      await withTimeout(api.delete(`/jobs/delete/${jobId}/`), 2000);
-      Toast.show({
-        type: "success",
-        text1: "Job deleted",
-        text2: `Job #${jobId} was successfully canceled.`,
-      });
-      setTempJobData(null);
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to cancel job",
-        text2:
-          err.response?.data?.error ||
-          "Failed to cancel the job. Please try again later.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cancelSearch = () => {
-    setIsSearching(false);
+  useEffect(() => {
     setTempJobData(null);
-  };
+    return () => {
+      reset();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!tempJobData) return;
+    if (jobCreationTimeout.current) {
+      clearTimeout(jobCreationTimeout.current);
+    }
+    jobCreationTimeout.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const coordinates = useStore.getState().selectedLatLng;
+        const payload = {
+          ...tempJobData,
+          latitude: coordinates?.latitude,
+          longitude: coordinates?.longitude,
+        };
+        const res = await api.post("/jobs/create/", payload);
+        setTimeout(() => {
+          Toast.show({
+            type: "info",
+            text1: "Created Job Id",
+            text2: res.data.id,
+          });
+        }, 2000);
+        jobToBeCancelledIdRef.current = res.data.id;
+        addJob(res.data);
+      } catch (err: any) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to post a job",
+          text2:
+            err.response?.data ||
+            "Something went wrong. Please check your internet connection.",
+        });
+      } finally {
+        jobCreationTimeout.current = null;
+        setLoading(false);
+      }
+    }, 5000);
+    return () => {
+      if (jobCreationTimeout.current) {
+        clearTimeout(jobCreationTimeout.current);
+        jobCreationTimeout.current = null;
+      }
+    };
+  }, [tempJobData]);
 
   const confirmSubmit = (data: JobFormInput) => {
     Alert.alert(
@@ -237,6 +177,60 @@ export default function JobPostScreen({ navigation }: any) {
       ],
       { cancelable: true }
     );
+  };
+
+  const onSubmit: SubmitHandler<JobFormInput> = async (formData) => {
+    const current = useStore.getState().tempJobData;
+    if (JSON.stringify(current) === JSON.stringify(formData)) return;
+    setIsSearching(true);
+    setTempJobData(formData);
+  };
+
+  const cancelSearch = () => {
+    console.log(
+      "Cancel search called, jobToBeCancelledId:",
+      jobToBeCancelledIdRef.current
+    );
+    setIsSearching(false);
+    setTempJobData(null);
+    if (jobToBeCancelledIdRef.current) {
+      deleteJobById();
+    }
+  };
+
+  const deleteJobById = async () => {
+    const jobId = jobs.find(
+      (job) => jobToBeCancelledIdRef.current == job.id
+    )?.id;
+
+    if (!jobId) return;
+
+    try {
+      const res = await api.delete(`/jobs/delete/${jobId}/`);
+      console.log(
+        res.data,
+        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);"
+      );
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Job deleted",
+          text2: `Job #${JSON.stringify(res.data)} was successfully deleted.`,
+        });
+      }, 3000);
+      const removeJob = useStore.getState().removeJob;
+      removeJob(jobId);
+      setTempJobData(null);
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel job",
+        text2:
+          err.response?.data?.error ||
+          "Failed to cancel the job. Please try again later.",
+      });
+    } finally {
+    }
   };
 
   return (

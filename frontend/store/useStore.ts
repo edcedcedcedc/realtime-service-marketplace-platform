@@ -96,6 +96,7 @@ interface State {
   addWorker: (worker: User) => void;
   addClient: (client: User) => void;
   addJob: (job: Job) => void;
+  removeJob: (id: number) => void;
   setJobs: (jobs: Job[]) => void;
   setLoading: (value: boolean) => void;
   setTempJobData: (data: JobFormInput | null) => void;
@@ -174,6 +175,10 @@ const useStore = create<State>()(
       addJob: (job: Job) =>
         set((state: { jobs: Job[] }) => ({
           jobs: sortJobsByDate([...state.jobs, job]),
+        })),
+      removeJob: (id: number) =>
+        set((state) => ({
+          jobs: state.jobs.filter((job) => job.id !== id),
         })),
       setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) }),
     }),

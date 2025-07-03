@@ -60,7 +60,7 @@ export default function LoginScreen({ navigation }: any) {
           password: data.password,
         }),
         3000,
-        "Request timed out. Please try again"
+        "Request timed out. Please try again",
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };
@@ -68,7 +68,7 @@ export default function LoginScreen({ navigation }: any) {
       setAuth(jwt, user);
 
       navigation.replace(
-        user.role === "client" ? "Search a tasker" : "Task feed"
+        user.role === "client" ? "Search a tasker" : "Task feed",
       );
     } catch (err: any) {
       Toast.show({
