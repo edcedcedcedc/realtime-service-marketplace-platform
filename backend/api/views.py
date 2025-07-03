@@ -147,7 +147,7 @@ def job_detail(request, id):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def open_jobs(request):
     jobs = Job.objects.filter(status="open").order_by("-id")
     serializer = JobSerializer(jobs, many=True)

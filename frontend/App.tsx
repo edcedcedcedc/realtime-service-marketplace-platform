@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+
 import Toast from "react-native-toast-message";
 import useStore, { Job } from "./store/useStore";
 import { socketManager } from "./utils/socketManager";
 import { WS_URL } from "./services/api";
 import WrappedRootNavigator from "./navigation/WrapperRootNavigator";
+import { NavigationContainer } from "@react-navigation/native";
+import { navigationRef } from "./utils/navigationRef";
 
 export default function App() {
   const addJob = useStore((state) => state.addJob);
@@ -35,7 +37,7 @@ export default function App() {
   }, [addJob]);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <WrappedRootNavigator />
     </NavigationContainer>
   );

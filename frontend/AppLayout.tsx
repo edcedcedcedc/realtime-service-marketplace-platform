@@ -22,7 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {children}
-        <Toast config={ToastConfig} visibilityTime={2500} />
+        <Toast config={ToastConfig} visibilityTime={2000} />
         <GlobalLoading visible={loading} />
       </View>
     </SafeAreaView>
