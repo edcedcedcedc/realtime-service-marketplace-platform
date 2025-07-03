@@ -1,3 +1,30 @@
+/**
+ * JobPostScreen Component
+ *
+ * This screen allows clients to create and submit a job request.
+ * It features form fields for entering job title, description, budget,
+ * location (manual or GPS-based), and urgency level.
+ *
+ * Key Features:
+ * - Form validation via react-hook-form and Yup schema.
+ * - Location selection with MapSelector and "Use My Location" option via Expo Location API.
+ * - Urgency level buttons with visual feedback.
+ * - Search initiation and cancellation logic.
+ * - Automatic job creation after a 5-second delay using a timeout.
+ * - Job deletion and toast notifications for feedback.
+ * - UI adapts based on whether a search is active (`isSearching`).
+ *
+ * Dependencies:
+ * - react-hook-form for form management
+ * - yup for schema validation
+ * - Zustand for global state management
+ * - react-native-keyboard-aware-scroll-view for keyboard handling
+ * - Toast notifications for feedback
+ *
+ * Props:
+ * - navigation: React Navigation prop passed from the parent stack
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -41,7 +68,6 @@ export default function JobPostScreen({ navigation }: any) {
   const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
   const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
-  const [jobToBeCancelledId, setJobToBeCancelledId] = useState(null);
   const jobToBeCancelledIdRef = useRef<number | null>(null);
   const urgencyOptions: {
     label: string;
@@ -191,6 +217,13 @@ export default function JobPostScreen({ navigation }: any) {
       "Cancel search called, jobToBeCancelledId:",
       jobToBeCancelledIdRef.current
     );
+    setTimeout(() => {
+      Toast.show({
+        type: "info",
+        text1: "Cancel search called, jobToBeCancelledId:",
+        text2: `jobToBeCancelledIdRef.current ${jobToBeCancelledIdRef.current}`,
+      });
+    }, 2000);
     setIsSearching(false);
     setTempJobData(null);
     if (jobToBeCancelledIdRef.current) {
@@ -202,9 +235,7 @@ export default function JobPostScreen({ navigation }: any) {
     const jobId = jobs.find(
       (job) => jobToBeCancelledIdRef.current == job.id
     )?.id;
-
     if (!jobId) return;
-
     try {
       const res = await api.delete(`/jobs/delete/${jobId}/`);
       console.log(
@@ -215,12 +246,13 @@ export default function JobPostScreen({ navigation }: any) {
         Toast.show({
           type: "success",
           text1: "Job deleted",
-          text2: `Job #${JSON.stringify(res.data)} was successfully deleted.`,
+          text2: `Job #${JSON.stringify(res.data, null, 2)}`,
         });
       }, 3000);
       const removeJob = useStore.getState().removeJob;
       removeJob(jobId);
       setTempJobData(null);
+      jobToBeCancelledIdRef.current = null;
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -238,7 +270,7 @@ export default function JobPostScreen({ navigation }: any) {
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="never"
-        extraHeight={400}
+        extraHeight={100}
         extraScrollHeight={20}
         keyboardOpeningTime={10000}
         showsVerticalScrollIndicator={false}
@@ -639,7 +671,6 @@ const styles = StyleSheet.create({
   infoFieldsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 7.5,
     width: "100%",
   },
   infoField: {
