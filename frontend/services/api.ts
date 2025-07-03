@@ -4,6 +4,7 @@ import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
 
+
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
 export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
 
@@ -56,24 +57,8 @@ api.interceptors.response.use(
           return new Promise((resolve, reject) => {
             Alert.prompt(
               "Session Expired",
-              "Please enter your password to continue or cancel to redirect to login",
+              "Please enter your password to continue",
               [
-                {
-                  text: "Cancel",
-                  onPress: () => {
-                    const store = useStore.getState();
-                    store.clearAuth();
-                    navigationRef.current?.dispatch(
-                      CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: "Start" }],
-                      }),
-                    );
-
-                    reject(new Error("User cancelled login prompt"));
-                  },
-                  style: "cancel",
-                },
                 {
                   text: "OK",
                   onPress: async (password: any) => {
@@ -96,7 +81,14 @@ api.interceptors.response.use(
                       const response = await api(originalRequest);
                       resolve(response);
                     } catch (loginError) {
-                      Alert.alert("Login failed", "Please try again");
+                       const store = useStore.getState();
+                        store.clearAuth();
+                        navigationRef.current?.dispatch(
+                          CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: "Start" }],
+                          }),
+                        );
                       reject(loginError);
                     }
                   },

@@ -52,20 +52,20 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        }),
+        })
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       Toast.show({
         type: "success",
         text1: "Registration Successful",
       });
       navigation.replace(
-        res.data.user === "client" ? "Search a tasker" : "Task feed",
+        res.data.user === "client" ? "Search a tasker" : "Task feed"
       );
     } catch (err: any) {
       Toast.show({
@@ -204,7 +204,7 @@ export default function RegisterScreen({ navigation }: any) {
             name="role"
             render={({ field: { onChange, value } }) => (
               <>
-                <Text style={styles.roleLabel}>Register as:</Text>
+                <Text style={styles.roleLabel}>Register as</Text>
                 <View style={styles.roleToggleContainer}>
                   {["client", "worker"].map((role, idx) => {
                     const selected = value === role;
@@ -329,10 +329,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   roleLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#212121",
+    fontSize: 14,
+    fontWeight: "400",
+    marginBottom: 10,
+    color: "#666",
   },
   roleToggleContainer: {
     flexDirection: "row",
