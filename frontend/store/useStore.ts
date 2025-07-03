@@ -30,34 +30,32 @@ export interface LatLng {
   latitude: number;
   longitude: number;
 }
-export type Urgency = "now" | "soon" | "flexible";
+
 export type JobFormInput = {
   title: string;
   description: string;
   location: string;
-  /* category: string; */
-  budget: string; // still string, convert before submit
-  urgency: Urgency;
+  budget: number;
+  urgency: string;
 };
 
-type Status = 
-    | "open"
-    | "accepted"
-    | "in-progress"
-    | "completed"
-    | "confirmed"
-    | "cancelled"
-    | "expired";
+type Status =
+  | "open"
+  | "confirmed"
+  | "in-progress"
+  | "completed"
+  | "cancelled"
+  | "expired";
 export interface Job {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   budget: number;
-  urgency: Urgency;
+  urgency: "now" | "soon" | "flexible";
   location: string;
-  latitude: number,
-  longitude: number,
-  status: Status,
+  latitude: number;
+  longitude: number;
+  status: Status;
   client_username: string;
   worker_username: string | null;
   worker_id: number | null;
@@ -131,29 +129,29 @@ const useStore = create<State>()(
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
       setMarkerPoint: (point) => set({ markerPoint: point }),
       setSelectedRegion: (region) => {
-            if (!region) {
-              set({ selectedRegion: null });
-              return;
-            }
-            let latitude = Number(region.latitude.toFixed(6));
-            let longitude = Number(region.longitude.toFixed(6));
-            let latitudeDelta = region.latitudeDelta;
-            let longitudeDelta = region.longitudeDelta;
-            set({
-              selectedRegion: {
-                latitude,
-                longitude,
-                latitudeDelta,
-                longitudeDelta,
-              },
-            });
-            set({
-              selectedLatLng: {
-                latitude,
-                longitude,
-              },
-            }); 
+        if (!region) {
+          set({ selectedRegion: null });
+          return;
+        }
+        let latitude = Number(region.latitude.toFixed(6));
+        let longitude = Number(region.longitude.toFixed(6));
+        let latitudeDelta = region.latitudeDelta;
+        let longitudeDelta = region.longitudeDelta;
+        set({
+          selectedRegion: {
+            latitude,
+            longitude,
+            latitudeDelta,
+            longitudeDelta,
           },
+        });
+        set({
+          selectedLatLng: {
+            latitude,
+            longitude,
+          },
+        });
+      },
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
       setTempJobData: (data) => set({ tempJobData: data }),
       setLoading: (value: boolean) => set({ loading: value }),

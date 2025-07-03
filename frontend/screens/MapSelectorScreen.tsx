@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   Animated,
+  Easing,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -20,12 +21,16 @@ type Props = {
   isSearching: boolean;
   onDoubleTap?: () => void;
   onExit: (region: Region) => void;
+  onChange: () => void;
+  handleGetLocation: (region: Region) => void;
 };
 
 export default function MapSelectorScreen({
   address,
   isSearching,
   onExit,
+  onChange,
+  handleGetLocation,
 }: Props) {
   const miniMapReady = useStore((s) => s.miniMapReady);
   const fullMapReady = useStore((s) => s.fullMapReady);
@@ -123,9 +128,10 @@ export default function MapSelectorScreen({
       };
       calculatePoint();
     }
-  }, [isFullMapVisible, handleDoubleTap]);
+  }, [isFullMapVisible, handleDoubleTap, selectedRegion]);
 
   useEffect(() => {
+    console.log("render");
     if (!isFullMapVisible && miniMapRef.current && selectedRegion) {
       const calculatePoint = async () => {
         try {
@@ -146,7 +152,7 @@ export default function MapSelectorScreen({
       };
       calculatePoint();
     }
-  }, [isFullMapVisible]);
+  }, [isFullMapVisible, onChange, selectedRegion]);
 
   // Geocode text input
   useEffect(() => {
@@ -198,6 +204,7 @@ export default function MapSelectorScreen({
 
   const handleExit = () => {
     setIsFullMapVisible(false);
+    if (isSearching) return;
     onExit(selectedRegion);
   };
 
