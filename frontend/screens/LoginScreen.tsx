@@ -59,7 +59,7 @@ export default function LoginScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
         }),
-        5000,
+        3000,
         "Request timed out. Please try again"
       );
 

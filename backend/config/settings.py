@@ -29,8 +29,8 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=5),  # SHORT lifespan
-    "REFRESH_TOKEN_LIFETIME": timedelta(seconds=15),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # SHORT lifespan
+    "REFRESH_TOKEN_LIFETIME": timedelta(day=7),
     "ROTATE_REFRESH_TOKENS": True,  # Optional: rotates refresh token on use
     "BLACKLIST_AFTER_ROTATION": True,  # Optional: blacklist old refresh tokens
     "AUTH_HEADER_TYPES": ("Bearer",),
