@@ -26,9 +26,9 @@ Client Flow:
 2. [Post Job]
     - Title
     - Description
-    - Location (Optional)
+    - Location
     - Suggested Budget (e.g., €15)
-    - [✓ Accept Bids] (toggle)
+    - [✓ Accept Bids or Not Accept Bids] (toggle)
 3. [Live Job Thread]
 4. [Wait for Bids]
     - See incoming bids (e.g., €19, €20, €15)

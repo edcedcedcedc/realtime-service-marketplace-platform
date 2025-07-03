@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import JobSerializer
 from .models import Job
 from .utils import jobsfeed_broadcast
+from api.tasks import delete_job_if_still_open
 
 User = get_user_model()
 
@@ -105,8 +106,28 @@ def job_create(request):
         job_instance = serializer.save(client=request.user)
         jobsfeed_broadcast(job_instance)
         re_serializer = JobSerializer(job_instance)
+        delete_job_if_still_open.apply_async(args=[job_instance.id], countdown=10)
         return Response(re_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def job_delete(request, id):
+    try:
+        job = Job.objects.get(pk=id)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if job.client != request.user:
+        return Response(
+            {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+        )
+
+    job.delete()
+    # Optionally broadcast deletion to connected clients:
+    jobsfeed_broadcast(job.id)
+    return Response({"message": "Job deleted successfully"}, status=status.HTTP_200_OK)
 
 
 @api_view(["PATCH"])

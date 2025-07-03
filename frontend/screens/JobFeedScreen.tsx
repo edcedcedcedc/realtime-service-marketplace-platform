@@ -82,6 +82,7 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
   };
 
   const renderJob = ({ item }: { item: Job }) => {
+    if (!item) return null;
     return (
       <View style={styles.card}>
         <Text style={styles.title}>{item.title}</Text>
@@ -99,7 +100,7 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
         <View style={styles.infoRow}>
           <Text style={styles.infoText}>Location: {item.location}</Text>
           <Text style={[styles.status, statusColors[item.status] || {}]}>
-            {item.status.toUpperCase()}
+            {item.status}
           </Text>
         </View>
 
@@ -132,16 +133,12 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
   return (
     <View style={styles.container}>
       {/* Fixed Header */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.header}>Jobs Feed</Text>
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
 
       <FlatList
         data={jobs}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) =>
+          item?.id ? item.id.toString() : Math.random().toString()
+        }
         renderItem={renderJob}
         contentContainerStyle={{
           paddingTop: HEADER_HEIGHT,
