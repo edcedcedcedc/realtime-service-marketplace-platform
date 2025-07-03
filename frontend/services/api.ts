@@ -1,6 +1,8 @@
 import axios from "axios";
 import useStore from "../store/useStore";
 import { Alert } from "react-native";
+import { CommonActions } from "@react-navigation/native";
+import { navigationRef } from "../utils/navigationRef";
 
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
 export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
@@ -43,20 +45,33 @@ api.interceptors.response.use(
           const res = await axios.post(`${API_BASE_URL}token/refresh/`, {
             refresh,
           });
-          store.setAuth({ access: res.data.access, refresh }, store.auth.user);
+          store.setAuth(
+            { access: res.data.access, refresh: res.data.refresh ?? refresh },
+            store.auth.user,
+          );
           originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
           return api(originalRequest);
         } catch (refreshError) {
-          console.log("Refresh token failed:", refreshError);
           store.clearAuth();
           return new Promise((resolve, reject) => {
             Alert.prompt(
               "Session Expired",
-              "Please enter your username and password to continue.",
+              "Please enter your password to continue or cancel to redirect to login",
               [
                 {
                   text: "Cancel",
-                  onPress: () => reject(refreshError),
+                  onPress: () => {
+                    const store = useStore.getState();
+                    store.clearAuth();
+                    navigationRef.current?.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "Start" }],
+                      }),
+                    );
+
+                    reject(new Error("User cancelled login prompt"));
+                  },
                   style: "cancel",
                 },
                 {

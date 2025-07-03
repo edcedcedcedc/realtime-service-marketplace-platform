@@ -78,7 +78,7 @@ export default function JobPostScreen({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position."
+        "Location permission is required to fetch your position.",
       );
       return;
     }
@@ -142,7 +142,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -161,7 +161,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -317,7 +317,7 @@ export default function JobPostScreen({ navigation }: any) {
                       isSearching={isSearching}
                       onExit={(region: Region) => {
                         const latlng = `${region.latitude.toFixed(
-                          6
+                          6,
                         )}, ${region.longitude.toFixed(6)}`;
                         setValue("location", latlng);
                       }}

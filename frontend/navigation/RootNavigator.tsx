@@ -5,6 +5,8 @@ import JobFeedScreen from "../screens/JobFeedScreen";
 import JobDetailsScreen from "../screens/JobDetailsScreen";
 import JobPostScreen from "../screens/JobPostScreen";
 import HeaderMenu from "../screens/HeaderMenu";
+import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -27,6 +29,8 @@ export default function RootNavigator() {
       })}
     >
       <Stack.Screen name="Start" component={AuthScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Task feed" component={JobFeedScreen} />
       <Stack.Screen name="Task details" component={JobDetailsScreen} />
       <Stack.Screen name="Search a tasker" component={JobPostScreen} />
