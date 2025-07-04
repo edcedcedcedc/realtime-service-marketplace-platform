@@ -344,3 +344,32 @@ From the root folder (`./`), run the commands in this order:
 - **format-client**  
   Run code formatters on the client codebase.
 
+
+## Testing and Reliability
+
+**Every other feature improvement — make sure to write tests for reliability:**
+
+Before releasing a new version, always write:
+
+- Unit tests for client and server  
+- Integration tests for client and server  
+
+To verify, run these commands:
+
+```bash
+coverage-server
+test-server
+test-client
+```
+
+## Git Workflow
+
+- Checkout from `dev` branch to create your feature branch  
+- When done, open a PR from your feature branch back into `dev`  
+- When `dev` is ready, open a PR from `dev` into `master`
+
+
+## Branch Naming Conventions
+
+Please follow the branch naming guidelines described in [`docs/git-branching.txt`](docs/git-branching.txt).
+
