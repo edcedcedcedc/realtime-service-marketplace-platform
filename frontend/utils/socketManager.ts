@@ -1,7 +1,9 @@
-type ServerMessage = {
-  type: string; // e.g. "job:new", "chat:message"
-  payload: any;
-};
+import { Job } from "../store/useStore";
+
+type ServerMessage =
+  | { type: "job:new"; payload: Job }
+  | { type: "job:delete"; payload: { id: number } }
+  | { type: "socket:onopen"; payload: null };
 
 type MessageHandler = (payload: any) => void;
 
@@ -23,6 +25,14 @@ class SocketManager {
     this.socket.onmessage = (e) => {
       try {
         const msg: ServerMessage = JSON.parse(e.data);
+        if (msg.type == "job:delete") {
+          const id = Number(msg.payload.id);
+          if (isNaN(id)) {
+            console.log(" const id = Number(msg.payload.id); is isNaN");
+          } else {
+            msg.payload.id = id;
+          }
+        }
         this.emit(msg.type, msg.payload);
       } catch (err) {
         console.error("Failed to parse socket message", err);

@@ -3,6 +3,24 @@ import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sortJobsByDate } from "../utils/sortJobs";
 
+const initialState = {
+  auth: {
+    jwt: { access: null, refresh: null },
+    user: null,
+  },
+  workers: [],
+  clients: [],
+  jobs: [],
+  loading: false,
+  tempJobData: null,
+  selectedRegion: null,
+  selectedLatLng: null,
+  markerPoint: null,
+  miniMapReady: false,
+  fullMapReady: false,
+  isFullMapVisible: false,
+};
+
 interface User {
   id: number;
   username: string;
@@ -102,6 +120,7 @@ interface State {
   setTempJobData: (data: JobFormInput | null) => void;
   setSelectedRegion: (region: Region | null) => void;
   setSelectedLatLng: (latLng: LatLng | null) => void;
+  resetStore: () => void;
 }
 
 const useStore = create<State>()(
@@ -165,22 +184,36 @@ const useStore = create<State>()(
           },
         })),
       addWorker: (worker: User) =>
-        set((state: { workers: User[] }) => ({
-          workers: [...state.workers, worker],
-        })),
+        set((state) => {
+          const exists = state.workers.some((w) => w.id === worker.id);
+          if (exists) return {};
+          return { workers: [...state.workers, worker] };
+        }),
+
       addClient: (client: User) =>
-        set((state: { clients: User[] }) => ({
-          clients: [...state.clients, client],
-        })),
+        set((state) => {
+          const exists = state.clients.some((c) => c.id === client.id);
+          if (exists) return {};
+          return { clients: [...state.clients, client] };
+        }),
       addJob: (job: Job) =>
-        set((state: { jobs: Job[] }) => ({
-          jobs: sortJobsByDate([...state.jobs, job]),
-        })),
+        set((state) => {
+          const normalizedJob = { ...job, id: Number(job.id) };
+          const exists = state.jobs.some((j) => j.id === normalizedJob.id);
+          if (exists) return {};
+          return { jobs: sortJobsByDate([...state.jobs, normalizedJob]) };
+        }),
       removeJob: (id: number) =>
         set((state) => ({
-          jobs: state.jobs.filter((job) => job.id !== id),
+          jobs: state.jobs.filter((job) => job.id !== Number(id)),
         })),
-      setJobs: (jobs: Job[]) => set({ jobs: sortJobsByDate(jobs) }),
+      setJobs: (jobs: Job[]) =>
+        set({
+          jobs: sortJobsByDate(
+            jobs.map((job) => ({ ...job, id: Number(job.id) })),
+          ),
+        }),
+      resetStore: () => set({ ...initialState }),
     }),
     {
       name: "my-app-storage",

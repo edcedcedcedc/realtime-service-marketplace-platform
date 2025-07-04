@@ -3,7 +3,7 @@ from channels.layers import get_channel_layer
 from .serializers import JobSerializer
 
 
-def jobsfeed_broadcast(job_instance):
+def jobsfeed_broadcast_new(job_instance: object):
     channel_layer = get_channel_layer()
     message = {
         "type": "job:new",  # the event type your frontend listens for
@@ -18,10 +18,10 @@ def jobsfeed_broadcast(job_instance):
     )
 
 
-def jobsfeed_broadcast_deleted(job_id):
+def jobsfeed_broadcast_deleted(job_id: int):
     channel_layer = get_channel_layer()
     message = {
-        "type": "job:deleted",  # event type for deletion
+        "type": "job:delete",  # event type for deletion
         "payload": {"id": job_id},  # minimal data to identify which job was deleted
     }
     async_to_sync(channel_layer.group_send)(

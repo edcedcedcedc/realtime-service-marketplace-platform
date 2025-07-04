@@ -19,16 +19,18 @@ const COOLDOWN_MS = 5000;
 
 export default function JobFeedScreen({ navigation }: { navigation: any }) {
   const jobs = useStore((state) => state.jobs);
-  const setJobs = useStore((state) => state.setJobs);
-  const addJob = useStore((state) => state.addJob);
+  const removeJob = useStore((state) => state.removeJob);
+  const setJobs = useStore().setJobs;
+  const addJob = useStore().addJob;
   const loading = useStore((state) => state.loading);
-  const setLoading = useStore((state) => state.setLoading);
+  const setLoading = useStore().setLoading;
   const lastRefreshRef = useRef(0);
   const [hasPulled, setHasPulled] = useState(false);
   const scrollOffsetRef = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
 
-  console.log("🌀 UI rerendered, jobs length:", jobs.length);
+  console.log("job feed rendered");
+
   useEffect(() => {
     fetchJobs();
   }, []);
@@ -134,9 +136,13 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
 
       <FlatList
         data={jobs}
-        keyExtractor={(item) =>
-          item?.id ? item.id.toString() : Math.random().toString()
-        }
+        keyExtractor={(item, index) => {
+          if (!item?.id) {
+            console.warn("⚠️ Missing job ID at index", index, item);
+            return index.toString();
+          }
+          return item.id.toString();
+        }}
         renderItem={renderJob}
         contentContainerStyle={{
           paddingTop: HEADER_HEIGHT,
