@@ -101,7 +101,7 @@ export default function JobPostScreen({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position."
+        "Location permission is required to fetch your position.",
       );
       return;
     }
@@ -182,7 +182,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -201,7 +201,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -215,7 +215,7 @@ export default function JobPostScreen({ navigation }: any) {
   const cancelSearch = () => {
     console.log(
       "Cancel search called, jobToBeCancelledId:",
-      jobToBeCancelledIdRef.current
+      jobToBeCancelledIdRef.current,
     );
     setTimeout(() => {
       Toast.show({
@@ -233,14 +233,14 @@ export default function JobPostScreen({ navigation }: any) {
 
   const deleteJobById = async () => {
     const jobId = jobs.find(
-      (job) => jobToBeCancelledIdRef.current == job.id
+      (job) => jobToBeCancelledIdRef.current == job.id,
     )?.id;
     if (!jobId) return;
     try {
       const res = await api.delete(`/jobs/delete/${jobId}/`);
       console.log(
         res.data,
-        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);"
+        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);",
       );
       setTimeout(() => {
         Toast.show({
@@ -417,7 +417,7 @@ export default function JobPostScreen({ navigation }: any) {
                       isSearching={isSearching}
                       onExit={(region: Region) => {
                         const latlng = `${region.latitude.toFixed(
-                          6
+                          6,
                         )}, ${region.longitude.toFixed(6)}`;
                         setValue("location", latlng);
                       }}

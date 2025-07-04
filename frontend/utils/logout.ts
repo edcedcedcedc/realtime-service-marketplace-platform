@@ -5,6 +5,7 @@ import { navigationRef } from "./navigationRef";
 export const logout = () => {
   const setLoading = useStore.getState().setLoading;
   setLoading(true);
+  useStore.getState().resetStore();
   setTimeout(() => {
     navigationRef.current?.dispatch(
       CommonActions.reset({
