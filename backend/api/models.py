@@ -50,6 +50,12 @@ class Job(models.Model):
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
     must_start_by = models.DateTimeField(null=True, blank=True)
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

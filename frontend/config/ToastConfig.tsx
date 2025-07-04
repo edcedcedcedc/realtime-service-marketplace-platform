@@ -14,6 +14,12 @@ const ToastConfig = {
       {text2 ? <Text style={styles.text2}>{text2}</Text> : null}
     </View>
   ),
+  info: ({ text1, text2 }: any) => (
+    <View style={[styles.container, styles.info]}>
+      <Text style={styles.text1}>{text1}</Text>
+      {text2 ? <Text style={styles.text2}>{text2}</Text> : null}
+    </View>
+  ),
 };
 
 const styles = StyleSheet.create({
@@ -31,11 +37,18 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "center",
   },
+  Layout: {
+    zIndex: 1000,
+    elevation: 1000,
+  },
   success: {
     backgroundColor: "#388E3C", // Material Green 700
   },
   error: {
     backgroundColor: "#D32F2F", // Material Red 700
+  },
+  info: {
+    backgroundColor: "#1976D2", // Material Blue 700
   },
   text1: {
     fontSize: 16,

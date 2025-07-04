@@ -6,7 +6,7 @@ export const usernameSchema = Yup.string()
   .max(32, "Username can't be over 32 characters")
   .matches(
     /^(?!.*[\s@#$%^&*!?\/\\])(?!.*[._]{2})[a-zA-Z0-9][a-zA-Z0-9._-]{1,30}[a-zA-Z0-9]$/,
-    "Username must start and end with a letter and contain only English letters, numbers, or underscores"
+    "Username must start and end with a letter and contain only English letters, numbers, or underscores",
   );
 
 export const passwordSchema = Yup.string()
@@ -39,4 +39,41 @@ export const registerSchema = Yup.object().shape({
     .oneOf([Yup.ref("password")], "Passwords must match")
     .required("Confirm Password is required"),
   role: roleSchema,
+});
+
+const anyLanguageRegex = /^[\p{L}\p{N}\p{P}\p{Zs}]+$/u;
+
+export const jobPostSchema = Yup.object().shape({
+  title: Yup.string()
+    .required("Title is required")
+    .max(32, "Title must be at most 32 characters")
+    .matches(
+      anyLanguageRegex,
+      "Title can contain letters, numbers, punctuation, and spaces",
+    ),
+
+  description: Yup.string()
+    .required("Description is required")
+    .max(128, "Description must be at most 128 characters")
+    .matches(
+      /^[\p{L}\p{N}\p{P}\p{Zs}]+$/u,
+      "Description can contain letters, numbers, punctuation, and spaces",
+    ),
+
+  budget: Yup.number()
+    .transform((value, originalValue) => {
+      return originalValue === "" ? NaN : Number(originalValue);
+    })
+    .typeError("Budget must be a number")
+    .required("Budget is required")
+    .min(50, "Budget must be at least 50 MDL"),
+
+  location: Yup.string()
+    .required("Location is required")
+    .max(64, "Location must be at most 64 characters")
+    .trim("No leading or trailing spaces"),
+
+  urgency: Yup.string()
+    .required("Urgency is required")
+    .oneOf(["now", "soon", "flexible"]),
 });

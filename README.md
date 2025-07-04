@@ -26,9 +26,9 @@ Client Flow:
 2. [Post Job]
     - Title
     - Description
-    - Location (Optional)
+    - Location
     - Suggested Budget (e.g., €15)
-    - [✓ Accept Bids] (toggle)
+    - [✓ Accept Bids or Not Accept Bids] (toggle)
 3. [Live Job Thread]
 4. [Wait for Bids]
     - See incoming bids (e.g., €19, €20, €15)
@@ -186,6 +186,8 @@ Message ◄──│ (JobFeedConsumer)        │
   ```
 
 ---
+## how to run redis server 
+if on windows install wsl2-ubuntu then from bash 'wsl' then sudo apt install redis-sever redis-cli
 
 ## Running Common Commands
 
@@ -195,6 +197,23 @@ Use the provided `Makefile` for common tasks:
 - `make run-http-ws`  — start asgi server
 - `` — Create admin user
 
+## Pallete of the APP
+Login: Blue 700 #2962FF
+
+Register: Green 700 #388E3C
+
+Client role: Orange 700 #F57C00
+
+Worker role: Grey 700 #616161
+
+test
+Blue (Primary variant) — #2962FF (Material Blue 800)
+
+Deep Purple — #512DA8 (Material Deep Purple 700)
+
+Teal — #00796B (Material Teal 700)
+
+Indigo — #303F9F (Material Indigo 700)
 <!-- 
 Redis guide on Windows:
     Start WSL Ubuntu

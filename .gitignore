@@ -62,3 +62,7 @@ frontend/app-example
 
 frontend/expo-env.d.ts
 # @end expo-cli, 
+
+
+dump.rdb
+.env
