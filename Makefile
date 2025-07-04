@@ -1,7 +1,7 @@
 .PHONY: start-server-h start-server-hws start-client migrate makemigrations \
 createsuperuser shell test-server reset-client freeze \
 update-client install-server format-client lint-client \
-reset-db test-client coverage-server start-server-r stop-server-r 
+reset-db test-client coverage-server start-server-r stop-server-r start-celery start-celery-windows
 
 # =============================================================================
 # [ BACKEND TASKS ]
@@ -14,6 +14,10 @@ start-server-r:
 	wsl -- bash -c "redis-server --daemonize yes && redis-cli ping"
 stop-server-r:
 	wsl -- bash -c "redis-cli shutdown && echo server-r shut down"
+start-celery:
+	cd backend && celery -A config worker --loglevel=info
+start-celery-windows:
+	cd backend && celery -A config worker --loglevel=info --pool=solo
 install-server:
 	@cd backend && \
 	echo "Checking backend dependencies..." && \

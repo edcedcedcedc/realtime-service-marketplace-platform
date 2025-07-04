@@ -3,6 +3,7 @@ from .views import (
     completed_jobs,
     job_create,
     in_progress_jobs,
+    job_delete,
     job_detail,
     job_update,
     open_jobs,
@@ -30,4 +31,5 @@ urlpatterns = [
     path("api/jobs/detail/<int:id>/", job_detail, name="job-detail"),
     path("api/jobs/create/", job_create, name="job-create"),
     path("api/jobs/update/<int:id>/", job_update, name="job-update"),
+    path("api/jobs/delete/<int:id>/", job_delete, name="job-delete"),
 ]

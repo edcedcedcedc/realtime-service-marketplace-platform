@@ -1,4 +1,31 @@
-import React, { useEffect, useState } from "react";
+/**
+ * JobPostScreen Component
+ *
+ * This screen allows clients to create and submit a job request.
+ * It features form fields for entering job title, description, budget,
+ * location (manual or GPS-based), and urgency level.
+ *
+ * Key Features:
+ * - Form validation via react-hook-form and Yup schema.
+ * - Location selection with MapSelector and "Use My Location" option via Expo Location API.
+ * - Urgency level buttons with visual feedback.
+ * - Search initiation and cancellation logic.
+ * - Automatic job creation after a 5-second delay using a timeout.
+ * - Job deletion and toast notifications for feedback.
+ * - UI adapts based on whether a search is active (`isSearching`).
+ *
+ * Dependencies:
+ * - react-hook-form for form management
+ * - yup for schema validation
+ * - Zustand for global state management
+ * - react-native-keyboard-aware-scroll-view for keyboard handling
+ * - Toast notifications for feedback
+ *
+ * Props:
+ * - navigation: React Navigation prop passed from the parent stack
+ */
+
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -34,11 +61,14 @@ const defaultRegion: Region = {
 };
 
 export default function JobPostScreen({ navigation }: any) {
-  const setTempJobData = useStore((state) => state.setTempJobData);
-  const setLoading = useStore((state) => state.setLoading);
+  const setTempJobData = useStore().setTempJobData;
+  const tempJobData = useStore((state) => state.tempJobData);
+  const addJob = useStore().addJob;
+  const jobs = useStore().jobs;
+  const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
-  const [showUrgencyHelp, setShowUrgencyHelp] = useState(false);
-
+  const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const jobToBeCancelledIdRef = useRef<number | null>(null);
   const urgencyOptions: {
     label: string;
     value: string;
@@ -64,21 +94,14 @@ export default function JobPostScreen({ navigation }: any) {
       urgency: "now",
     },
   });
+  const urgency = watch("urgency");
 
-  useEffect(() => {
-    return () => {
-      reset();
-      setLoading(false);
-    };
-  }, []);
-
-  const setSelectedRegion = useStore((s) => s.setSelectedRegion);
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position.",
+        "Location permission is required to fetch your position."
       );
       return;
     }
@@ -89,40 +112,57 @@ export default function JobPostScreen({ navigation }: any) {
     setValue("location", latlng);
   };
 
-  const urgency = watch("urgency");
-  const onSubmit: SubmitHandler<JobFormInput> = async (formData) => {
-    setIsSearching(true);
-    setTempJobData(formData);
-    const coordinates = useStore.getState().selectedLatLng;
-    const payload = {
-      ...formData,
-      budget: formData.budget,
-      latitude: coordinates?.latitude,
-      longitude: coordinates?.longitude,
+  useEffect(() => {
+    setTempJobData(null);
+    return () => {
+      reset();
     };
-    Keyboard.dismiss();
-    try {
-      const res = await api.post("/jobs/create/", payload);
-      Toast.show({
-        type: "success",
-        text1: `Status: ${res.status}`,
-        text2: JSON.stringify(res.data),
-      });
-    } catch (err: any) {
-      console.error(err);
-      Toast.show({
-        type: "error",
-        text1: "Failed to post a task",
-        text2:
-          err.response?.data ||
-          "Something went wrong. Please check your internet connection.",
-      });
-    }
-  };
+  }, []);
 
-  const cancelSearch = () => {
-    setIsSearching(false);
-  };
+  useEffect(() => {
+    if (!tempJobData) return;
+    if (jobCreationTimeout.current) {
+      clearTimeout(jobCreationTimeout.current);
+    }
+    jobCreationTimeout.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const coordinates = useStore.getState().selectedLatLng;
+        const payload = {
+          ...tempJobData,
+          latitude: coordinates?.latitude,
+          longitude: coordinates?.longitude,
+        };
+        const res = await api.post("/jobs/create/", payload);
+        setTimeout(() => {
+          Toast.show({
+            type: "info",
+            text1: "Created Job Id",
+            text2: res.data.id,
+          });
+        }, 2000);
+        jobToBeCancelledIdRef.current = res.data.id;
+        addJob(res.data);
+      } catch (err: any) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to post a job",
+          text2:
+            err.response?.data ||
+            "Something went wrong. Please check your internet connection.",
+        });
+      } finally {
+        jobCreationTimeout.current = null;
+        setLoading(false);
+      }
+    }, 5000);
+    return () => {
+      if (jobCreationTimeout.current) {
+        clearTimeout(jobCreationTimeout.current);
+        jobCreationTimeout.current = null;
+      }
+    };
+  }, [tempJobData]);
 
   const confirmSubmit = (data: JobFormInput) => {
     Alert.alert(
@@ -142,7 +182,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -161,8 +201,68 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
+  };
+
+  const onSubmit: SubmitHandler<JobFormInput> = async (formData) => {
+    const current = useStore.getState().tempJobData;
+    if (JSON.stringify(current) === JSON.stringify(formData)) return;
+    setIsSearching(true);
+    setTempJobData(formData);
+  };
+
+  const cancelSearch = () => {
+    console.log(
+      "Cancel search called, jobToBeCancelledId:",
+      jobToBeCancelledIdRef.current
+    );
+    setTimeout(() => {
+      Toast.show({
+        type: "info",
+        text1: "Cancel search called, jobToBeCancelledId:",
+        text2: `jobToBeCancelledIdRef.current ${jobToBeCancelledIdRef.current}`,
+      });
+    }, 2000);
+    setIsSearching(false);
+    setTempJobData(null);
+    if (jobToBeCancelledIdRef.current) {
+      deleteJobById();
+    }
+  };
+
+  const deleteJobById = async () => {
+    const jobId = jobs.find(
+      (job) => jobToBeCancelledIdRef.current == job.id
+    )?.id;
+    if (!jobId) return;
+    try {
+      const res = await api.delete(`/jobs/delete/${jobId}/`);
+      console.log(
+        res.data,
+        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);"
+      );
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Job deleted",
+          text2: `Job #${JSON.stringify(res.data, null, 2)}`,
+        });
+      }, 3000);
+      const removeJob = useStore.getState().removeJob;
+      removeJob(jobId);
+      setTempJobData(null);
+      jobToBeCancelledIdRef.current = null;
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel job",
+        text2:
+          err.response?.data?.error ||
+          "Failed to cancel the job. Please try again later.",
+      });
+    } finally {
+    }
   };
 
   return (
@@ -170,7 +270,7 @@ export default function JobPostScreen({ navigation }: any) {
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="never"
-        extraHeight={400}
+        extraHeight={100}
         extraScrollHeight={20}
         keyboardOpeningTime={10000}
         showsVerticalScrollIndicator={false}
@@ -317,7 +417,7 @@ export default function JobPostScreen({ navigation }: any) {
                       isSearching={isSearching}
                       onExit={(region: Region) => {
                         const latlng = `${region.latitude.toFixed(
-                          6,
+                          6
                         )}, ${region.longitude.toFixed(6)}`;
                         setValue("location", latlng);
                       }}
@@ -571,7 +671,6 @@ const styles = StyleSheet.create({
   infoFieldsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 7.5,
     width: "100%",
   },
   infoField: {

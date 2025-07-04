@@ -1,3 +1,4 @@
+amqp==5.3.1
 asgiref==3.8.1
 asttokens==2.4.1
 asyncio==3.4.3
@@ -5,14 +6,19 @@ attrs==25.3.0
 autobahn==24.4.2
 Automat==25.4.16
 beautifulsoup4==4.12.3
+billiard==4.2.1
 black==24.2.0
 bs4==0.0.2
+celery==5.5.3
 certifi==2024.2.2
 cffi==1.17.1
 channels==4.2.2
 channels_redis==4.2.1
 charset-normalizer==3.3.2
 click==8.1.7
+click-didyoumean==0.3.1
+click-plugins==1.1.1.2
+click-repl==0.3.0
 cloup==3.0.5
 colorama==0.4.6
 colour==0.1.5
@@ -38,6 +44,7 @@ ipython==8.28.0
 isosurfaces==0.1.2
 jedi==0.19.1
 kiwisolver==1.4.7
+kombu==5.5.4
 mapbox_earcut==1.0.2
 markdown-it-py==3.0.0
 matplotlib==3.9.2
@@ -106,6 +113,7 @@ typing_extensions==4.12.2
 tzdata==2025.2
 urllib3==2.2.1
 validators==0.34.0
+vine==5.1.0
 watchdog==6.0.0
 wcwidth==0.2.13
 websockets==15.0.1

@@ -16,3 +16,18 @@ def jobsfeed_broadcast(job_instance):
             "data": message,
         },
     )
+
+
+def jobsfeed_broadcast_deleted(job_id):
+    channel_layer = get_channel_layer()
+    message = {
+        "type": "job:deleted",  # event type for deletion
+        "payload": {"id": job_id},  # minimal data to identify which job was deleted
+    }
+    async_to_sync(channel_layer.group_send)(
+        "jobfeed",
+        {
+            "type": "update",  # reuse the same 'update' handler in consumer
+            "data": message,
+        },
+    )
