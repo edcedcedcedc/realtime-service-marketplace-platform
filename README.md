@@ -333,7 +333,7 @@ From the root folder (`./`), run the commands in this order:
    Start the backend HTTP + WebSocket servers.
 
 4. **start-server-r**  
-   (Optional) Start the Celery worker for background tasks.
+   Start redis server
 
 5. **start-client**  
    Launch the React Native client app.
