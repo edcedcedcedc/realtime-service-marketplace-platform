@@ -28,13 +28,17 @@ class Profile(models.Model):
         return f"{self.user.username}'s profile"
 
 
+from django.db import models
+from django.conf import settings
+from django.core.exceptions import ValidationError
+
+
 class Job(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
-        ("accepted", "accepted"),
+        ("confirmed", "Confirmed"),
         ("in-progress", "In-Progress"),
         ("completed", "Completed"),
-        ("confirmed", "Confirmed"),
         ("cancelled", "Cancelled"),
         ("expired", "Expired"),
     ]
@@ -44,9 +48,24 @@ class Job(models.Model):
         ("flexible", "Later - 1 hour"),
     ]
 
+    CATEGORY_CHOICES = [
+        ("repair", "Fix & Repair"),
+        ("personal_help", "Personal Help"),
+        ("delivery", "Move & Deliver"),
+    ]
+
+    # Main fields
     title = models.CharField(max_length=255)
     description = models.TextField()
     budget = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    material_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        help_text="Extra cost for parts/materials, if applicable",
+    )
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
@@ -60,6 +79,8 @@ class Job(models.Model):
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    # Relations
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -72,6 +93,36 @@ class Job(models.Model):
         null=True,
         blank=True,
     )
+
+    # New fields
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    subcategory = models.CharField(
+        max_length=50, blank=True, help_text="Subcategory or specific task type"
+    )
+    photo_urls = models.JSONField(
+        default=list, blank=True, help_text="List of photo URLs related to the job"
+    )
+
+    def clean(self):
+        super().clean()
+        SUBCATEGORY_CHOICES = {
+            "repair": ["electrical", "plumbing", "appliance", "furniture"],
+            "personal_help": [
+                "dog_walking",
+                "grocery_pickup",
+                "waiting_line",
+                "elderly_help",
+            ],
+            "delivery": ["package_delivery", "furniture_moving", "heavy_lifting"],
+        }
+        if self.subcategory:
+            valid_subcats = SUBCATEGORY_CHOICES.get(self.category, [])
+            if self.subcategory not in valid_subcats:
+                raise ValidationError(
+                    {
+                        "subcategory": f"Subcategory '{self.subcategory}' is invalid for category '{self.category}'."
+                    }
+                )
 
     def __str__(self):
         return self.title

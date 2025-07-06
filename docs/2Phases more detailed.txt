@@ -306,5 +306,46 @@ Optional: Let user select “I will help lift” vs “Tasker brings help” to 
 | 📦   | Move & Deliver | `delivery`   |
 
 ---
+Sure! Here's a clear categorization of your **task categories and subtasks** paired with the **payment types** and how you can handle payments with exactly **1 Stripe payment per task**:
 
-Would you like me to draft a JSON structure or database schema for these job categories, with Stripe price rules attached to each?
+---
+
+## 🗂 Task Categories, Subtasks & Payment Types
+
+| **Category**       | **Subtasks (Examples)**                                          | **Payment Type**              | **Stripe Flow Details**                                                                                                                                                                           |
+| ------------------ | ---------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fix & Repair**   | Electrical, Plumbing, Appliance Repair, Furniture Assembly       | Base price + Optional Add-ons | - Client pays a base amount upfront (e.g., labor)  <br> - Tasker can add extra costs (e.g., parts) <br> - Client approves extra charges <br> - Single Stripe PaymentIntent updated before capture |
+| **Personal Help**  | Dog Walking, Grocery Pickup, Waiting in Line, Elderly Assistance | Fixed Price                   | - Client sets total budget upfront <br> - Tasker accepts and completes job <br> - Stripe captures payment once after completion                                                                   |
+| **Move & Deliver** | Package Delivery, Furniture Moving, Heavy Lifting                | Fixed or Tiered Price         | - Client pays a flat or tiered fee based on service <br> - Tasker accepts job <br> - Stripe processes single fixed payment                                                                        |
+
+---
+DETAILS ABOUT PAYMENT:
+
+How to implement this in your flow:
+Client posts task → status "open"
+
+Worker accepts → status "accepted"
+
+Client confirms the task → status "confirmed" triggers payment authorization
+
+App immediately asks client to pay or pre-authorize the agreed amount via Stripe
+
+Until payment success, task cannot move forward to "in-progress" or worker cannot start
+
+Once payment is authorized, worker starts task → status "in-progress"
+
+After completion → status "completed" and payment is captured (if pre-authorized) or charged
+
+UX considerations:
+When client hits Confirm, show a payment screen/modal for immediate payment/pre-authorization
+
+If payment fails or is canceled, task stays in "accepted" or "open" status and cannot proceed
+
+Notify worker when payment is confirmed and task is ready to start
+
+Summary:
+Payment must happen at "confirmed" step inside app, before work starts
+
+This prevents off-app cash or direct payments between client & worker
+
+Protects all parties and ensures app gets commission if applicable
