@@ -219,3 +219,92 @@ STRIPE is used for:
 - Escrow payment hold (when client accepts bid)
 - Notification/payment after job completion
 - Payout to worker
+
+
+MORE ON STRIPE PAYMENT SYSTEM WITH CATEGORIES 
+
+Perfect — let’s **pack everything into a clean task flow structure** for your **job feed categories**, aligned with **Stripe’s 1-payment model**.
+
+---
+
+## 📲 Your Real-Time Job App: Task Categories & Stripe Flows
+
+Let’s break this into **3 categories** you can add to your **Job Feed UI**, and show exactly how each handles **payments** using **1 Stripe integration**:
+
+---
+
+### 🛠️ 1. **Fix & Repair**
+
+**Example jobs:** electrician, appliance repair, plumbing
+
+**🧾 Category Label:** `Fix & Repair`
+**💳 Stripe Flow:**
+
+* Client sets **base price** (e.g. \$30/hour or \$40 flat)
+* Tasker arrives, inspects
+* If materials are needed (extra wire, parts, etc):
+
+  * Tasker taps **"Add cost"**, inputs amount
+  * Client gets **in-app confirmation** (e.g., +\$15)
+  * Total is **charged once** via Stripe after completion
+
+**✅ Requires optional “add cost” modal**
+
+---
+
+### 🧤 2. **Personal Help**
+
+**Example jobs:** dog walking, grocery pickup, wait in line, elderly help
+
+**🧾 Category Label:** `Personal Help`
+**💳 Stripe Flow:**
+
+* Client sets **final budget** when posting (e.g. \$8 for dog walk, \$12 grocery pickup)
+* Tasker accepts
+* Stripe **pre-authorizes** amount
+* Charge is finalized after job
+
+**✅ Fully covered by 1 payment**
+
+Optional: Grocery pickup could include a **“list” or “store name”** field.
+
+---
+
+### 📦 3. **Move & Deliver**
+
+**Example jobs:** package delivery, light moving, object pickup/dropoff
+
+**🧾 Category Label:** `Move & Deliver`
+**💳 Stripe Flow:**
+
+* Client sets fixed fee (e.g. \$10 small box, \$25 furniture)
+* Tasker accepts
+* Stripe payment processed as **flat fee**
+
+Optional: Let user select “I will help lift” vs “Tasker brings help” to change price tier.
+
+**✅ Always fixed fee**
+
+---
+
+### 💳 Stripe Integration Summary
+
+| Task Category  | Stripe Flow                   | Variability |
+| -------------- | ----------------------------- | ----------- |
+| Fix & Repair   | Base + Optional Add Cost      | Medium–High |
+| Personal Help  | Fixed price                   | Low         |
+| Move & Deliver | Fixed price (possibly tiered) | Low–Medium  |
+
+---
+
+## 🗂 Example Feed Categories in UI:
+
+| Icon | Label          | Internal Tag |
+| ---- | -------------- | ------------ |
+| 🔧   | Fix & Repair   | `repair`     |
+| 🐾   | Personal Help  | `personal`   |
+| 📦   | Move & Deliver | `delivery`   |
+
+---
+
+Would you like me to draft a JSON structure or database schema for these job categories, with Stripe price rules attached to each?
