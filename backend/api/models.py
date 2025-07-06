@@ -96,7 +96,13 @@ class Job(models.Model):
     )
 
     # New fields
-    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        null=True,
+        blank=True,
+        default=None,
+    )
     subcategory = models.CharField(
         max_length=50, blank=True, help_text="Subcategory or specific task type"
     )

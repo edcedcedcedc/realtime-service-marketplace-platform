@@ -12,11 +12,8 @@ import Toast from "react-native-toast-message";
 import GlobalLoading from "./utils/GlobalLoading";
 import ToastConfig from "./config/ToastConfig";
 import { SPACING } from "./utils/spacings";
-import { useWindowDimensions } from "react-native";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
   const loading = useStore((state) => state.loading);
   return (
     <SafeAreaView style={styles.safeArea}>
