@@ -4,10 +4,8 @@ import RootNavigator from "./RootNavigator";
 
 export default function WrappedRootNavigator() {
   return (
-    <AppLayout>
-      <PaperProvider>
-        <RootNavigator />
-      </PaperProvider>
-    </AppLayout>
+    <PaperProvider>
+      <RootNavigator />
+    </PaperProvider>
   );
 }

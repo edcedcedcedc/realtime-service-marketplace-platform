@@ -1,18 +1,9 @@
-Got it! Here's the full **README.md** content bundled as one file including everything with your Job status and urgency sections properly integrated.
-
-I’ll also save it as a `.txt` file for you, so you can easily download and use it.
-
----
-
-**README.md** content:
-
-```markdown
 # ⚡ Symmetrical Engine
 
 **Symmetrical Engine** is a real-time job marketplace platform connecting clients with workers for immediate, location-flexible tasks.  
 Think Uber for services — with bidding, escrow, and instant payouts.
 
----
+
 
 ## 🚀 Features
 
@@ -25,14 +16,14 @@ Think Uber for services — with bidding, escrow, and instant payouts.
 - ✅ Job confirmation + worker rating system  
 - 📈 Dashboards for job history and analytics  
 
----
+
 
 ## 📊 Flowchart & Wireframe
 
 Designed with Excalidraw for visual clarity.  
 🔗 [View Flowchart & Wireframe](https://excalidraw.com/#json=brWpcnjNHEg5_k-d6PWrn,8x5ATqWcsx6cC__EVpoBtA)
 
----
+
 
 ## 🎯 Client Flow
 
@@ -56,7 +47,7 @@ Designed with Excalidraw for visual clarity.
    - Stripe releases funds to worker  
 7. **Rate Worker**  
 
----
+
 
 ## 🎯 Worker Flow
 
@@ -72,7 +63,7 @@ Designed with Excalidraw for visual clarity.
 7. **Mark Done** — Mark "Job Started" then "Job Done"  
 8. **Get Paid** — Stripe payout or automatic after client confirmation  
 
----
+
 
 ## 💳 Stripe Usage
 
@@ -80,7 +71,7 @@ Designed with Excalidraw for visual clarity.
 - Notification and payment after job completion  
 - Payouts to workers' linked accounts  
 
----
+
 
 ## 🛠️ Tech Stack (Planned)
 
@@ -90,7 +81,7 @@ Designed with Excalidraw for visual clarity.
 - **Payments:** Stripe Connect  
 - **Deployment:** Docker, PostgreSQL  
 
----
+
 
 # Backend Documentation
 
@@ -103,7 +94,7 @@ The backend is built with Django and Django REST Framework, providing a RESTful 
 - Bidding system(not MVP, form MVP its static)...
 - User profiles and ratings(in planning)
 
----
+
 
 # Real-Time Job Feed Architecture
 
@@ -113,21 +104,19 @@ The backend is built with Django and Django REST Framework, providing a RESTful 
 2. WebSocket connects on app startup
 3. Listens for live job updates
 
----
 
 ### Communication Endpoints
 
 * HTTP POST request: `/api/jobs/`
 * WebSocket connection: `ws://<host>/ws/jobs/`
 
----
 
-### ASGI Server (Daphne or Uvicorn)
+
+### ASGI Server (Daphne)
 
 * Handles both HTTP and WebSocket protocols
 * Routes requests appropriately based on protocol
 
----
 
 ### HTTP Request Flow
 
@@ -137,32 +126,32 @@ The backend is built with Django and Django REST Framework, providing a RESTful 
   * Saves the job to the database
   * Broadcasts the new job event via Redis
 
----
+
 
 ### Redis (Channel Layer)
 
 * Acts like a mailbox for message passing
 * Stores and forwards messages between Django views and Channels consumers
 
----
+
 
 ### WebSocket Flow
 
 * Django Channels Consumer (`JobFeedConsumer`) subscribes to the job feed group
 * Receives job update messages broadcasted through Redis
 
----
+
 
 ### Frontend WebSocket Client
 
 * Remains connected to receive real-time WebSocket events
 * Updates the job feed UI immediately upon receiving updates
 
----
+
 
 Let me know if you want it in markdown syntax or need anything else!
 
-````
+
 
 ---
 
@@ -189,7 +178,7 @@ Let me know if you want it in markdown syntax or need anything else!
 | `/api/jobs/update/<int:id>/`    | PUT/PATCH | Update job by ID             |
 | `/api/jobs/delete/<int:id>/`    | DELETE    | Delete job by ID             |
 
----
+
 
 ## WebSocket Endpoint
 
@@ -208,7 +197,7 @@ websocket_urlpatterns = [
 ]
 ````
 
----
+
 
 ## Authentication
 
@@ -219,7 +208,7 @@ websocket_urlpatterns = [
   Authorization: Bearer <access_token>
   ```
 
----
+
 
 ## Job Status and Urgency (STILL IN REVIEW)
 
@@ -244,80 +233,7 @@ Jobs also have an **urgency** level indicating expected timing:
 | **soon**     | Near future (within 30 minutes). |
 | **flexible** | Later (within 1 hour).           |
 
----
 
-## Tasks
-
-```makefile
-
-# Backend Tasks
-start-server-h:
-	cd backend && python manage.py runserver 0.0.0.0:8000
-
-start-server-hws:
-	cd backend && daphne -b 0.0.0.0 -p 8000 config.asgi:application
-
-start-server-r:
-	wsl -- bash -c "redis-server --daemonize yes && redis-cli ping"
-
-stop-server-r:
-	wsl -- bash -c "redis-cli shutdown && echo server-r shut down"
-
-start-celery:
-	cd backend && celery -A config worker --loglevel=info
-
-start-celery-windows:
-	cd backend && celery -A config worker --loglevel=info --pool=solo
-
-install-server:
-	@cd backend && \
-	echo "Checking backend dependencies..." && \
-	pip install -r requirements.txt --quiet && \
-	echo "All backend dependencies are installed and up to date."
-
-freeze:
-	cd backend && pip freeze > requirements.txt
-
-reset-db:
-	cd backend && rm db.sqlite3 && rm api/migrations/0*.py
-
-migrate:
-	cd backend && python manage.py migrate
-
-makemigrations:
-	cd backend && python manage.py makemigrations
-
-createsuperuser:
-	cd backend && python manage.py createsuperuser
-
-shell:
-	cd backend && python manage.py shell
-
-test-server:
-	cd backend && python manage.py test -v 2
-
-coverage-server:
-	cd backend && coverage run manage.py test && coverage report
-
-# Frontend Tasks
-start-client:
-	cd frontend && npx expo start -c
-
-install-client:
-	cd frontend && npm install
-
-format-client:
-	cd frontend && npm run format
-
-lint-client:
-	cd frontend && npm run lint
-
-reset-client:
-	cd frontend && rm -rf node_modules && rm -f package-lock.json && npm install
-
-test-client:
-	cd frontend && npm run test
-```
 
 ## HOW TO START THE APP and INSTALL THE APP
 
@@ -338,7 +254,7 @@ From the root folder (`./`), run the commands in this order:
 5. **start-client**  
    Launch the React Native client app.
 
----
+
 
 **Optional before committing:**  
 - **format-client**  

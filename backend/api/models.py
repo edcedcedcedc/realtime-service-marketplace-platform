@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class User(AbstractUser):
@@ -31,10 +32,9 @@ class Profile(models.Model):
 class Job(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
-        ("accepted", "accepted"),
+        ("confirmed", "Confirmed"),
         ("in-progress", "In-Progress"),
         ("completed", "Completed"),
-        ("confirmed", "Confirmed"),
         ("cancelled", "Cancelled"),
         ("expired", "Expired"),
     ]
@@ -44,12 +44,32 @@ class Job(models.Model):
         ("flexible", "Later - 1 hour"),
     ]
 
+    CATEGORY_CHOICES = [
+        ("repair", "Fix & Repair"),
+        ("personal_help", "Personal Help"),
+        ("delivery", "Move & Deliver"),
+    ]
+
+    # Main fields
     title = models.CharField(max_length=255)
     description = models.TextField()
     budget = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    material_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        help_text="Extra cost for parts/materials, if applicable",
+    )
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
+    scheduled_for = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Specific date and time the task is scheduled for",
+    )
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
     )
@@ -60,6 +80,8 @@ class Job(models.Model):
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    # Relations
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -72,6 +94,49 @@ class Job(models.Model):
         null=True,
         blank=True,
     )
+
+    # New fields
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        null=True,
+        blank=True,
+        default=None,
+    )
+    subcategory = models.CharField(
+        max_length=50, blank=True, help_text="Subcategory or specific task type"
+    )
+    photo_urls = models.JSONField(
+        default=list, blank=True, help_text="List of photo URLs related to the job"
+    )
+
+    def clean(self):
+        super().clean()
+        SUBCATEGORY_CHOICES = {
+            "repair": ["electrical", "plumbing", "appliance", "furniture"],
+            "personal_help": [
+                "dog_walking",
+                "grocery_pickup",
+                "waiting_line",
+                "elderly_help",
+            ],
+            "delivery": ["package_delivery", "furniture_moving", "heavy_lifting"],
+        }
+        if self.subcategory:
+            valid_subcats = SUBCATEGORY_CHOICES.get(self.category, [])
+            if self.subcategory not in valid_subcats:
+                raise ValidationError(
+                    {
+                        "subcategory": f"Subcategory '{self.subcategory}' is invalid for category '{self.category}'."
+                    }
+                )
+        if not self.urgency and not self.scheduled_for:
+            raise ValidationError("Either 'urgency' or 'scheduled_for' must be set.")
+
+        if self.urgency and self.scheduled_for:
+            raise ValidationError(
+                "Only one of 'urgency' or 'scheduled_for' can be set, not both."
+            )
 
     def __str__(self):
         return self.title
