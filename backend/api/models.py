@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class User(AbstractUser):
@@ -26,11 +27,6 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s profile"
-
-
-from django.db import models
-from django.conf import settings
-from django.core.exceptions import ValidationError
 
 
 class Job(models.Model):
