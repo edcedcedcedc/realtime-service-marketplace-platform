@@ -65,6 +65,11 @@ class Job(models.Model):
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, default="now")
+    scheduled_for = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Specific date and time the task is scheduled for",
+    )
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
     )
@@ -119,6 +124,13 @@ class Job(models.Model):
                         "subcategory": f"Subcategory '{self.subcategory}' is invalid for category '{self.category}'."
                     }
                 )
+        if not self.urgency and not self.scheduled_for:
+            raise ValidationError("Either 'urgency' or 'scheduled_for' must be set.")
+
+        if self.urgency and self.scheduled_for:
+            raise ValidationError(
+                "Only one of 'urgency' or 'scheduled_for' can be set, not both."
+            )
 
     def __str__(self):
         return self.title
