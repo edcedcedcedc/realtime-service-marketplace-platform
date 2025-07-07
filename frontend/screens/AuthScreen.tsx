@@ -9,12 +9,14 @@ const Tab = createMaterialTopTabNavigator();
 export default function AuthTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarStyle: { height: 2 },
         tabBarLabelStyle: { display: "none" },
-        tabBarIndicatorStyle: { backgroundColor: "#007AFF" },
+        tabBarIndicatorStyle: {
+          backgroundColor: route.name === "Login" ? "#007AFF" : "#FF6F00",
+        },
         swipeEnabled: true,
-      }}
+      })}
     >
       <Tab.Screen name="Login" component={LoginScreen} />
       <Tab.Screen name="Register" component={RegisterScreen} />

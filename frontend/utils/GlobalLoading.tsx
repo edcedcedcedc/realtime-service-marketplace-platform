@@ -8,12 +8,12 @@ export default function GlobalLoading({ visible }: { visible: boolean }) {
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={[styles.overlay, { backgroundColor: "rgba(0,0,0,0.3)" }]}>
+      <View style={[styles.overlay, { backgroundColor: "rgba(0,0,0,0.2)" }]}>
         <View
-          style={[
+        /* style={[
             styles.spinnerContainer,
             { backgroundColor: theme.colors.surface },
-          ]}
+          ]} */
         >
           <ActivityIndicator size="large" color="#2962FF" />
         </View>

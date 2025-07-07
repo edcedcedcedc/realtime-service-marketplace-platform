@@ -9,6 +9,8 @@ import {
   Modal,
   Animated,
   Easing,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -54,8 +56,7 @@ export default function MapSelectorScreen({
 
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
-
-  const handleMapPress = (event: any) => {
+  const handleFullMapPress = (event: any) => {
     if (isSearching) {
       return;
     }
@@ -66,7 +67,18 @@ export default function MapSelectorScreen({
     });
   };
 
+  /**
+   * Handles user taps on the mini map.
+   *
+   * - On **single tap**, it dismisses the keyboard.
+   * - On **double tap** (within 300ms), it opens the full map view modal.
+   *
+   * This allows users to interact naturally with the map:
+   * - A single tap hides the keyboard if it's open.
+   * - A fast double tap expands the map for more precise selection.
+   */
   const handleDoubleTap = () => {
+    Keyboard.dismiss();
     const now = Date.now();
     if (lastTap.current && now - lastTap.current < 300) {
       setIsFullMapVisible(true);
@@ -101,6 +113,7 @@ export default function MapSelectorScreen({
   ).current; */
 
   useEffect(() => {
+    console.log("render from MapSelectorScreen");
     if (
       isFullMapVisible &&
       fullMapRef.current &&
@@ -249,7 +262,7 @@ export default function MapSelectorScreen({
             onMapReady={() => setFullMapReady(true)}
             /*  onRegionChange={updatePosition}
             onRegionChangeComplete={updatePosition} */
-            onPress={handleMapPress}
+            onPress={handleFullMapPress}
             zoomEnabled={false}
             scrollEnabled={true}
           >

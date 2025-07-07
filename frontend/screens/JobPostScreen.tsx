@@ -32,10 +32,13 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
   Button,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Dimensions,
 } from "react-native";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -43,6 +46,7 @@ import useStore, {
   Region,
   JobFormInput,
   DEFAULT_DELTA,
+  DEFAULT_REGION,
 } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
 import MapSelector from "./MapSelectorScreen";
@@ -50,15 +54,8 @@ import Toast from "react-native-toast-message";
 import api from "../services/api";
 import { jobPostSchema } from "../validation/validationSchema";
 import { yupResolver } from "@hookform/resolvers/yup";
-
+import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import * as Location from "expo-location";
-
-const defaultRegion: Region = {
-  latitude: 37.78825,
-  longitude: -122.4324,
-  latitudeDelta: 0.01,
-  longitudeDelta: 0.01,
-};
 
 export default function JobPostScreen({ navigation }: any) {
   const setTempJobData = useStore().setTempJobData;
@@ -69,16 +66,8 @@ export default function JobPostScreen({ navigation }: any) {
   const [isSearching, setIsSearching] = useState(false);
   const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const jobToBeCancelledIdRef = useRef<number | null>(null);
-  const urgencyOptions: {
-    label: string;
-    value: string;
-    color: string;
-  }[] = [
-    { label: "Now", value: "now", color: "#ff3b30" },
-    { label: "Soon", value: "soon", color: "#ff9500" },
-    { label: "Flexible", value: "flexible", color: "#34c759" },
-  ];
-
+  const lastYOffset = useRef(0);
+  const isAllowAutoScroll = useRef(false);
   const {
     control,
     handleSubmit,
@@ -92,6 +81,7 @@ export default function JobPostScreen({ navigation }: any) {
       title: "",
       location: "",
       urgency: "now",
+      category: "repair",
     },
   });
   const urgency = watch("urgency");
@@ -265,182 +255,279 @@ export default function JobPostScreen({ navigation }: any) {
     }
   };
 
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const yOffset = event.nativeEvent.contentOffset.y;
+    const screenHeight = Dimensions.get("window").height / 5;
+    const delta = yOffset - lastYOffset.current;
+    if (delta >= screenHeight) {
+      isAllowAutoScroll.current = false;
+    } else {
+      isAllowAutoScroll.current = true;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="never"
-        extraHeight={100}
-        extraScrollHeight={20}
-        keyboardOpeningTime={10000}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraHeight={300}
+        keyboardOpeningTime={2000}
+        enableAutomaticScroll={isAllowAutoScroll.current}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View>
-            <Text style={styles.heading}>What do you need?</Text>
+        <View>
+          <Text style={styles.heading}>What do you need?</Text>
 
-            {/* Title */}
-            <Controller
-              control={control}
-              name="title"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <>
-                  <TextInput
+          {/* Title */}
+          <Controller
+            control={control}
+            name="category"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.categoryContainer}>
+                {["repair", "delivery", "personal_help", "other"].map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    onPress={() => onChange(cat)}
                     style={[
-                      styles.input,
-                      errors.title && styles.inputError,
-                      { color: isSearching ? "#999" : "#212121" },
+                      styles.categoryButton,
+                      value === cat && styles.categoryButtonSelected,
                     ]}
-                    placeholder="Task title (e.g walk with my dog)"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    editable={!isSearching}
-                  />
-                  {errors.title && (
-                    <Text style={styles.errorText}>{errors.title.message}</Text>
-                  )}
-                </>
-              )}
-            />
-
-            {/* Description */}
-            <Controller
-              control={control}
-              name="description"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.descriptionInput,
-                      errors.description && styles.inputError,
-                      { color: isSearching ? "#999" : "#212121" },
-                    ]}
-                    placeholder="Description"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    editable={!isSearching}
-                  />
-                  {errors.description && (
-                    <Text style={styles.errorText}>
-                      {errors.description.message}
+                    disabled={isSearching}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        value === cat && styles.categoryTextSelected,
+                      ]}
+                    >
+                      {cat.replace("_", " ").toUpperCase()}
                     </Text>
-                  )}
-                </>
-              )}
-            />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          />
+          <Controller
+            control={control}
+            name="subcategory"
+            render={({ field: { onChange, value } }) => {
+              const selectedCategory = watch("category");
+              const options = SUBCATEGORY_OPTIONS[selectedCategory] || [];
 
-            {/* Budget */}
-            <Controller
-              control={control}
-              name="budget"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      errors.budget && styles.inputError,
-                      { color: isSearching ? "#999" : "#212121" },
-                    ]}
-                    placeholder="Budget"
-                    placeholderTextColor="#999"
-                    value={value?.toString()}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="numeric"
-                    editable={!isSearching}
-                  />
-                  {errors.budget && (
-                    <Text style={styles.errorText}>
-                      {errors.budget.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-
-            {/* Location */}
-            <Controller
-              control={control}
-              name="location"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      errors.location && styles.inputError,
-                      { color: isSearching ? "#999" : "#212121" },
-                    ]}
-                    placeholder="Location"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    editable={!isSearching}
-                  />
-                  {errors.location && (
-                    <Text style={styles.errorText}>
-                      {errors.location.message}
-                    </Text>
-                  )}
-                  <View>
-                    <View style={styles.wrapper}>
-                      <View style={{ display: "flex", alignItems: "center" }}>
-                        <View
-                          style={{
-                            width: 200,
-                            flexDirection: "row",
-                            justifyContent: "center",
-                          }}
+              return (
+                <View style={styles.subcategoryWrapper}>
+                  <View style={styles.categoryContainer}>
+                    {options.map((sub) => (
+                      <TouchableOpacity
+                        key={sub}
+                        onPress={() => onChange(sub)}
+                        style={[
+                          styles.categoryButton,
+                          value === sub && styles.categoryButtonSelected,
+                        ]}
+                        disabled={isSearching}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            value === sub && styles.categoryTextSelected,
+                          ]}
                         >
-                          <Button
-                            disabled={isSearching}
-                            title="Use My Location"
-                            onPress={() => handleGetLocation()}
-                          />
-                        </View>
-                      </View>
-                      <Text style={styles.helperText}>
-                        You can choose your location manually if you don't
-                        prefer exact location, just double tap the mini map.
-                      </Text>
-                    </View>
-                    <MapSelector
-                      address={value || ""}
-                      isSearching={isSearching}
-                      onExit={(region: Region) => {
-                        const latlng = `${region.latitude.toFixed(
-                          6,
-                        )}, ${region.longitude.toFixed(6)}`;
-                        setValue("location", latlng);
-                      }}
-                      onChange={onChange}
-                      handleGetLocation={handleGetLocation}
-                    />
+                          {sub.replace(/_/g, " ")}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </>
-              )}
-            />
+                  {errors.subcategory && (
+                    <Text style={styles.errorText}>
+                      {errors.subcategory.message}
+                    </Text>
+                  )}
+                </View>
+              );
+            }}
+          />
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.title && styles.inputError,
+                    { color: isSearching ? "#999" : "#212121" },
+                  ]}
+                  placeholder="Task title (e.g walk with my dog)"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  editable={!isSearching}
+                  textContentType="none"
+                  autoComplete="off"
+                  autoCorrect={false}
+                />
+                {errors.title && (
+                  <Text style={styles.errorText}>{errors.title.message}</Text>
+                )}
+              </>
+            )}
+          />
 
-            {/* Urgency Label with Help Icon */}
-            <View style={styles.urgencyLabelWrapper}>
-              <Text style={styles.label}>Urgency</Text>
-              {/*  <TouchableOpacity
+          {/* Description */}
+          <Controller
+            control={control}
+            name="description"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.descriptionInput,
+                    errors.description && styles.inputError,
+                    { color: isSearching ? "#999" : "#212121" },
+                  ]}
+                  placeholder="Description"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  editable={!isSearching}
+                  textContentType="none"
+                  autoComplete="off"
+                  autoCorrect={false}
+                />
+                {errors.description && (
+                  <Text style={styles.errorText}>
+                    {errors.description.message}
+                  </Text>
+                )}
+              </>
+            )}
+          />
+
+          {/* Budget */}
+          <Controller
+            control={control}
+            name="budget"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.budget && styles.inputError,
+                    { color: isSearching ? "#999" : "#212121" },
+                  ]}
+                  placeholder="Budget"
+                  placeholderTextColor="#999"
+                  value={value ? value.toString() : ""}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="numeric"
+                  editable={!isSearching}
+                  textContentType="none"
+                  autoComplete="off"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  importantForAutofill="no"
+                  secureTextEntry={false}
+                />
+                {errors.budget && (
+                  <Text style={styles.errorText}>{errors.budget.message}</Text>
+                )}
+              </>
+            )}
+          />
+
+          {/* Location */}
+          <Controller
+            control={control}
+            name="location"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.location && styles.inputError,
+                    { color: isSearching ? "#999" : "#212121" },
+                  ]}
+                  placeholder="Location"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  editable={!isSearching}
+                  textContentType="none" // Trick Apple into stopping suggestions
+                  autoComplete="off"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  importantForAutofill="no"
+                  secureTextEntry={false}
+                />
+                {errors.location && (
+                  <Text style={styles.errorText}>
+                    {errors.location.message}
+                  </Text>
+                )}
+
+                <View>
+                  <View style={styles.wrapper}>
+                    <View style={{ display: "flex", alignItems: "center" }}>
+                      <View
+                        style={{
+                          width: 200,
+                          flexDirection: "row",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Button
+                          disabled={isSearching}
+                          title="Use My Location"
+                          onPress={() => handleGetLocation()}
+                        />
+                      </View>
+                    </View>
+                    <Text style={styles.helperText}>
+                      You can choose your location manually if you don't prefer
+                      exact location, just double tap the mini map.
+                    </Text>
+                  </View>
+                  <MapSelector
+                    address={value || ""}
+                    isSearching={isSearching}
+                    onExit={(region: Region) => {
+                      const latlng = `${region.latitude.toFixed(
+                        6,
+                      )}, ${region.longitude.toFixed(6)}`;
+                      setValue("location", latlng);
+                    }}
+                    onChange={onChange}
+                    handleGetLocation={handleGetLocation}
+                  />
+                </View>
+              </>
+            )}
+          />
+
+          {/* Urgency Label with Help Icon */}
+          <View style={styles.urgencyLabelWrapper}>
+            <Text style={styles.label}>Urgency</Text>
+            {/*  <TouchableOpacity
                 onPress={() => setShowUrgencyHelp(!showUrgencyHelp)}
               >
                 <Text style={styles.helpIcon}>?</Text>
               </TouchableOpacity> */}
-            </View>
+          </View>
 
-            {/* Urgency Help Text */}
-            {/* {showUrgencyHelp && (
+          {/* Urgency Help Text */}
+          {/* {showUrgencyHelp && (
               <View style={styles.urgencyHelperBox}>
                 <Text style={styles.urgencyHelperText}>
                   <Text style={{ fontWeight: "bold" }}>Now</Text> - tasker will
@@ -453,77 +540,76 @@ export default function JobPostScreen({ navigation }: any) {
               </View>
             )} */}
 
-            {/* Urgency Buttons */}
-            {!isSearching ? (
-              <>
-                <View style={styles.urgencyContainer}>
-                  {urgencyOptions.map(({ label, value, color }) => {
-                    const selected = urgency === value;
-                    return (
-                      <TouchableOpacity
-                        disabled={isSearching}
-                        key={value}
-                        style={styles.urgencyButton}
-                        onPress={() => setValue("urgency", value)}
-                        activeOpacity={0.7}
+          {/* Urgency Buttons */}
+          {!isSearching ? (
+            <>
+              <View style={styles.urgencyContainer}>
+                {URGENCY_OPTIONS.map(({ label, value, color }) => {
+                  const selected = urgency === value;
+                  return (
+                    <TouchableOpacity
+                      disabled={isSearching}
+                      key={value}
+                      style={styles.urgencyButton}
+                      onPress={() => setValue("urgency", value)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.urgencyText,
+                          selected ? { color: color } : { color: "#888" },
+                        ]}
                       >
-                        <Text
-                          style={[
-                            styles.urgencyText,
-                            selected ? { color: color } : { color: "#888" },
-                          ]}
-                        >
-                          {label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.infoFieldsRow}>
+                <View style={styles.infoField}>
+                  <Text style={styles.infoLabel}>Workers in your area</Text>
+                  <Text style={styles.infoValue}>12</Text>
                 </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.infoFieldsRow}>
-                  <View style={styles.infoField}>
-                    <Text style={styles.infoLabel}>Workers in your area</Text>
-                    <Text style={styles.infoValue}>12</Text>
-                  </View>
 
-                  <View style={styles.infoField}>
-                    <Text style={styles.infoLabel}>Estimated wait</Text>
-                    <Text style={styles.infoValue}>5 min</Text>
-                  </View>
+                <View style={styles.infoField}>
+                  <Text style={styles.infoLabel}>Estimated wait</Text>
+                  <Text style={styles.infoValue}>5 min</Text>
                 </View>
-                <View style={styles.infoFieldsRow}>
-                  <View style={styles.infoField}>
-                    <Text style={styles.infoLabel}>Incoming requests</Text>
-                    <Text style={styles.infoValue}>5</Text>
-                  </View>
-                  <View>
-                    <Button title="Inspect Requests" onPress={() => {}} />
-                  </View>
+              </View>
+              <View style={styles.infoFieldsRow}>
+                <View style={styles.infoField}>
+                  <Text style={styles.infoLabel}>Incoming requests</Text>
+                  <Text style={styles.infoValue}>5</Text>
                 </View>
-              </>
-            )}
+                <View>
+                  <Button title="Inspect Requests" onPress={() => {}} />
+                </View>
+              </View>
+            </>
+          )}
 
-            {!isSearching ? (
-              <TouchableOpacity
-                onPress={handleSubmit(confirmSubmit)}
-                style={styles.searchButtonFind}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.searchButtonText}>Find</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={rejectSubmit}
-                style={styles.searchButtonStop}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.searchButtonText}>Stop</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableWithoutFeedback>
+          {!isSearching ? (
+            <TouchableOpacity
+              onPress={handleSubmit(confirmSubmit)}
+              style={styles.searchButtonFind}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.searchButtonText}>Find</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={rejectSubmit}
+              style={styles.searchButtonStop}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.searchButtonText}>Stop</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </KeyboardAwareScrollView>
     </View>
   );
@@ -691,5 +777,36 @@ const styles = StyleSheet.create({
     color: "#212121",
     lineHeight: 18,
     marginLeft: 8,
+  },
+  subcategoryWrapper: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  categoryButton: {
+    borderWidth: 1,
+    borderColor: "#888",
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    margin: 4,
+    backgroundColor: "#f0f0f0",
+  },
+  categoryButtonSelected: {
+    backgroundColor: "#2962FF",
+    borderColor: "#2962FF",
+  },
+  categoryText: {
+    color: "#333",
+    fontSize: 14,
+  },
+  categoryTextSelected: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

@@ -3,11 +3,8 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import api from "../services/api";
@@ -35,7 +32,7 @@ export default function RegisterScreen({ navigation }: any) {
       username: "",
       password: "",
       confirmPassword: "",
-      role: "client",
+      role: "",
     },
   });
 
@@ -103,7 +100,7 @@ export default function RegisterScreen({ navigation }: any) {
                 <TextInput
                   style={[styles.input, errors.email && styles.inputError]}
                   placeholder="Email"
-                  value={value}
+                  value={value ? value : ""}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   keyboardType="email-address"
@@ -128,13 +125,17 @@ export default function RegisterScreen({ navigation }: any) {
                 <TextInput
                   style={[styles.input, errors.username && styles.inputError]}
                   placeholder="Username"
-                  value={value}
+                  value={value ? value : ""}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   autoCapitalize="none"
                   autoCorrect={false}
                   placeholderTextColor="#999"
                   selectionColor="#388E3C"
+                  autoComplete="off"
+                  textContentType="name"
+                  importantForAutofill="no"
+                  enablesReturnKeyAutomatically
                 />
                 {errors.username && (
                   <Text style={styles.errorText}>
@@ -198,35 +199,26 @@ export default function RegisterScreen({ navigation }: any) {
             )}
           />
 
-          {/* Role Selector */}
           <Controller
             control={control}
             name="role"
             render={({ field: { onChange, value } }) => (
-              <>
-                <Text style={styles.roleLabel}>Register as</Text>
-                <View style={styles.roleToggleContainer}>
-                  {["client", "worker"].map((role, idx) => {
+              <View>
+                <Text style={styles.roleLabel}>Pick one of</Text>
+                <View style={styles.roleInlineContainer}>
+                  {["client", "tasker"].map((role) => {
                     const selected = value === role;
                     return (
                       <TouchableOpacity
                         key={role}
                         onPress={() => onChange(role)}
-                        style={[
-                          styles.roleToggleButton,
-                          selected
-                            ? role === "client"
-                              ? styles.roleToggleButtonSelectedClient
-                              : styles.roleToggleButtonSelectedWorker
-                            : styles.roleToggleButtonUnselected,
-                          idx === 0 ? { marginRight: 5 } : { marginLeft: 5 },
-                        ]}
                         activeOpacity={0.7}
+                        style={styles.roleTextWrapper}
                       >
                         <Text
                           style={[
-                            styles.roleToggleText,
-                            selected && styles.roleToggleTextSelected,
+                            styles.roleText,
+                            selected && styles.roleTextSelected,
                           ]}
                         >
                           {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -238,7 +230,7 @@ export default function RegisterScreen({ navigation }: any) {
                 {errors.role && (
                   <Text style={styles.errorText}>{errors.role.message}</Text>
                 )}
-              </>
+              </View>
             )}
           />
 
@@ -321,7 +313,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20.84,
   },
   registerButton: {
-    backgroundColor: "#388E3C",
+    backgroundColor: "#FF6F00",
   },
   buttonText: {
     color: "white",
@@ -367,5 +359,25 @@ const styles = StyleSheet.create({
   },
   roleToggleTextSelected: {
     color: "#fff",
+  },
+  roleInlineContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24, // spacing between text items, if "gap" not supported use marginHorizontal
+  },
+  roleTextWrapper: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  roleText: {
+    fontSize: 16,
+    color: "#666",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    fontWeight: "500",
+    paddingBottom: 10,
+  },
+  roleTextSelected: {
+    color: "#cb5d0e", // your primary highlight color
   },
 });

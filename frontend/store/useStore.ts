@@ -3,6 +3,41 @@ import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sortJobsByDate } from "../utils/sortJobs";
 
+export const URGENCY_OPTIONS = [
+  { label: "Now", value: "now", color: "#ff3b30" },
+  { label: "Soon", value: "soon", color: "#ff9500" },
+  { label: "Flexible", value: "flexible", color: "#34c759" },
+];
+
+export const STATUS_OPTIONS = [
+  { label: "Open", value: "open", color: "#1976d2" }, // MUI Blue 700
+  { label: "Confirmed", value: "confirmed", color: "#fbc02d" }, // MUI Yellow 700
+  { label: "In Progress", value: "in-progress", color: "#388e3c" }, // MUI Green 700
+  { label: "Completed", value: "completed", color: "#2e7d32" }, // MUI Green 800
+  { label: "Cancelled", value: "cancelled", color: "#d32f2f" }, // MUI Red 700
+  { label: "Expired", value: "expired", color: "#616161" }, // MUI Grey 700
+];
+
+export const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
+  repair: ["electrical", "plumbing", "appliance", "furniture", "other"],
+  personal_help: [
+    "dog_walking",
+    "grocery_pickup",
+    "waiting_line",
+    "elderly_help",
+    "other",
+  ],
+  delivery: ["package_delivery", "furniture_moving", "heavy_lifting", "other"],
+  other: [],
+};
+
+export const DEFAULT_REGION: Region = {
+  latitude: 37.78825,
+  longitude: -122.4324,
+  latitudeDelta: 0.01,
+  longitudeDelta: 0.01,
+};
+
 const initialState = {
   auth: {
     jwt: { access: null, refresh: null },
@@ -55,6 +90,8 @@ export type JobFormInput = {
   location: string;
   budget: number;
   urgency: string;
+  category: string;
+  subcategory: string;
 };
 
 type Status =
@@ -64,6 +101,7 @@ type Status =
   | "completed"
   | "cancelled"
   | "expired";
+
 export interface Job {
   id: number;
   title: string;
@@ -81,6 +119,9 @@ export interface Job {
   must_start_by: string | null;
   created_at: string;
   updated_at: string | null;
+  category: "repair" | "delivery" | "personal_help" | "other";
+  subcategory: string;
+  subtasks?: [];
 }
 interface Jwt {
   access: string | null;

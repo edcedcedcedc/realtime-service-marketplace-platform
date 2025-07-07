@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  InteractionManager,
   Keyboard,
 } from "react-native";
 import api from "../services/api";
@@ -59,7 +58,7 @@ export default function LoginScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
         }),
-        3000,
+        5000,
         "Request timed out. Please try again",
       );
 
