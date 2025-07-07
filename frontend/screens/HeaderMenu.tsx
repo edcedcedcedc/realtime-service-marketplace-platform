@@ -43,7 +43,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
       <Menu.Item
         onPress={() => {
           closeMenu();
-          logout(navigation);
+          logout();
         }}
         title="Logout"
       />

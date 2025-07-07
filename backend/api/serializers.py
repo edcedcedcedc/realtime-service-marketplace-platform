@@ -1,13 +1,20 @@
 # api/serializers.py
 
 from rest_framework import serializers
-from .models import Job
+from .models import Job, Subtask
+
+
+class SubtaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subtask
+        fields = ["id", "title", "cost", "is_completed"]
 
 
 class JobSerializer(serializers.ModelSerializer):
     client_username = serializers.CharField(source="client.username", read_only=True)
     worker_username = serializers.SerializerMethodField()
     worker_id = serializers.SerializerMethodField()
+    subtasks = SubtaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Job
@@ -28,6 +35,9 @@ class JobSerializer(serializers.ModelSerializer):
             "updated_at",
             "latitude",
             "longitude",
+            "category",
+            "subcategory",
+            "subtasks",
         ]
 
     def create(self, validated_data):

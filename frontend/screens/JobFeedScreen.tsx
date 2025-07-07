@@ -1,19 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { View, FlatList, StyleSheet, Dimensions, Text } from "react-native";
 import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../utils/spacings";
+import MapSelector from "./MapSelectorScreen";
+import * as Location from "expo-location";
+import JobCard from "./JobCardScreen";
+import JobSearchBar from "./JobSearchBarScreen";
 
-const { width } = Dimensions.get("window");
 const HEADER_HEIGHT = 120; // approx header + logout button height
 const COOLDOWN_MS = 5000;
 
@@ -23,13 +19,13 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
   const setJobs = useStore().setJobs;
   const addJob = useStore().addJob;
   const loading = useStore((state) => state.loading);
+  console.log(loading, "loading");
   const setLoading = useStore().setLoading;
   const lastRefreshRef = useRef(0);
   const [hasPulled, setHasPulled] = useState(false);
   const scrollOffsetRef = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
-
-  console.log("job feed rendered");
+  const [value, setValue] = useState("");
 
   useEffect(() => {
     fetchJobs();
@@ -81,61 +77,20 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const renderJob = ({ item }: { item: Job }) => {
-    if (!item) return null;
-    return (
-      <View style={styles.card}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description} numberOfLines={3}>
-          {item.description}
-        </Text>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoText}>
-            Budget: ${Number(item.budget).toFixed(2)}
-          </Text>
-          <Text style={styles.infoText}>Urgency: {item.urgency}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoText}>Location: {item.location}</Text>
-          <Text style={[styles.status, statusColors[item.status] || {}]}>
-            {item.status}
-          </Text>
-        </View>
-
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.blueButton]}
-            onPress={() => onViewDetails(item)}
-          >
-            <Text style={styles.buttonText}>View Details</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.yellowButton]}
-            onPress={() => onButtonPress(item, "Action 1")}
-          >
-            <Text style={styles.buttonText}>Action 1</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.greenButton]}
-            onPress={() => onButtonPress(item, "Action 2")}
-          >
-            <Text style={styles.buttonText}>Action 2</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
+  const filteredJobs = jobs.filter(
+    (job) =>
+      job.title.toLowerCase().includes(value.toLowerCase()) ||
+      job.description?.toLowerCase().includes(value.toLowerCase()) ||
+      job.urgency.toLowerCase().includes(value.toLowerCase()) ||
+      job.location.toLowerCase().includes(value.toLowerCase()),
+  );
 
   return (
     <View style={styles.container}>
-      {/* Fixed Header */}
-
+      <View style={styles.mascotPlaceholder} />
+      <JobSearchBar value={value} onChangeText={setValue} />
       <FlatList
-        data={jobs}
+        data={filteredJobs}
         keyExtractor={(item, index) => {
           if (!item?.id) {
             console.warn("⚠️ Missing job ID at index", index, item);
@@ -143,11 +98,21 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
           }
           return item.id.toString();
         }}
-        renderItem={renderJob}
-        contentContainerStyle={{
-          paddingTop: HEADER_HEIGHT,
-          paddingBottom: 80,
-        }}
+        renderItem={({ item }) => <JobCard item={item} />}
+        ListEmptyComponent={
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 50,
+            }}
+          >
+            <Text style={{ fontSize: 16, color: "#999" }}>
+              No tasks found matching your search.
+            </Text>
+          </View>
+        }
         scrollEventThrottle={300}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
@@ -159,10 +124,9 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
 
 const statusColors: Record<string, object> = {
   open: { color: "#1976d2" }, // Blue
-  accepted: { color: "#fbc02d" }, // Yellow
+  confirmed: { color: "#fbc02d" },
   "in-progress": { color: "#388e3c" }, // Green
-  completed: { color: "#388e3c" },
-  confirmed: { color: "#388e3c" },
+  completed: { color: "#388E3C" },
   cancelled: { color: "#d32f2f" }, // Red
   expired: { color: "#757575" }, // Grey
 };
@@ -174,6 +138,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: SPACING.md,
     backgroundColor: "#fff",
+  },
+  mascotPlaceholder: {
+    height: 100, // or whatever height fits your mascot image
+    width: "100%",
+    // Optionally center or add background color if you want visual debugging:
+    // backgroundColor: '#eee',
+    marginBottom: SPACING.sm, // space below mascot before search bar
   },
   headerContainer: {
     position: "absolute",
@@ -209,20 +180,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   card: {
-    backgroundColor: "#f5f5f5",
+    alignContent: "center",
+    alignItems: "center",
+
     padding: 16,
-    borderRadius: 4,
+    borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#ddd",
-    width: width - 32,
     alignSelf: "center",
   },
   title: {
-    fontWeight: "700",
     fontSize: 18,
     marginBottom: 8,
-    color: "#222",
+    color: "#555",
   },
   description: {
     fontSize: 14,

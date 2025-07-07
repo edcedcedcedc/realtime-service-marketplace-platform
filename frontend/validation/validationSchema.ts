@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { SUBCATEGORY_OPTIONS } from "../store/useStore";
 
 export const usernameSchema = Yup.string()
   .required("Username is required")
@@ -24,7 +25,7 @@ export const emailSchema = Yup.string()
 
 export const roleSchema = Yup.string()
   .required("Role is required")
-  .oneOf(["worker", "client"], "Role must be either 'worker' or 'client'");
+  .oneOf(["client", "tasker", ""], "Role must be either 'client' or 'tasker'");
 
 export const loginSchema = Yup.object().shape({
   username: usernameSchema,
@@ -76,4 +77,17 @@ export const jobPostSchema = Yup.object().shape({
   urgency: Yup.string()
     .required("Urgency is required")
     .oneOf(["now", "soon", "flexible"]),
+
+  category: Yup.string().required("Category is required"),
+
+  subcategory: Yup.string()
+    .default("")
+    .when("category", ([category], schema) => {
+      if (category !== "other") {
+        return schema
+          .required("Subcategory is required for this category")
+          .oneOf(SUBCATEGORY_OPTIONS[category], "Invalid subcategory");
+      }
+      return schema.notRequired().default("");
+    }),
 });

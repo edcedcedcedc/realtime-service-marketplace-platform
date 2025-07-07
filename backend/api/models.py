@@ -48,6 +48,7 @@ class Job(models.Model):
         ("repair", "Fix & Repair"),
         ("personal_help", "Personal Help"),
         ("delivery", "Move & Deliver"),
+        ("other", "Other"),
     ]
 
     # Main fields
@@ -137,6 +138,23 @@ class Job(models.Model):
             raise ValidationError(
                 "Only one of 'urgency' or 'scheduled_for' can be set, not both."
             )
+
+    def __str__(self):
+        return self.title
+
+
+class Subtask(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="subtasks")
+    title = models.CharField(max_length=255)
+    cost = models.DecimalField(max_digits=10, decimal_places=2)
+    worker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subtasks_taken",
+    )
+    is_completed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
