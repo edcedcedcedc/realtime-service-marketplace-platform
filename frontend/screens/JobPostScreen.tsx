@@ -40,7 +40,7 @@ import {
   NativeScrollEvent,
   Dimensions,
 } from "react-native";
-import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { Controller, set, SubmitHandler, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore, {
   Region,
@@ -67,7 +67,8 @@ export default function JobPostScreen({ navigation }: any) {
   const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const jobToBeCancelledIdRef = useRef<number | null>(null);
   const lastYOffset = useRef(0);
-  const isAllowAutoScroll = useRef(false);
+  const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
+
   const {
     control,
     handleSubmit,
@@ -85,13 +86,13 @@ export default function JobPostScreen({ navigation }: any) {
     },
   });
   const urgency = watch("urgency");
-
+  console.log("render");
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position.",
+        "Location permission is required to fetch your position."
       );
       return;
     }
@@ -115,7 +116,6 @@ export default function JobPostScreen({ navigation }: any) {
       clearTimeout(jobCreationTimeout.current);
     }
     jobCreationTimeout.current = setTimeout(async () => {
-      setLoading(true);
       try {
         const coordinates = useStore.getState().selectedLatLng;
         const payload = {
@@ -130,7 +130,7 @@ export default function JobPostScreen({ navigation }: any) {
             text1: "Created Job Id",
             text2: res.data.id,
           });
-        }, 2000);
+        }, 50);
         jobToBeCancelledIdRef.current = res.data.id;
         addJob(res.data);
       } catch (err: any) {
@@ -143,7 +143,6 @@ export default function JobPostScreen({ navigation }: any) {
         });
       } finally {
         jobCreationTimeout.current = null;
-        setLoading(false);
       }
     }, 5000);
     return () => {
@@ -172,7 +171,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -191,7 +190,7 @@ export default function JobPostScreen({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -205,7 +204,7 @@ export default function JobPostScreen({ navigation }: any) {
   const cancelSearch = () => {
     console.log(
       "Cancel search called, jobToBeCancelledId:",
-      jobToBeCancelledIdRef.current,
+      jobToBeCancelledIdRef.current
     );
     setTimeout(() => {
       Toast.show({
@@ -213,7 +212,7 @@ export default function JobPostScreen({ navigation }: any) {
         text1: "Cancel search called, jobToBeCancelledId:",
         text2: `jobToBeCancelledIdRef.current ${jobToBeCancelledIdRef.current}`,
       });
-    }, 2000);
+    }, 50);
     setIsSearching(false);
     setTempJobData(null);
     if (jobToBeCancelledIdRef.current) {
@@ -223,14 +222,14 @@ export default function JobPostScreen({ navigation }: any) {
 
   const deleteJobById = async () => {
     const jobId = jobs.find(
-      (job) => jobToBeCancelledIdRef.current == job.id,
+      (job) => jobToBeCancelledIdRef.current == job.id
     )?.id;
     if (!jobId) return;
     try {
       const res = await api.delete(`/jobs/delete/${jobId}/`);
       console.log(
         res.data,
-        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);",
+        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);"
       );
       setTimeout(() => {
         Toast.show({
@@ -238,7 +237,7 @@ export default function JobPostScreen({ navigation }: any) {
           text1: "Job deleted",
           text2: `Job #${JSON.stringify(res.data, null, 2)}`,
         });
-      }, 3000);
+      }, 50);
       const removeJob = useStore.getState().removeJob;
       removeJob(jobId);
       setTempJobData(null);
@@ -260,9 +259,9 @@ export default function JobPostScreen({ navigation }: any) {
     const screenHeight = Dimensions.get("window").height / 5;
     const delta = yOffset - lastYOffset.current;
     if (delta >= screenHeight) {
-      isAllowAutoScroll.current = false;
+      setIsAllowAutoScroll(false);
     } else {
-      isAllowAutoScroll.current = true;
+      setIsAllowAutoScroll(true);
     }
   };
 
@@ -273,8 +272,8 @@ export default function JobPostScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         extraHeight={300}
-        keyboardOpeningTime={2000}
-        enableAutomaticScroll={isAllowAutoScroll.current}
+        keyboardOpeningTime={250}
+        enableAutomaticScroll={isAllowAutoScroll}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
       >
@@ -504,7 +503,7 @@ export default function JobPostScreen({ navigation }: any) {
                     isSearching={isSearching}
                     onExit={(region: Region) => {
                       const latlng = `${region.latitude.toFixed(
-                        6,
+                        6
                       )}, ${region.longitude.toFixed(6)}`;
                       setValue("location", latlng);
                     }}

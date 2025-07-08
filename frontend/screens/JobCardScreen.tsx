@@ -1,17 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
+import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 
 const { width } = Dimensions.get("window");
-
-import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
-import { Button } from "react-native";
 
 const urgencyColorMap = URGENCY_OPTIONS.reduce(
   (map, option) => {
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 const statusColorMap = STATUS_OPTIONS.reduce(
@@ -19,7 +17,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 type JobCardProps = {
@@ -31,6 +29,7 @@ type JobCardProps = {
     urgency: string;
     location: string;
     status: string;
+    category: string;
   };
 };
 
@@ -38,51 +37,69 @@ export default function JobCard({ item }: JobCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{item.title}</Text>
+
       <Text style={styles.description} numberOfLines={3}>
         {item.description}
       </Text>
 
-      <View style={styles.row}>
-        <View style={styles.column}>
+      <View
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          justifyContent: "space-evenly",
+          marginBottom: 8,
+        }}
+      >
+        <View>
           <Text style={styles.infoText}>
             Budget: ${Number(item.budget).toFixed(2)}
           </Text>
-          <View style={{ display: "flex", flexDirection: "row" }}>
-            <Text style={styles.infoText}>Urgency: </Text>
+          <Text style={styles.infoText}>
+            Status:{" "}
             <Text
-              style={[
-                styles.infoText,
-                { color: urgencyColorMap[item.urgency] || "#444" },
-              ]}
-            >
-              {item.urgency}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.column}>
-          <Text style={styles.infoText}>Location: {item.location}</Text>
-          <View style={{ flexDirection: "row" }}>
-            <Text style={styles.infoText}>Status: </Text>
-            <Text
-              style={[
-                styles.infoText,
-                {
-                  color:
-                    STATUS_OPTIONS.find(
-                      (status) => status.value === item.status,
-                    )?.color || "#444",
-                  fontWeight: "600",
-                },
-              ]}
+              style={{
+                color: statusColorMap[item.status] || "#444",
+                fontWeight: "600",
+              }}
             >
               {item.status}
             </Text>
-          </View>
+          </Text>
+        </View>
+
+        <View>
+          <Text style={styles.infoText}>
+            Category:{" "}
+            {item.category == "repair"
+              ? "Fix & Repair"
+              : item.category == "personal_help"
+                ? "Personal Help"
+                : item.category == "delivery"
+                  ? "Move & Deliver"
+                  : item.category == "other"
+                    ? "Other"
+                    : item.category}
+          </Text>
+          <Text style={styles.infoText}>
+            Urgency:
+            <Text style={{ color: urgencyColorMap[item.urgency] || "#444" }}>
+              {" " + item.urgency}
+            </Text>
+          </Text>
         </View>
       </View>
-      <Button title="Approximate Location" />
-      <Button title="Accept" />
+
+      <View style={styles.centeredRow}>
+        <Text style={[styles.infoText, styles.centeredText]}>
+          Location: {item.location}
+        </Text>
+      </View>
+
+      <View style={{ display: "flex", flexDirection: "row" }}>
+        <Button title="View Location" onPress={() => {}} />
+        <Button title="Accept" />
+      </View>
     </View>
   );
 }
@@ -114,18 +131,25 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    justifyContent: "center",
+    //justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
-  column: {
-    flex: 1,
-    justifyContent: "center",
+  centeredRow: {
+    width: "100%",
     alignItems: "center",
+    justifyContent: "center",
+
+    paddingHorizontal: 8,
+  },
+  centeredText: {
+    textAlign: "center",
+    maxWidth: "90%",
   },
   infoText: {
     fontSize: 13,
     color: "#444",
-    marginVertical: 2,
   },
 });

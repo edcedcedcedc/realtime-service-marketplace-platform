@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, FlatList, StyleSheet, Dimensions, Text } from "react-native";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  Text,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
+  Keyboard,
+} from "react-native";
 import api from "../services/api";
 import useStore, { Job } from "../store/useStore";
 import Toast from "react-native-toast-message";
@@ -67,11 +76,9 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
     const now = Date.now();
     if (
       offsetY < -80 &&
-      !hasPulled &&
       !loading &&
       now - lastRefreshRef.current > COOLDOWN_MS
     ) {
-      setHasPulled(true);
       lastRefreshRef.current = now;
       fetchJobs();
     }
@@ -82,12 +89,16 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
       job.title.toLowerCase().includes(value.toLowerCase()) ||
       job.description?.toLowerCase().includes(value.toLowerCase()) ||
       job.urgency.toLowerCase().includes(value.toLowerCase()) ||
-      job.location.toLowerCase().includes(value.toLowerCase()),
+      job.location.toLowerCase().includes(value.toLowerCase()) ||
+      job.status.toLowerCase().includes(value.toLowerCase())
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.mascotPlaceholder} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.mascotPlaceholder} />
+      </TouchableWithoutFeedback>
+
       <JobSearchBar value={value} onChangeText={setValue} />
       <FlatList
         data={filteredJobs}

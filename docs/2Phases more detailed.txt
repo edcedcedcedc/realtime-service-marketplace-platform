@@ -316,7 +316,7 @@ Sure! Here's a clear categorization of your **task categories and subtasks** pai
 | ------------------ | ---------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Fix & Repair**   | Electrical, Plumbing, Appliance Repair, Furniture Assembly       | Base price + Optional Add-ons | - Client pays a base amount upfront (e.g., labor)  <br> - Tasker can add extra costs (e.g., parts) <br> - Client approves extra charges <br> - Single Stripe PaymentIntent updated before capture |
 | **Personal Help**  | Dog Walking, Grocery Pickup, Waiting in Line, Elderly Assistance | Fixed Price                   | - Client sets total budget upfront <br> - Tasker accepts and completes job <br> - Stripe captures payment once after completion                                                                   |
-| **Move & Deliver** | Package Delivery, Furniture Moving, Heavy Lifting                | Fixed or Tiered Price         | - Client pays a flat or tiered fee based on service <br> - Tasker accepts job <br> - Stripe processes single fixed payment                                                                        |
+| **Move & Delivery** | Package Delivery, Furniture Moving, Heavy Lifting                | Fixed or Tiered Price         | - Client pays a flat or tiered fee based on service <br> - Tasker accepts job <br> - Stripe processes single fixed payment                                                                        |
 
 ---
 DETAILS ABOUT PAYMENT:
