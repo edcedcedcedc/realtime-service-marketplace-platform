@@ -62,7 +62,7 @@ export default function RegisterScreen({ navigation }: any) {
         text1: "Registration Successful",
       });
       navigation.replace(
-        res.data.user === "client" ? "Search a tasker" : "Task feed"
+        res.data.user.role === "client" ? "Search a tasker" : "Task feed"
       );
     } catch (err: any) {
       Toast.show({

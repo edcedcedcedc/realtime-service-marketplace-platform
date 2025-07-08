@@ -2,28 +2,28 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
-import useStore, { Job } from "../store/useStore";
+import useStore, { Task } from "../store/useStore";
 
-export default function JobDetailsScreen() {
-  const route = useRoute<RouteProp<{ params: { jobId: number } }, "params">>();
-  const jobId = route.params.jobId;
-  const job = useStore((state) => state.jobs.find((j) => j.id === jobId));
+export default function TaskDetailsScreen() {
+  const route = useRoute<RouteProp<{ params: { taskId: number } }, "params">>();
+  const taskId = route.params.taskId;
+  const task = useStore((state) => state.tasks.find((t) => t.id === taskId));
 
-  if (!job) {
+  if (!task) {
     return;
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{job.title}</Text>
+      <Text style={styles.title}>{task.title}</Text>
       <Text style={styles.label}>Description</Text>
-      <Text style={styles.text}>{job.description}</Text>
+      <Text style={styles.text}>{task.description}</Text>
       <Text style={styles.label}>Budget</Text>
-      <Text style={styles.text}>€{Number(job.budget)}</Text>
+      <Text style={styles.text}>€{Number(task.budget)}</Text>
       <Text style={styles.label}>Urgency</Text>
-      <Text style={styles.text}>{job.urgency}</Text>
+      <Text style={styles.text}>{task.urgency}</Text>
       <Text style={styles.label}>Location</Text>
-      <Text style={styles.text}>{job.location}</Text>
+      <Text style={styles.text}>{task.location}</Text>
       <Text style={styles.label}>Category</Text>
       <Text style={styles.text}>General</Text>
     </ScrollView>

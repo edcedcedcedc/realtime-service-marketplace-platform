@@ -1,8 +1,8 @@
 /**
- * JobPostScreen Component
+ * TaskPostScreen Component
  *
- * This screen allows clients to create and submit a job request.
- * It features form fields for entering job title, description, budget,
+ * This screen allows clients to create and submit a task request.
+ * It features form fields for entering task title, description, budget,
  * location (manual or GPS-based), and urgency level.
  *
  * Key Features:
@@ -10,8 +10,8 @@
  * - Location selection with MapSelector and "Use My Location" option via Expo Location API.
  * - Urgency level buttons with visual feedback.
  * - Search initiation and cancellation logic.
- * - Automatic job creation after a 5-second delay using a timeout.
- * - Job deletion and toast notifications for feedback.
+ * - Automatic task creation after a 5-second delay using a timeout.
+ * - Task deletion and toast notifications for feedback.
  * - UI adapts based on whether a search is active (`isSearching`).
  *
  * Dependencies:
@@ -44,28 +44,28 @@ import { Controller, set, SubmitHandler, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import useStore, {
   Region,
-  JobFormInput,
+  TaskFormInput,
   DEFAULT_DELTA,
   DEFAULT_REGION,
 } from "../store/useStore";
 import { SPACING } from "../utils/spacings";
-import MapSelector from "./MapSelectorScreen";
+import MapSelector from "./MapSelector";
 import Toast from "react-native-toast-message";
 import api from "../services/api";
-import { jobPostSchema } from "../validation/validationSchema";
+import { taskPostSchema } from "../validation/validationSchema";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import * as Location from "expo-location";
 
-export default function JobPostScreen({ navigation }: any) {
-  const setTempJobData = useStore().setTempJobData;
-  const tempJobData = useStore((state) => state.tempJobData);
-  const addJob = useStore().addJob;
-  const jobs = useStore().jobs;
+export default function TaskPost({ navigation }: any) {
+  const setTempTaskData = useStore().setTempTaskData;
+  const tempTaskData = useStore((state) => state.tempTaskData);
+  const addTask = useStore().addTask;
+  const tasks = useStore().tasks;
   const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
-  const jobCreationTimeout = useRef<NodeJS.Timeout | null>(null);
-  const jobToBeCancelledIdRef = useRef<number | null>(null);
+  const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const taskToBeCancelledIdRef = useRef<number | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
 
@@ -76,8 +76,8 @@ export default function JobPostScreen({ navigation }: any) {
     reset,
     setValue,
     formState: { errors },
-  } = useForm<JobFormInput>({
-    resolver: yupResolver(jobPostSchema),
+  } = useForm<TaskFormInput>({
+    resolver: yupResolver(taskPostSchema),
     defaultValues: {
       title: "",
       location: "",
@@ -104,56 +104,56 @@ export default function JobPostScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    setTempJobData(null);
+    setTempTaskData(null);
     return () => {
       reset();
     };
   }, []);
 
   useEffect(() => {
-    if (!tempJobData) return;
-    if (jobCreationTimeout.current) {
-      clearTimeout(jobCreationTimeout.current);
+    if (!tempTaskData) return;
+    if (taskCreationTimeout.current) {
+      clearTimeout(taskCreationTimeout.current);
     }
-    jobCreationTimeout.current = setTimeout(async () => {
+    taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
         const payload = {
-          ...tempJobData,
+          ...tempTaskData,
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
-        const res = await api.post("/jobs/create/", payload);
+        const res = await api.post("/tasks/create/", payload);
         setTimeout(() => {
           Toast.show({
             type: "info",
-            text1: "Created Job Id",
+            text1: "Created Task Id",
             text2: res.data.id,
           });
         }, 50);
-        jobToBeCancelledIdRef.current = res.data.id;
-        addJob(res.data);
+        taskToBeCancelledIdRef.current = res.data.id;
+        addTask(res.data);
       } catch (err: any) {
         Toast.show({
           type: "error",
-          text1: "Failed to post a job",
+          text1: "Failed to post a task",
           text2:
             err.response?.data ||
             "Something went wrong. Please check your internet connection.",
         });
       } finally {
-        jobCreationTimeout.current = null;
+        taskCreationTimeout.current = null;
       }
     }, 5000);
     return () => {
-      if (jobCreationTimeout.current) {
-        clearTimeout(jobCreationTimeout.current);
-        jobCreationTimeout.current = null;
+      if (taskCreationTimeout.current) {
+        clearTimeout(taskCreationTimeout.current);
+        taskCreationTimeout.current = null;
       }
     };
-  }, [tempJobData]);
+  }, [tempTaskData]);
 
-  const confirmSubmit = (data: JobFormInput) => {
+  const confirmSubmit = (data: TaskFormInput) => {
     Alert.alert(
       "Confirm Search",
       "Are you sure you with the information provided ?",
@@ -194,61 +194,61 @@ export default function JobPostScreen({ navigation }: any) {
     );
   };
 
-  const onSubmit: SubmitHandler<JobFormInput> = async (formData) => {
-    const current = useStore.getState().tempJobData;
+  const onSubmit: SubmitHandler<TaskFormInput> = async (formData) => {
+    const current = useStore.getState().tempTaskData;
     if (JSON.stringify(current) === JSON.stringify(formData)) return;
     setIsSearching(true);
-    setTempJobData(formData);
+    setTempTaskData(formData);
   };
 
   const cancelSearch = () => {
     console.log(
-      "Cancel search called, jobToBeCancelledId:",
-      jobToBeCancelledIdRef.current
+      "Cancel search called, taskToBeCancelledId:",
+      taskToBeCancelledIdRef.current
     );
     setTimeout(() => {
       Toast.show({
         type: "info",
-        text1: "Cancel search called, jobToBeCancelledId:",
-        text2: `jobToBeCancelledIdRef.current ${jobToBeCancelledIdRef.current}`,
+        text1: "Cancel search called, taskToBeCancelledId:",
+        text2: `taskToBeCancelledIdRef.current ${taskToBeCancelledIdRef.current}`,
       });
     }, 50);
     setIsSearching(false);
-    setTempJobData(null);
-    if (jobToBeCancelledIdRef.current) {
-      deleteJobById();
+    setTempTaskData(null);
+    if (taskToBeCancelledIdRef.current) {
+      deleteTaskById();
     }
   };
 
-  const deleteJobById = async () => {
-    const jobId = jobs.find(
-      (job) => jobToBeCancelledIdRef.current == job.id
+  const deleteTaskById = async () => {
+    const taskId = tasks.find(
+      (task) => taskToBeCancelledIdRef.current == task.id
     )?.id;
-    if (!jobId) return;
+    if (!taskId) return;
     try {
-      const res = await api.delete(`/jobs/delete/${jobId}/`);
+      const res = await api.delete(`/tasks/delete/${taskId}/`);
       console.log(
         res.data,
-        " <= res.data for const res = await api.delete(`/jobs/delete/${jobId}/`);"
+        " <= res.data for const res = await api.delete(`/tasks/delete/${taskId}/`);"
       );
       setTimeout(() => {
         Toast.show({
           type: "success",
-          text1: "Job deleted",
-          text2: `Job #${JSON.stringify(res.data, null, 2)}`,
+          text1: "Task deleted",
+          text2: `Task #${JSON.stringify(res.data, null, 2)}`,
         });
       }, 50);
-      const removeJob = useStore.getState().removeJob;
-      removeJob(jobId);
-      setTempJobData(null);
-      jobToBeCancelledIdRef.current = null;
+      const removeTask = useStore.getState().removeTask;
+      removeTask(taskId);
+      setTempTaskData(null);
+      taskToBeCancelledIdRef.current = null;
     } catch (err: any) {
       Toast.show({
         type: "error",
-        text1: "Failed to cancel job",
+        text1: "Failed to cancel task",
         text2:
           err.response?.data?.error ||
-          "Failed to cancel the job. Please try again later.",
+          "Failed to cancel the task. Please try again later.",
       });
     } finally {
     }
@@ -568,25 +568,39 @@ export default function JobPostScreen({ navigation }: any) {
             </>
           ) : (
             <>
-              <View style={styles.infoFieldsRow}>
-                <View style={styles.infoField}>
-                  <Text style={styles.infoLabel}>Workers in your area</Text>
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text style={styles.infoLabel}>Workers in your area:</Text>
                   <Text style={styles.infoValue}>12</Text>
                 </View>
-
-                <View style={styles.infoField}>
-                  <Text style={styles.infoLabel}>Estimated wait</Text>
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text style={styles.infoLabel}>Estimated wait:</Text>
                   <Text style={styles.infoValue}>5 min</Text>
                 </View>
               </View>
-              <View style={styles.infoFieldsRow}>
-                <View style={styles.infoField}>
-                  <Text style={styles.infoLabel}>Incoming requests</Text>
+
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text style={styles.infoLabel}>Incoming requests:</Text>
                   <Text style={styles.infoValue}>5</Text>
                 </View>
-                <View>
-                  <Button title="Inspect Requests" onPress={() => {}} />
-                </View>
+
+                <Button title="Inspect Requests" onPress={() => {}} />
               </View>
             </>
           )}

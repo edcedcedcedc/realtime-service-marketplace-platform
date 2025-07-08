@@ -2,14 +2,14 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 
-class JobFeedConsumer(AsyncWebsocketConsumer):
+class TaskFeedConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.channel_layer.group_add("jobfeed", self.channel_name)
+        await self.channel_layer.group_add("taskfeed", self.channel_name)
         await self.accept()
-        print("Client connected to jobs feed.")
+        print("Client connected to task feed.")
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard("jobfeed", self.channel_name)
+        await self.channel_layer.group_discard("taskfeed", self.channel_name)
 
     async def receive(self, text_data):
         pass

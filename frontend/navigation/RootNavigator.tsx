@@ -1,12 +1,12 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import AuthScreen from "../screens/AuthScreen";
-import JobFeedScreen from "../screens/JobFeedScreen";
-import JobDetailsScreen from "../screens/JobDetailsScreen";
-import JobPostScreen from "../screens/JobPostScreen";
+import Auth from "../screens/Auth";
+import TaskFeed from "../screens/TaskFeed";
+import TaskDetails from "../screens/TaskDetails";
+import TaskPost from "../screens/TaskPost";
 import HeaderMenu from "../screens/HeaderMenu";
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
+import Login from "../screens/Login";
+import Register from "../screens/Register";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -28,12 +28,12 @@ export default function RootNavigator() {
         headerRight: () => <HeaderMenu navigation={navigation} />,
       })}
     >
-      <Stack.Screen name="Start" component={AuthScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="Task feed" component={JobFeedScreen} />
-      <Stack.Screen name="Task details" component={JobDetailsScreen} />
-      <Stack.Screen name="Search a tasker" component={JobPostScreen} />
+      <Stack.Screen name="Start" component={Auth} />
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="Task feed" component={TaskFeed} />
+      <Stack.Screen name="Task details" component={TaskDetails} />
+      <Stack.Screen name="Search a tasker" component={TaskPost} />
     </Stack.Navigator>
   );
 }

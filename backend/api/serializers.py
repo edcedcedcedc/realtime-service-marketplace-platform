@@ -1,7 +1,7 @@
 # api/serializers.py
 
 from rest_framework import serializers
-from .models import Job, Subtask
+from .models import Task, Subtask
 
 
 class SubtaskSerializer(serializers.ModelSerializer):
@@ -10,14 +10,14 @@ class SubtaskSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "cost", "is_completed"]
 
 
-class JobSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer):
     client_username = serializers.CharField(source="client.username", read_only=True)
-    worker_username = serializers.SerializerMethodField()
-    worker_id = serializers.SerializerMethodField()
+    tasker_username = serializers.SerializerMethodField()
+    tasker_id = serializers.SerializerMethodField()
     subtasks = SubtaskSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Job
+        model = Task
         fields = [
             "id",
             "title",
@@ -27,8 +27,8 @@ class JobSerializer(serializers.ModelSerializer):
             "location",
             "status",
             "client_username",
-            "worker_username",
-            "worker_id",
+            "tasker_username",
+            "tasker_id",
             "expires_from_feed",
             "must_start_by",
             "created_at",
@@ -44,11 +44,11 @@ class JobSerializer(serializers.ModelSerializer):
         validated_data["client"] = self.context["request"].user
         return super().create(validated_data)
 
-    def get_worker_username(self, obj):
-        return obj.worker.username if obj.worker else ""
+    def get_tasker_username(self, obj):
+        return obj.tasker.username if obj.tasker else ""
 
-    def get_worker_id(self, obj):
-        return obj.worker.id if obj.worker else None
+    def get_tasker_id(self, obj):
+        return obj.tasker.id if obj.tasker else None
 
     def validate_latitude(self, value):
         return value

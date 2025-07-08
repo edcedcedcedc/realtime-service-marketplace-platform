@@ -10,23 +10,23 @@ import {
   Keyboard,
 } from "react-native";
 import api from "../services/api";
-import useStore, { Job } from "../store/useStore";
+import useStore, { Task } from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../utils/spacings";
-import MapSelector from "./MapSelectorScreen";
+import MapSelector from "./MapSelector";
 import * as Location from "expo-location";
-import JobCard from "./JobCardScreen";
-import JobSearchBar from "./JobSearchBarScreen";
+import TaskCard from "./TaskCard";
+import TaskSearchBar from "./TaskSearchBar";
 
 const HEADER_HEIGHT = 120; // approx header + logout button height
 const COOLDOWN_MS = 5000;
 
-export default function JobFeedScreen({ navigation }: { navigation: any }) {
-  const jobs = useStore((state) => state.jobs);
-  const removeJob = useStore((state) => state.removeJob);
-  const setJobs = useStore().setJobs;
-  const addJob = useStore().addJob;
+export default function TaskFeed({ navigation }: { navigation: any }) {
+  const tasks = useStore((state) => state.tasks);
+  const removeTask = useStore((state) => state.removeTask);
+  const setTasks = useStore().setTasks;
+  const addTask = useStore().addTask;
   const loading = useStore((state) => state.loading);
   console.log(loading, "loading");
   const setLoading = useStore().setLoading;
@@ -37,14 +37,14 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
   const [value, setValue] = useState("");
 
   useEffect(() => {
-    fetchJobs();
+    fetchTasks();
   }, []);
 
-  const fetchJobs = async () => {
+  const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await withTimeout(api.get("/jobs/open/"));
-      setJobs(response.data);
+      const response = await withTimeout(api.get("/tasks/open/"));
+      setTasks(response.data);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -58,12 +58,12 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const onViewDetails = (job: Job) => {
-    navigation.navigate("JobDetails", { jobId: job.id });
+  const onViewDetails = (task: Task) => {
+    navigation.navigate("TaskDetails", { taskId: task.id });
   };
 
-  const onButtonPress = (job: Job, action: string) => {
-    alert(`${action} pressed for job: ${job.title}`);
+  const onButtonPress = (task: Task, action: string) => {
+    alert(`${action} pressed for task: ${task.title}`);
   };
 
   const onScroll = (event: any) => {
@@ -80,17 +80,17 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
       now - lastRefreshRef.current > COOLDOWN_MS
     ) {
       lastRefreshRef.current = now;
-      fetchJobs();
+      fetchTasks();
     }
   };
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(value.toLowerCase()) ||
-      job.description?.toLowerCase().includes(value.toLowerCase()) ||
-      job.urgency.toLowerCase().includes(value.toLowerCase()) ||
-      job.location.toLowerCase().includes(value.toLowerCase()) ||
-      job.status.toLowerCase().includes(value.toLowerCase())
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(value.toLowerCase()) ||
+      task.description?.toLowerCase().includes(value.toLowerCase()) ||
+      task.urgency.toLowerCase().includes(value.toLowerCase()) ||
+      task.location.toLowerCase().includes(value.toLowerCase()) ||
+      task.status.toLowerCase().includes(value.toLowerCase())
   );
 
   return (
@@ -99,17 +99,17 @@ export default function JobFeedScreen({ navigation }: { navigation: any }) {
         <View style={styles.mascotPlaceholder} />
       </TouchableWithoutFeedback>
 
-      <JobSearchBar value={value} onChangeText={setValue} />
+      <TaskSearchBar value={value} onChangeText={setValue} />
       <FlatList
-        data={filteredJobs}
+        data={filteredTasks}
         keyExtractor={(item, index) => {
           if (!item?.id) {
-            console.warn("⚠️ Missing job ID at index", index, item);
+            console.warn("⚠️ Missing task ID at index", index, item);
             return index.toString();
           }
           return item.id.toString();
         }}
-        renderItem={({ item }) => <JobCard item={item} />}
+        renderItem={({ item }) => <TaskCard item={item} />}
         ListEmptyComponent={
           <View
             style={{

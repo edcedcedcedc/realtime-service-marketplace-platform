@@ -3,7 +3,7 @@ import React from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 import { SPACING } from "../utils/spacings";
 
-export default function JobSearchBar({
+export default function TaskSearchBar({
   value,
   onChangeText,
   placeholder = "Search tasks...",

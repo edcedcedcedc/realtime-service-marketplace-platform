@@ -44,7 +44,7 @@ export const registerSchema = Yup.object().shape({
 
 const anyLanguageRegex = /^[\p{L}\p{N}\p{P}\p{Zs}]+$/u;
 
-export const jobPostSchema = Yup.object().shape({
+export const taskPostSchema = Yup.object().shape({
   title: Yup.string()
     .required("Title is required")
     .max(32, "Title must be at most 32 characters")

@@ -20,7 +20,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
   {} as Record<string, string>
 );
 
-type JobCardProps = {
+type TaskCardProps = {
   item: {
     id: number | string;
     title: string;
@@ -33,7 +33,7 @@ type JobCardProps = {
   };
 };
 
-export default function JobCard({ item }: JobCardProps) {
+export default function TaskCard({ item }: TaskCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{item.title}</Text>

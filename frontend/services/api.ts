@@ -5,7 +5,7 @@ import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
 
 const API_BASE_URL = "http://192.168.1.4:8000/api/";
-export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
+export const WS_URL = "ws://192.168.1.4:8000/ws/tasks/";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
