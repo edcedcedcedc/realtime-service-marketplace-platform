@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { sortJobsByDate } from "../utils/sortJobs";
+import { sortTasksByDate } from "../utils/sortTasks"
 
 export const URGENCY_OPTIONS = [
   { label: "Now", value: "now", color: "#ff3b30" },
@@ -17,6 +17,8 @@ export const STATUS_OPTIONS = [
   { label: "Cancelled", value: "cancelled", color: "#d32f2f" }, // MUI Red 700
   { label: "Expired", value: "expired", color: "#616161" }, // MUI Grey 700
 ];
+
+
 
 export const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
   repair: ["electrical", "plumbing", "appliance", "furniture", "other"],
@@ -43,11 +45,11 @@ const initialState = {
     jwt: { access: null, refresh: null },
     user: null,
   },
-  workers: [],
+  taskers: [],
   clients: [],
-  jobs: [],
+  tasks: [],
   loading: false,
-  tempJobData: null,
+  tempTaskData: null,
   selectedRegion: null,
   selectedLatLng: null,
   markerPoint: null,
@@ -84,7 +86,7 @@ export interface LatLng {
   longitude: number;
 }
 
-export type JobFormInput = {
+export type TaskFormInput = {
   title: string;
   description: string;
   location: string;
@@ -102,7 +104,7 @@ type Status =
   | "cancelled"
   | "expired";
 
-export interface Job {
+export interface Task {
   id: number;
   title: string;
   description?: string;
@@ -113,8 +115,8 @@ export interface Job {
   longitude: number;
   status: Status;
   client_username: string;
-  worker_username: string | null;
-  worker_id: number | null;
+  tasker_username: string | null;
+  tasker_id: number | null;
   expires_from_feed: string | null;
   must_start_by: string | null;
   created_at: string;
@@ -135,11 +137,11 @@ interface State {
     jwt: Jwt | null;
     user: User | null;
   };
-  workers: User[];
+  taskers: User[];
   clients: User[];
-  jobs: Job[];
+  tasks: Task[];
   loading: boolean;
-  tempJobData: JobFormInput | null;
+  tempTaskData: TaskFormInput | null;
   selectedRegion: Region | null;
   selectedLatLng: LatLng | null;
   markerPoint: Point | null;
@@ -152,13 +154,13 @@ interface State {
   setMarkerPoint: (point: Point | null) => void;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
-  addWorker: (worker: User) => void;
+  addTasker: (tasker: User) => void;
   addClient: (client: User) => void;
-  addJob: (job: Job) => void;
-  removeJob: (id: number) => void;
-  setJobs: (jobs: Job[]) => void;
+  addTask: (task: Task) => void;
+  removeTask: (id: number) => void;
+  setTasks: (task: Task[]) => void;
   setLoading: (value: boolean) => void;
-  setTempJobData: (data: JobFormInput | null) => void;
+  setTempTaskData: (data: TaskFormInput | null) => void;
   setSelectedRegion: (region: Region | null) => void;
   setSelectedLatLng: (latLng: LatLng | null) => void;
   resetStore: () => void;
@@ -174,11 +176,11 @@ const useStore = create<State>()(
         },
         user: null,
       },
-      workers: [],
+      taskers: [],
       clients: [],
-      jobs: [],
+      tasks: [],
       loading: false,
-      tempJobData: null,
+      tempTaskData: null,
       selectedRegion: null,
       selectedLatLng: null,
       markerPoint: null,
@@ -214,7 +216,7 @@ const useStore = create<State>()(
         });
       },
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
-      setTempJobData: (data) => set({ tempJobData: data }),
+      setTempTaskData: (data) => set({ tempTaskData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
       clearAuth: () =>
@@ -224,11 +226,11 @@ const useStore = create<State>()(
             user: state.auth.user, // keep user info if you want
           },
         })),
-      addWorker: (worker: User) =>
+      addTasker: (tasker: User) =>
         set((state) => {
-          const exists = state.workers.some((w) => w.id === worker.id);
+          const exists = state.taskers.some((t) => t.id === tasker.id);
           if (exists) return {};
-          return { workers: [...state.workers, worker] };
+          return { taskers: [...state.taskers, tasker] };
         }),
 
       addClient: (client: User) =>
@@ -237,21 +239,21 @@ const useStore = create<State>()(
           if (exists) return {};
           return { clients: [...state.clients, client] };
         }),
-      addJob: (job: Job) =>
+      addTask: (task: Task) =>
         set((state) => {
-          const normalizedJob = { ...job, id: Number(job.id) };
-          const exists = state.jobs.some((j) => j.id === normalizedJob.id);
+          const normalizedTask = { ...task, id: Number(task.id) };
+          const exists = state.tasks.some((t) => t.id === normalizedTask.id);
           if (exists) return {};
-          return { jobs: sortJobsByDate([...state.jobs, normalizedJob]) };
+          return { tasks: sortTasksByDate([...state.tasks, normalizedTask]) };
         }),
-      removeJob: (id: number) =>
+      removeTask: (id: number) =>
         set((state) => ({
-          jobs: state.jobs.filter((job) => job.id !== Number(id)),
+          tasks: state.tasks.filter((task) => task.id !== Number(id)),
         })),
-      setJobs: (jobs: Job[]) =>
+      setTasks: (tasks: Task[]) =>
         set({
-          jobs: sortJobsByDate(
-            jobs.map((job) => ({ ...job, id: Number(job.id) })),
+          tasks: sortTasksByDate(
+            tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
       resetStore: () => set({ ...initialState }),

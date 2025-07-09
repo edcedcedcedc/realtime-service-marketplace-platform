@@ -1,56 +1,66 @@
-/* The code mocks the axios library to replace real HTTP calls with controlled mock functions, 
-allowing tests to run without actual network requests. It intercepts calls to axios.create() 
-and HTTP methods (post, get, request), returning mocked functions instead. 
-This lets your app’s api instance use the mocked axios automatically, 
-so tests can simulate API responses and errors (like 401 Unauthorized) reliably and quickly, 
-ensuring isolated, deterministic testing of your API logic and interceptors. */
+// __tests__/api.test.ts
 
+//Mock axios before importing anything that uses it
 jest.mock("axios", () => {
   const actualAxios = jest.requireActual("axios");
   const instance = actualAxios.create({
     baseURL: "http://192.168.1.4:8000/api/",
   });
 
-  // Mock all HTTP methods you use:
   instance.post = jest.fn();
   instance.get = jest.fn();
   instance.request = jest.fn();
-  const mockedPost = jest.fn();
 
   return {
     ...actualAxios,
     create: jest.fn(() => instance),
-    post: mockedPost,
+    post: jest.fn(),
     get: jest.fn(),
     request: jest.fn(),
   };
 });
 
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
+// Mock Zustand store with JWT
+jest.mock("../store/useStore", () => ({
+  __esModule: true,
+  default: {
+    getState: jest.fn(() => ({
+      auth: {
+        jwt: {
+          access: "mock-token",
+          refresh: "mock-refresh",
+        },
+        user: {
+          id: 1,
+          username: "test",
+          email: "test@example.com",
+          role: "client",
+        },
+      },
+    })),
+  },
 }));
 
 const api = require("../services/api").default;
-const AsyncStorage = require("@react-native-async-storage/async-storage");
+const useStore = require("../store/useStore").default;
+const axios = require("axios");
 
 describe("API Interceptors", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const axios = require("axios");
+
+    // Setup mock for refresh endpoint
     axios.post.mockImplementation((url, data) => {
-      if (
-        url.endsWith("token/refresh/") &&
-        data.refresh === "mock-refresh-token"
-      ) {
+      if (url.endsWith("token/refresh/") && data.refresh === "mock-refresh") {
         return Promise.resolve({ data: { access: "new-access-token" } });
       }
       return Promise.reject(new Error("Unexpected POST call"));
     });
   });
 
-  test("does not attach token for 'api/login/ and 'api/register/", async () => {
-    const urls = ["/register/", "/login/"];
+  test("Does not attach token for /login/ and /register/", async () => {
+    const urls = ["/login/", "/register/"];
+
     for (const url of urls) {
       const config = { url, headers: {} };
       const modified =
@@ -59,58 +69,59 @@ describe("API Interceptors", () => {
     }
   });
 
-  test("attaches token for protected routes", async () => {
-    AsyncStorage.getItem.mockResolvedValue("mock-token");
-    const config = { url: "/protected", headers: {} };
+  test("Attaches token for protected routes", async () => {
+    const config = { url: "/protected/", headers: {} };
     const modified =
       await api.interceptors.request.handlers[0].fulfilled(config);
     expect(modified.headers.Authorization).toBe("Bearer mock-token");
   });
 
-  test("check axios config in request interceptor", async () => {
+  test("Preserves baseURL and URL", async () => {
     const config = {
       url: "/protected/",
       headers: {},
       baseURL: "http://192.168.1.4:8000/api/",
     };
-    const modifiedConfig =
-      await api.interceptors.request.handlers[0].fulfilled(config);
-    expect(modifiedConfig.baseURL).toBe(api.defaults.baseURL);
-    expect(modifiedConfig.url).toBe("/protected/");
-  });
 
-  test("attaches token for protected routes", async () => {
-    AsyncStorage.getItem.mockResolvedValue("mock-token");
-    const config = {
-      url: "/protected/",
-      headers: {},
-      baseURL: "http://192.168.1.4:8000/api/",
-    };
     const modified =
       await api.interceptors.request.handlers[0].fulfilled(config);
-    expect(modified.headers.Authorization).toBe("Bearer mock-token");
+    expect(modified.baseURL).toBe(api.defaults.baseURL);
+    expect(modified.url).toBe("/protected/");
+  });
+
+  test("No token results in missing Authorization header", async () => {
+    useStore.getState.mockReturnValueOnce({
+      auth: { jwt: { access: null, refresh: null }, user: null },
+    });
+
+    const config = { url: "/protected/", headers: {} };
+    const modified =
+      await api.interceptors.request.handlers[0].fulfilled(config);
+    expect(modified.headers.Authorization).toBeUndefined();
   });
 });
 
-test("GET /protected/ returns 401 when no token is set", async () => {
-  AsyncStorage.getItem.mockResolvedValue(null);
-
-  const axiosInstance = require("axios").create();
-  axiosInstance.request.mockRejectedValue({
-    response: { status: 401 },
-    toJSON: () => ({ message: "Unauthorized" }),
-  });
-
-  try {
-    await api.request({
-      method: "get",
-      url: "/protected/",
-      baseURL: "http://192.168.1.4:8000/api/",
+describe("API Error Handling", () => {
+  test("GET /protected/ returns 401 when no token is set", async () => {
+    useStore.getState.mockReturnValueOnce({
+      auth: { jwt: { access: null, refresh: null }, user: null },
     });
-    throw new Error("Request should have failed with 401");
-  } catch (error) {
-    console.log("Error object:", error.toJSON?.() || error);
-    console.log("Response status:", error.response?.status);
-    expect(error.response?.status).toBe(401);
-  }
+
+    const axiosInstance = axios.create();
+    axiosInstance.request.mockRejectedValue({
+      response: { status: 401 },
+      toJSON: () => ({ message: "Unauthorized" }),
+    });
+
+    try {
+      await api.request({
+        method: "get",
+        url: "/protected/",
+        baseURL: "http://192.168.1.4:8000/api/",
+      });
+      throw new Error("Expected 401 error");
+    } catch (error) {
+      expect(error.response?.status).toBe(401);
+    }
+  });
 });

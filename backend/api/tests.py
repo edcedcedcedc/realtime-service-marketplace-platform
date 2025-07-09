@@ -7,12 +7,12 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.test import TestCase, TransactionTestCase, override_settings
 from channels.layers import InMemoryChannelLayer, get_channel_layer
-from api.utils import jobsfeed_broadcast
+from api.utils import taskfeed_broadcast_new
 from asgiref.sync import sync_to_async
 import asyncio
 import json
 from channels.testing import WebsocketCommunicator
-from api.models import Job
+from api.models import Task
 from config.asgi import application
 
 User = get_user_model()
@@ -56,11 +56,11 @@ class AuthTests(APITestCase):
         self.assertIn("error", response.data)
 
 
-class JobTests(AuthTests):
+class TaskTests(AuthTests):
     def setUp(self):
         super().setUp()
-        self.jobs_url = reverse("job-create")
-        self.job_data = {
+        self.tasks_url = reverse("task-create")
+        self.task_data = {
             "title": "Fix my sink",
             "description": "It's leaking.",
             "budget": "100.00",
@@ -75,15 +75,15 @@ class JobTests(AuthTests):
         token = response.data["access"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
-    def test_job_post(self):
+    def test_task_post(self):
         self.authenticate()
-        response = self.client.post(self.jobs_url, self.job_data)
+        response = self.client.post(self.tasks_url, self.task_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["title"], self.job_data["title"])
+        self.assertEqual(response.data["title"], self.task_data["title"])
         self.assertEqual(response.data["client_username"], self.user_data["username"])
 
-        response_after_first_post = self.client.post(self.jobs_url, self.job_data)
-        response_after_second_post = self.client.post(self.jobs_url, self.job_data)
+        response_after_first_post = self.client.post(self.tasks_url, self.task_data)
+        response_after_second_post = self.client.post(self.tasks_url, self.task_data)
         self.assertEqual(response_after_first_post.status_code, status.HTTP_201_CREATED)
         self.assertEqual(
             response_after_second_post.status_code, status.HTTP_201_CREATED
@@ -93,20 +93,20 @@ class JobTests(AuthTests):
             response_after_first_post.data["created_at"],
         )
 
-    def test_job_patch(self):
+    def test_task_patch(self):
         self.authenticate()
 
-        response = self.client.post(self.jobs_url, self.job_data)
+        response = self.client.post(self.tasks_url, self.task_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        job_id = response.data["id"]
+        task_id = response.data["id"]
 
         patch_data = {
             "status": "in-progress",
             "budget": "150.00",
         }
 
-        update_url = reverse("job-update", kwargs={"id": job_id})
+        update_url = reverse("task-update", kwargs={"id": task_id})
 
         response = self.client.patch(update_url, patch_data, format="json")
 
@@ -129,7 +129,7 @@ class JobTests(AuthTests):
             "status": "in-progress",
             "budget": "250.00",
         }
-        update_url = reverse("job-update", kwargs={"id": job_id})
+        update_url = reverse("task-update", kwargs={"id": task_id})
         response_after = self.client.patch(update_url, patch_data, format="json")
         self.assertEqual(response_after.status_code, status.HTTP_200_OK)
 
@@ -140,34 +140,34 @@ class JobTests(AuthTests):
         self.assertNotEqual(updated_at_before, updated_at_after)
 
 
-class JobBroadcastIntegrationTests(TransactionTestCase):
+class TaskBroadcastIntegrationTests(TransactionTestCase):
     reset_sequences = True
 
-    async def test_job_broadcast_received(self):
+    async def test_task_broadcast_received(self):
 
         user = await sync_to_async(User.objects.create_user)(
             username="john", password="pass"
         )
-        job = await sync_to_async(Job.objects.create)(
-            title="Test job",
-            description="Job desc",
+        task = await sync_to_async(Task.objects.create)(
+            title="Test task",
+            description="Task desc",
             budget=100,
             location="Chișinău",
             status="open",
             client=user,
         )
 
-        communicator = WebsocketCommunicator(application, "/ws/jobs/")
+        communicator = WebsocketCommunicator(application, "/ws/tasks/")
         connected, _ = await communicator.connect()
         self.assertTrue(connected, "Failed to connect to WebSocket")
 
-        await sync_to_async(jobsfeed_broadcast)(job)
+        await sync_to_async(taskfeed_broadcast_new)(task)
 
         response = await communicator.receive_from()
         data = json.loads(response)
         print(data, "data")
-        self.assertEqual(data["payload"]["title"], job.title)
-        self.assertEqual(data["payload"]["description"], job.description)
-        self.assertEqual(data["payload"]["status"], job.status)
+        self.assertEqual(data["payload"]["title"], task.title)
+        self.assertEqual(data["payload"]["description"], task.description)
+        self.assertEqual(data["payload"]["status"], task.status)
 
         await communicator.disconnect()

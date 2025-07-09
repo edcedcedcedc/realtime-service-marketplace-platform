@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Button, StyleSheet, ScrollView } from "react-native";
 import Toast from "react-native-toast-message";
-import useStore, { Job } from "./store/useStore";
+import useStore, { Task } from "./store/useStore";
 import { socketManager } from "./utils/socketManager";
 import { WS_URL } from "./services/api";
 import { NavigationContainer } from "@react-navigation/native";
@@ -18,22 +18,22 @@ import {
 export default function App() {
   useEffect(() => {
     socketManager.connect(WS_URL);
-    const handleNewJob = (payload: Job) => {
+    const handleNewTask = (payload: Task) => {
       Toast.show({
         type: "info",
         text1: "New task received",
       });
-      useStore.getState().addJob(payload);
+      useStore.getState().addTask(payload);
     };
 
     type Id = { id: number };
 
-    const handleDeleteJob = (id: Id) => {
+    const handleDeleteTask = (id: Id) => {
       Toast.show({
         type: "info",
-        text1: `Job with ${JSON.stringify(id)} was deleted`,
+        text1: `Task with ${JSON.stringify(id)} was deleted`,
       });
-      useStore.getState().removeJob(id.id);
+      useStore.getState().removeTask(id.id);
     };
 
     const handleSocketOnOpen = () =>
@@ -42,12 +42,12 @@ export default function App() {
         text1: "Websocket connected!",
       });
 
-    socketManager.on("job:new", handleNewJob);
-    socketManager.on("job:delete", handleDeleteJob);
+    socketManager.on("task:new", handleNewTask);
+    socketManager.on("task:delete", handleDeleteTask);
     socketManager.on("socket:onopen", handleSocketOnOpen);
 
     return () => {
-      socketManager.off("job:new", handleNewJob);
+      socketManager.off("task:new", handleNewTask);
       socketManager.off("socket:onopen", handleSocketOnOpen);
       socketManager.disconnect();
     };

@@ -10,7 +10,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(
         max_length=20,
-        choices=[("worker", "Worker"), ("client", "Client")],
+        choices=[("tasker", "Tasker"), ("client", "Client")],
         default="client",
     )
 
@@ -29,7 +29,7 @@ class Profile(models.Model):
         return f"{self.user.username}'s profile"
 
 
-class Job(models.Model):
+class Task(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
         ("confirmed", "Confirmed"),
@@ -86,12 +86,12 @@ class Job(models.Model):
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="jobs_posted",
+        related_name="tasks_posted",
     )
-    worker = models.ForeignKey(
+    tasker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name="jobs_taken",
+        related_name="tasks_taken",
         null=True,
         blank=True,
     )
@@ -108,7 +108,7 @@ class Job(models.Model):
         max_length=50, blank=True, help_text="Subcategory or specific task type"
     )
     photo_urls = models.JSONField(
-        default=list, blank=True, help_text="List of photo URLs related to the job"
+        default=list, blank=True, help_text="List of photo URLs related to the task"
     )
 
     def clean(self):
@@ -144,10 +144,10 @@ class Job(models.Model):
 
 
 class Subtask(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="subtasks")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="subtasks")
     title = models.CharField(max_length=255)
     cost = models.DecimalField(max_digits=10, decimal_places=2)
-    worker = models.ForeignKey(
+    tasker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
@@ -161,19 +161,19 @@ class Subtask(models.Model):
 
 
 class Bid(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="bids")
-    worker = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bids")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="bids")
+    tasker = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bids")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Bid by {self.worker.username} on {self.job.title}"
+        return f"Bid by {self.tasker.username} on {self.task.title}"
 
 
 class Rating(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="ratings")
-    worker = models.ForeignKey(
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="ratings")
+    tasker = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="worker_ratings"
     )
     client = models.ForeignKey(

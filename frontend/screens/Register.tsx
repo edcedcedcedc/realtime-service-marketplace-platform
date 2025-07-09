@@ -49,20 +49,20 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        }),
+        })
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       Toast.show({
         type: "success",
         text1: "Registration Successful",
       });
       navigation.replace(
-        res.data.user === "client" ? "Search a tasker" : "Task feed",
+        res.data.user.role === "client" ? "Search a tasker" : "Task feed"
       );
     } catch (err: any) {
       Toast.show({
@@ -83,8 +83,8 @@ export default function RegisterScreen({ navigation }: any) {
         contentContainerStyle={styles.scrollContent}
         enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
-        extraHeight={250}
-        keyboardOpeningTime={10000}
+        extraHeight={300}
+        keyboardOpeningTime={250}
         scrollEventThrottle={250}
         showsVerticalScrollIndicator={false}
       >
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     color: "#666",
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
-    fontWeight: "500",
+
     paddingBottom: 10,
   },
   roleTextSelected: {

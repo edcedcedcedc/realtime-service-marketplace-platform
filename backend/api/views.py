@@ -5,10 +5,10 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import JobSerializer
-from .models import Job
-from .utils import jobsfeed_broadcast_new, jobsfeed_broadcast_deleted
-from api.tasks import delete_job_if_still_open
+from .serializers import TaskSerializer
+from .models import Task
+from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted
+from api.tasks import delete_task_if_still_open
 
 User = get_user_model()
 
@@ -36,9 +36,9 @@ def register(request):
             {"error": "Username already taken."}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    if role not in ["worker", "client"]:
+    if role not in ["tasker", "client"]:
         return Response(
-            {"error": "Role must be 'worker' or 'client'."},
+            {"error": "Role must be tasker or client."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -100,99 +100,99 @@ def protected_view(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def job_create(request):
-    serializer = JobSerializer(data=request.data, context={"request": request})
+def task_create(request):
+    serializer = TaskSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
-        job_instance = serializer.save(client=request.user)
-        jobsfeed_broadcast_new(job_instance)
-        re_serializer = JobSerializer(job_instance)
-        delete_job_if_still_open.apply_async(args=[job_instance.id], countdown=300)
+        task_instance = serializer.save(client=request.user)
+        taskfeed_broadcast_new(task_instance)
+        re_serializer = TaskSerializer(task_instance)
+        delete_task_if_still_open.apply_async(args=[task_instance.id], countdown=300)
         return Response(re_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
-def job_delete(request, id):
+def task_delete(request, id):
     try:
-        job = Job.objects.get(pk=id)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+        task = Task.objects.get(pk=id)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if job.client != request.user:
+    if task.client != request.user:
         return Response(
             {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
         )
-    job_id = job.id
-    jobsfeed_broadcast_deleted(job_id)
-    job.delete()
-    return Response({"message": "Job deleted successfully"}, status=status.HTTP_200_OK)
+    task_id = task.id
+    taskfeed_broadcast_deleted(task_id)
+    task.delete()
+    return Response({"message": "Task deleted successfully"}, status=status.HTTP_200_OK)
 
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
-def job_update(request, id):
+def task_update(request, id):
     try:
-        job_instance = Job.objects.get(pk=id)
-    except Job.DoesNotExist:
+        task_instance = Task.objects.get(pk=id)
+    except Task.DoesNotExist:
         return Response(
-            {"error": "Job doesn't exist"}, status=status.HTTP_404_NOT_FOUND
+            {"error": "Task doesn't exist"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    if request.user != job_instance.client:
+    if request.user != task_instance.client:
         return Response(
             {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
         )
 
-    serializer = JobSerializer(
-        job_instance, data=request.data, partial=True, context={"request": request}
+    serializer = TaskSerializer(
+        task_instance, data=request.data, partial=True, context={"request": request}
     )
     if serializer.is_valid():
-        updated_job_instance = serializer.save()
-        jobsfeed_broadcast_new(updated_job_instance)
-        re_serializer = JobSerializer(updated_job_instance)
+        updated_task_instance = serializer.save()
+        taskfeed_broadcast_new(updated_task_instance)
+        re_serializer = TaskSerializer(updated_task_instance)
         return Response(re_serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def job_detail(request, id):
+def task_detail(request, id):
     try:
-        job = Job.objects.get(pk=id)
-        serializer = JobSerializer(job)
+        task = Task.objects.get(pk=id)
+        serializer = TaskSerializer(task)
         return Response(serializer.data, status.HTTP_200_OK)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_400_BAD_REQUEST)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def open_jobs(request):
-    jobs = Job.objects.filter(status="open").order_by("-id")
-    serializer = JobSerializer(jobs, many=True)
+def open_tasks(request):
+    tasks = Task.objects.filter(status="open").order_by("-id")
+    serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def in_progress_jobs(request):
-    jobs = Job.objects.filter(status="in-progress").order_by("-id")
-    serializer = JobSerializer(jobs, many=True)
+def in_progress_tasks(request):
+    tasks = Task.objects.filter(status="in-progress").order_by("-id")
+    serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def completed_jobs(request):
-    jobs = Job.objects.filter(status="completed").order_by("-id")
-    serializer = JobSerializer(jobs, many=True)
+def completed_tasks(request):
+    tasks = Task.objects.filter(status="completed").order_by("-id")
+    serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def all_jobs(request):
-    jobs = Job.objects.all().order_by("-id")
-    serializer = JobSerializer(jobs, many=True)
+def all_tasks(request):
+    tasks = Task.objects.all().order_by("-id")
+    serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status.HTTP_200_OK)

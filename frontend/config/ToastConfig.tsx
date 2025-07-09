@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   Layout: {
-    zIndex: 1000,
+    zIndex: 1,
     elevation: 1000,
   },
   success: {

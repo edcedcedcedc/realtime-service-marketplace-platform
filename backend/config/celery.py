@@ -9,8 +9,8 @@ app.autodiscover_tasks()
 
 
 app.conf.beat_schedule = {
-    "delete-expired-jobs-every-minute": {
-        "task": "api.tasks.delete_expired_jobs",
+    "delete-expired-tasks-every-minute": {
+        "task": "api.tasks.delete_expired_tasks",
         "schedule": 60.0,
     },
 }

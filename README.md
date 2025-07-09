@@ -1,6 +1,6 @@
 # ⚡ Symmetrical Engine
 
-**Symmetrical Engine** is a real-time job marketplace platform connecting clients with workers for immediate, location-flexible tasks.  
+**Symmetrical Engine** is a real-time task marketplace platform connecting clients with workers for immediate, location-flexible tasks.  
 Think Uber for services — with bidding, escrow, and instant payouts.
 
 
@@ -8,13 +8,13 @@ Think Uber for services — with bidding, escrow, and instant payouts.
 ## 🚀 Features
 
 - 🔐 Client & Worker authentication  
-- 🧑‍💼 Job posting with suggested budgets  
-- ⏱ Live feed of available jobs for workers  
-- 💬 Real-time job threads and optional chat  
+- 🧑‍💼 Task posting with suggested budgets  
+- ⏱ Live feed of available tasks for workers  
+- 💬 Real-time task threads and optional chat  
 - 💸 Bidding system with optional price negotiation  
 - 🔒 Stripe-powered escrow payments  
-- ✅ Job confirmation + worker rating system  
-- 📈 Dashboards for job history and analytics  
+- ✅ Task confirmation + worker rating system  
+- 📈 Dashboards for task history and analytics  
 
 
 
@@ -28,13 +28,13 @@ Designed with Excalidraw for visual clarity.
 ## 🎯 Client Flow
 
 1. **Login**  
-2. **Post Job**  
+2. **Post Task**  
    - Title  
    - Description  
    - Location  
    - Suggested Budget (e.g., €15)  
    - Accept Bids or Not (toggle)  
-3. **Live Job Thread**  
+3. **Live Task Thread**  
 4. **Wait for Bids**  
    - See incoming bids (e.g., €19, €20, €15)  
    - View worker profiles, ratings  
@@ -52,15 +52,15 @@ Designed with Excalidraw for visual clarity.
 ## 🎯 Worker Flow
 
 1. **Login**  
-2. **Live Feed** — View new job posts  
-3. **View Job**  
+2. **Live Feed** — View new task posts  
+3. **View Task**  
    - See client budget (e.g., €15)  
    - If Accept Bids = true → Show Place Bid button  
-   - Else → Show Accept Job button  
+   - Else → Show Accept Task button  
 4. **Wait for Acceptance/Bid** — Enter bid amount (e.g., €19)  
 5. **Get Accepted** — Notification with payment info  
-6. **Do the Job** — Real-time updates  
-7. **Mark Done** — Mark "Job Started" then "Job Done"  
+6. **Do the Task** — Real-time updates  
+7. **Mark Done** — Mark "Task Started" then "Task Done"  
 8. **Get Paid** — Stripe payout or automatic after client confirmation  
 
 
@@ -68,7 +68,7 @@ Designed with Excalidraw for visual clarity.
 ## 💳 Stripe Usage
 
 - Escrow payment hold when client accepts bid  
-- Notification and payment after job completion  
+- Notification and payment after task completion  
 - Payouts to workers' linked accounts  
 
 
@@ -90,25 +90,25 @@ Designed with Excalidraw for visual clarity.
 The backend is built with Django and Django REST Framework, providing a RESTful API for:
 
 - User registration and JWT authentication  
-- Job posting and management  
+- Task posting and management  
 - Bidding system(not MVP, form MVP its static)...
 - User profiles and ratings(in planning)
 
 
 
-# Real-Time Job Feed Architecture
+# Real-Time Task Feed Architecture
 
 ### Frontend (React Native)
 
-1. User posts a job (HTTP POST request)
+1. User posts a task (HTTP POST request)
 2. WebSocket connects on app startup
-3. Listens for live job updates
+3. Listens for live task updates
 
 
 ### Communication Endpoints
 
-* HTTP POST request: `/api/jobs/`
-* WebSocket connection: `ws://<host>/ws/jobs/`
+* HTTP POST request: `/api/tasks/`
+* WebSocket connection: `ws://<host>/ws/tasks/`
 
 
 
@@ -121,10 +121,10 @@ The backend is built with Django and Django REST Framework, providing a RESTful 
 ### HTTP Request Flow
 
 * HTTP POST request is handled by Django Views (`views.py`)
-* The `create_job()` function:
+* The `create_task()` function:
 
-  * Saves the job to the database
-  * Broadcasts the new job event via Redis
+  * Saves the task to the database
+  * Broadcasts the new task event via Redis
 
 
 
@@ -137,15 +137,15 @@ The backend is built with Django and Django REST Framework, providing a RESTful 
 
 ### WebSocket Flow
 
-* Django Channels Consumer (`JobFeedConsumer`) subscribes to the job feed group
-* Receives job update messages broadcasted through Redis
+* Django Channels Consumer (`TaskFeedConsumer`) subscribes to the task feed group
+* Receives task update messages broadcasted through Redis
 
 
 
 ### Frontend WebSocket Client
 
 * Remains connected to receive real-time WebSocket events
-* Updates the job feed UI immediately upon receiving updates
+* Updates the task feed UI immediately upon receiving updates
 
 
 
@@ -165,18 +165,18 @@ Let me know if you want it in markdown syntax or need anything else!
 | `/api/token/refresh/`          | POST      | Refresh JWT access token           |
 | `/api/protected/`              | GET       | Example protected endpoint         |
 
-### Job Endpoints
+### Task Endpoints
 
 | Endpoint                          | Method    | Description                  |
 |----------------------------------|-----------|------------------------------|
-| `/api/jobs/open/`                | GET       | Get open jobs                |
-| `/api/jobs/in-progress/`         | GET       | Get in-progress jobs         |
-| `/api/jobs/completed/`           | GET       | Get completed jobs           |
-| `/api/jobs/all/`                 | GET       | Get all jobs                 |
-| `/api/jobs/detail/<int:id>/`    | GET       | Get job by ID                |
-| `/api/jobs/create/`              | POST      | Create a new job             |
-| `/api/jobs/update/<int:id>/`    | PUT/PATCH | Update job by ID             |
-| `/api/jobs/delete/<int:id>/`    | DELETE    | Delete job by ID             |
+| `/api/tasks/open/`                | GET       | Get open tasks                |
+| `/api/tasks/in-progress/`         | GET       | Get in-progress tasks         |
+| `/api/tasks/completed/`           | GET       | Get completed tasks           |
+| `/api/tasks/all/`                 | GET       | Get all tasks                 |
+| `/api/tasks/detail/<int:id>/`    | GET       | Get task by ID                |
+| `/api/tasks/create/`              | POST      | Create a new task             |
+| `/api/tasks/update/<int:id>/`    | PUT/PATCH | Update task by ID             |
+| `/api/tasks/delete/<int:id>/`    | DELETE    | Delete task by ID             |
 
 
 
@@ -184,7 +184,7 @@ Let me know if you want it in markdown syntax or need anything else!
 
 | Endpoint             | Description                  |
 |----------------------|------------------------------|
-| `ws://<host>/ws/jobs/` | Real-time job feed updates  |
+| `ws://<host>/ws/tasks/` | Real-time task feed updates  |
 
 **Django routing:**
 
@@ -193,7 +193,7 @@ from django.urls import re_path
 from . import consumers
 
 websocket_urlpatterns = [
-    re_path(r"ws/jobs/$", consumers.JobFeedConsumer.as_asgi()),
+    re_path(r"ws/tasks/$", consumers.TaskFeedConsumer.as_asgi()),
 ]
 ````
 
@@ -210,21 +210,20 @@ websocket_urlpatterns = [
 
 
 
-## Job Status and Urgency (STILL IN REVIEW)
+## Task Status and Urgency (STILL IN REVIEW)
 
-Each job has a **status** representing its current state in the workflow:
+Each task has a **status** representing its current state in the workflow:
 
 | Status          | Description                                           |
 | --------------- | ----------------------------------------------------- |
 | **open**        | Newly posted and awaiting bids or acceptance.         |
-| **accepted**    | Bid or worker accepted by client.                     |
-| **in-progress** | Worker started performing the job.                    |
-| **completed**   | Worker marked job done, awaiting client confirmation. |
-| **confirmed**   | Client confirmed job completion; payment released.    |
-| **cancelled**   | Job was cancelled before completion.                  |
-| **expired**     | Job expired without acceptance or completion.         |
+| **in-progress** | Worker started performing the task.                    |
+| **completed**   | Worker marked task done, awaiting client confirmation. |
+| **confirmed**   | Client confirmed task completion; payment released.    |
+| **cancelled**   | Task was cancelled before completion.                  |
+| **expired**     | Task expired without acceptance or completion.         |
 
-Jobs also have an **urgency** level indicating expected timing:
+Tasks also have an **urgency** level indicating expected timing:
 (TIMINGS STILL IN REVIEW)
 
 | Urgency      | Description                      |
@@ -245,13 +244,16 @@ From the root folder (`./`), run the commands in this order:
 2. **install-server**  
    Install all dependencies for the backend server.
 
-3. **start-server-hws**  
+3. **install redis-cli redis-server on WSL if using Windows(like myself)**
+   On Ubuntu get redis-cli redis-server
+
+4. **start-server-hws**  
    Start the backend HTTP + WebSocket servers.
 
-4. **start-server-r**  
+5. **start-server-r**  
    Start redis server
 
-5. **start-client**  
+6. **start-client**  
    Launch the React Native client app.
 
 

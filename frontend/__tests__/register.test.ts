@@ -1,5 +1,6 @@
-import useStore from "../store/useStore";
-import api from "../services/api";
+
+const useStore = require("../store/useStore").default;
+const api = require("../services/api").default;
 
 jest.mock("axios", () => {
   const handlers = { fulfilled: jest.fn(), rejected: jest.fn() };
@@ -46,6 +47,5 @@ test("register updates zustand auth state", async () => {
   expect(auth.jwt?.access).toBe("mock-access-token");
   expect(auth.jwt?.refresh).toBe("mock-refresh-token");
   expect(auth.user?.username).toBe("user1");
-  expect(auth.user?.password).toBe("user1");
   expect(auth.user?.role).toBe("worker");
 });

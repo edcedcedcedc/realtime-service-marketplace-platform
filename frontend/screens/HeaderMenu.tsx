@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Menu, Text } from "react-native-paper";
 import { logout } from "../utils/logout";
+import useStore from "../store/useStore";
 
 interface HeaderMenuProps {
   navigation: any;
@@ -10,10 +11,13 @@ interface HeaderMenuProps {
 
 export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const [visible, setVisible] = useState(false);
-
+  const user = useStore((state) => state.auth.user);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
 
+  if (!user) {
+    return;
+  }
   return (
     <Menu
       visible={visible}

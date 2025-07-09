@@ -1,8 +1,8 @@
 // navigation/AuthTabs.tsx
 import React from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
+import Login from "./Login";
+import Register from "./Register";
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -18,8 +18,8 @@ export default function AuthTabs() {
         swipeEnabled: true,
       })}
     >
-      <Tab.Screen name="Login" component={LoginScreen} />
-      <Tab.Screen name="Register" component={RegisterScreen} />
+      <Tab.Screen name="Login" component={Login} />
+      <Tab.Screen name="Register" component={Register} />
     </Tab.Navigator>
   );
 }
