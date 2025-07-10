@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   TouchableOpacity,
   Text,
@@ -8,24 +8,90 @@ import {
   StyleSheet,
   Button,
 } from "react-native";
+import useStore from "../store/useStore";
+import Toast from "react-native-toast-message";
+import { withTimeout } from "../utils/withTimeout";
+import { logout } from "../utils/logout";
+import api from "../services/api";
+import TinySpinner from "../utils/TinySpinner";
 
 interface Props {
   modalVisible: boolean;
   setModalVisible: (param: boolean) => void;
-  setTermsAccepted: (param: boolean) => void;
-  pendingLocalData: any;
+
   handleLogin: (data: any) => void;
+  navigation: any;
 }
 
 export default function TermsAndConditions({
   modalVisible,
   setModalVisible,
-  pendingLocalData,
-  handleLogin,
-  setTermsAccepted,
+  navigation,
 }: Props) {
+  const auth = useStore((state) => state.auth);
+  const setLoading = useStore().setLoading;
+  const loading = useStore((state) => state.loading);
+  const [version, setVersion] = useState("");
+  const [tinyLoading, setTinyLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        setTinyLoading(true);
+        const res = await withTimeout(
+          api.get("/current-tsc-version/"),
+          3000,
+          "Request timed out. Please try again"
+        );
+        setVersion(res.data.version);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setTinyLoading(false);
+      }
+    };
+    fetchVersion();
+  }, []);
+
+  const handleAccept = async () => {
+    try {
+      setLoading(true);
+      const res = await withTimeout(
+        api.post("/accept-terms/", {}),
+        5000,
+        "Request timed out. Please try again"
+      );
+      Toast.show({
+        type: "success",
+        text1: "TsC timestamp success!",
+        text2:
+          res.data.message ||
+          "Please check your credentials and internet connection",
+      });
+      navigation.replace(
+        auth.user?.role === "client" ? "Search a tasker" : "Task feed"
+      );
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2:
+          err.response?.data?.error ||
+          "Please check your credentials and internet connection",
+      });
+    } finally {
+      setLoading(false);
+      setModalVisible(false);
+    }
+  };
+
+  const handleReject = () => {
+    setModalVisible(false);
+    //logout();
+  };
+
   const termsText = `
-# TERMENI ȘI CONDIȚII - PLATFORMĂ TASKOON
+# TERMENI ȘI CONDIȚII - PLATFORMĂ TASKOON, versiunea ${tinyLoading ? <TinySpinner /> : version}
 
 ## 1. Părțile implicate
 
@@ -140,21 +206,8 @@ Platforma își rezervă dreptul de a modifica Termenii și Condițiile. Orice m
                 justifyContent: "center",
               }}
             >
-              <Button
-                title="Accept"
-                onPress={() => {
-                  setTermsAccepted(true);
-                  setModalVisible(false);
-                  handleLogin(pendingLocalData);
-                }}
-              />
-              <Button
-                title="Reject"
-                onPress={() => {
-                  setTermsAccepted(false);
-                  setModalVisible(false);
-                }}
-              />
+              <Button title="Accept" onPress={handleAccept} />
+              <Button title="Reject" onPress={handleReject} />
             </View>
           </View>
         </View>

@@ -16,6 +16,9 @@ class TaskSerializer(serializers.ModelSerializer):
     tasker_id = serializers.SerializerMethodField()
     subtasks = SubtaskSerializer(many=True, read_only=True)
 
+    terms_accepted_client_at = serializers.SerializerMethodField()
+    terms_accepted_tasker_at = serializers.SerializerMethodField()
+
     class Meta:
         model = Task
         fields = [
@@ -33,11 +36,14 @@ class TaskSerializer(serializers.ModelSerializer):
             "must_start_by",
             "created_at",
             "updated_at",
+            "finished_at",
             "latitude",
             "longitude",
             "category",
             "subcategory",
             "subtasks",
+            "terms_accepted_client_at",
+            "terms_accepted_tasker_at",
         ]
 
     def create(self, validated_data):
@@ -55,3 +61,13 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def validate_longitude(self, value):
         return value
+
+    def get_terms_accepted_client_at(self, obj):
+        if obj.terms_accepted_client_at:
+            return obj.terms_accepted_client_at.accepted_at.isoformat()
+        return None
+
+    def get_terms_accepted_tasker_at(self, obj):
+        if obj.terms_accepted_tasker_at:
+            return obj.terms_accepted_tasker_at.accepted_at.isoformat()
+        return None

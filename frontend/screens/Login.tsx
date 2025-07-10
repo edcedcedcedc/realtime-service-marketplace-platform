@@ -27,31 +27,11 @@ export default function LoginScreen({ navigation }: any) {
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  /*  const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingLoginData, setPendingLoginData] = useState<{
     username: string;
     password: string;
-  } | null>(null);
-
-  const confirmSubmit = () => {
-    Alert.alert(
-      "Acceptare Termeni și Condiții",
-      "Prin bifarea căsuței și apăsarea butonului „Accept”, confirmi că ai citit, înțeles și ești de acord cu Termenii și Condițiile platformei Taskoon.",
-      [
-        {
-          text: "Nu",
-          onPress: () => {
-            return;
-          },
-        },
-        {
-          text: "Da",
-          onPress: () => handleLogin,
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+  } | null>(null); */
 
   useEffect(() => {
     scrollRef.current?.scrollToPosition(0, 0, false);
@@ -91,10 +71,8 @@ export default function LoginScreen({ navigation }: any) {
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-
-      navigation.replace(
-        user.role === "client" ? "Search a tasker" : "Task feed"
-      );
+      setLoading(false);
+      setModalVisible(true);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -174,12 +152,7 @@ export default function LoginScreen({ navigation }: any) {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={[styles.button, styles.loginButton]}
-            onPress={handleSubmit((data) => {
-              if (!termsAccepted) {
-                setPendingLoginData(data);
-                setModalVisible(true);
-              }
-            })}
+            onPress={handleSubmit(handleLogin)}
             activeOpacity={0.7}
           >
             <Text style={styles.buttonText}>Login</Text>
@@ -188,9 +161,8 @@ export default function LoginScreen({ navigation }: any) {
         <TermsAndConditions
           modalVisible={modalVisible}
           setModalVisible={setModalVisible}
-          setTermsAccepted={setTermsAccepted}
-          pendingLocalData={pendingLoginData}
           handleLogin={handleLogin}
+          navigation={navigation}
         />
       </KeyboardAwareScrollView>
     </View>

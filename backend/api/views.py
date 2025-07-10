@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -6,8 +7,8 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import TaskSerializer
-from .models import Task
-from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted
+from .models import Task, TermsAcceptanceLog
+from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted, get_user_ip
 from api.tasks import delete_task_if_still_open
 
 User = get_user_model()
@@ -100,10 +101,46 @@ def protected_view(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def accept_terms(request):
+    user = request.user
+    version = request.data.get("version", settings.CURRENT_TSC_VERSION)
+    user_agent = request.META.get("HTTP_USER_AGENT", "")
+    ip = get_user_ip(request)
+
+    TermsAcceptanceLog.objects.create(
+        user=user,
+        accepted_version=version,
+        ip_address=ip,
+        user_agent=user_agent,
+    )
+    return Response({"message": "Terms accepted"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def current_tsc_version(request):
+    return Response({"version": settings.CURRENT_TSC_VERSION})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def task_create(request):
     serializer = TaskSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
-        task_instance = serializer.save(client=request.user)
+        try:
+            terms_log = TermsAcceptanceLog.objects.filter(user=request.user).latest(
+                "accepted_at"
+            )
+        except TermsAcceptanceLog.DoesNotExist:
+            return Response(
+                {
+                    "error": "Terms and Conditions must be accepted before creating a task."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        task_instance = serializer.save(
+            client=request.user, terms_accepted_client_at=terms_log
+        )
         taskfeed_broadcast_new(task_instance)
         re_serializer = TaskSerializer(task_instance)
         delete_task_if_still_open.apply_async(args=[task_instance.id], countdown=300)
