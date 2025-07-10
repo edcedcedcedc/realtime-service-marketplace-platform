@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -18,21 +18,47 @@ import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../utils/spacings";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useFocusEffect } from "@react-navigation/native";
+import TermsAndConditions from "./TermsAndConditions";
 
 export default function LoginScreen({ navigation }: any) {
   const auth = useStore((state) => state.auth);
   const { setAuth, setLoading } = useStore.getState();
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [pendingLoginData, setPendingLoginData] = useState<{
+    username: string;
+    password: string;
+  } | null>(null);
+
+  const confirmSubmit = () => {
+    Alert.alert(
+      "Acceptare Termeni și Condiții",
+      "Prin bifarea căsuței și apăsarea butonului „Accept”, confirmi că ai citit, înțeles și ești de acord cu Termenii și Condițiile platformei Taskoon.",
+      [
+        {
+          text: "Nu",
+          onPress: () => {
+            return;
+          },
+        },
+        {
+          text: "Da",
+          onPress: () => handleLogin,
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
       scrollRef.current?.scrollToPosition(0, 0, false);
+      reset();
     };
   }, []);
 
@@ -59,7 +85,7 @@ export default function LoginScreen({ navigation }: any) {
           password: data.password,
         }),
         5000,
-        "Request timed out. Please try again",
+        "Request timed out. Please try again"
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };
@@ -67,7 +93,7 @@ export default function LoginScreen({ navigation }: any) {
       setAuth(jwt, user);
 
       navigation.replace(
-        user.role === "client" ? "Search a tasker" : "Task feed",
+        user.role === "client" ? "Search a tasker" : "Task feed"
       );
     } catch (err: any) {
       Toast.show({
@@ -94,7 +120,7 @@ export default function LoginScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <Image source={require("../assets/icon.png")} style={styles.logo} />
-        <Text style={styles.title}>Your App Name</Text>
+        <Text style={styles.title}>Taskoon</Text>
 
         {/* Username */}
         <Controller
@@ -148,24 +174,25 @@ export default function LoginScreen({ navigation }: any) {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={[styles.button, styles.loginButton]}
-            onPress={handleSubmit(handleLogin)}
+            onPress={handleSubmit((data) => {
+              if (!termsAccepted) {
+                setPendingLoginData(data);
+                setModalVisible(true);
+              }
+            })}
             activeOpacity={0.7}
           >
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Terms */}
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Terms and Conditions", "Display your terms here")
-          }
-          style={{ alignSelf: "center", marginTop: 10 }}
-        >
-          <Text style={styles.terms}>Terms and Conditions</Text>
-        </TouchableOpacity>
+        <TermsAndConditions
+          modalVisible={modalVisible}
+          setModalVisible={setModalVisible}
+          setTermsAccepted={setTermsAccepted}
+          pendingLocalData={pendingLoginData}
+          handleLogin={handleLogin}
+        />
       </KeyboardAwareScrollView>
-      {/*  </ScrollView> */}
     </View>
   );
 }
