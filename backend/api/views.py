@@ -118,8 +118,8 @@ def accept_terms(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def current_tsc_version(request):
-    return Response({"version": settings.CURRENT_TSC_VERSION})
+def current_tsc_text(request):
+    return Response({"tsc": settings.CURRENT_TSC_TEXT})
 
 
 @api_view(["POST"])

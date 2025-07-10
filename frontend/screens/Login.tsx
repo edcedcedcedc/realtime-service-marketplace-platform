@@ -21,19 +21,15 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import TermsAndConditions from "./TermsAndConditions";
 
 export default function LoginScreen({ navigation }: any) {
-  const auth = useStore((state) => state.auth);
-  const { setAuth, setLoading } = useStore.getState();
+  const { setAuth, setLoading, setIsLoggedIn } = useStore.getState();
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  /*  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [pendingLoginData, setPendingLoginData] = useState<{
-    username: string;
-    password: string;
-  } | null>(null); */
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
 
   useEffect(() => {
+    setIsLoggedIn(false);
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
@@ -72,6 +68,7 @@ export default function LoginScreen({ navigation }: any) {
       const user = res.data.user;
       setAuth(jwt, user);
       setLoading(false);
+      setIsLoggedIn(true);
       setModalVisible(true);
     } catch (err: any) {
       Toast.show({
@@ -158,12 +155,14 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
-        <TermsAndConditions
-          modalVisible={modalVisible}
-          setModalVisible={setModalVisible}
-          handleLogin={handleLogin}
-          navigation={navigation}
-        />
+        {isLoggedIn && (
+          <TermsAndConditions
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            handleLogin={handleLogin}
+            navigation={navigation}
+          />
+        )}
       </KeyboardAwareScrollView>
     </View>
   );

@@ -2,7 +2,7 @@ from .views import (
     accept_terms,
     all_tasks,
     completed_tasks,
-    current_tsc_version,
+    current_tsc_text,
     task_create,
     in_progress_tasks,
     task_delete,
@@ -26,7 +26,7 @@ urlpatterns = [
     path("api/login/", login, name="login"),
     path("api/protected/", protected_view, name="protected"),
     path("api/accept-terms/", accept_terms, name="accept-terms"),
-    path("api/current-tsc-version/", current_tsc_version, name="current-tsc-version"),
+    path("api/current-tsc-text/", current_tsc_text, name="current-tsc-text"),
     # tasks endpoints
     path("api/tasks/open/", open_tasks, name="tasks-open"),
     path("api/tasks/in-progress/", in_progress_tasks, name="tasks-in-progress-"),
