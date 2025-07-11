@@ -14,6 +14,9 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
+    extra: {
+      IPV4: process.env.IPV4,
+    },
     ios: {
       bundleIdentifier: "com.mycompany.myapp",
       supportsTablet: true,

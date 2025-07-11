@@ -3,9 +3,13 @@ import useStore from "../store/useStore";
 import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
+import Constants from 'expo-constants';
 
-const API_BASE_URL = "http://192.168.1.4:8000/api/";
-export const WS_URL = "ws://192.168.1.4:8000/ws/tasks/";
+const IPV4 = Constants.expoConfig!.extra!.IPV4;
+
+const API_BASE_URL = `http://${IPV4}:8000/api/`;
+
+export const WS_URL = `ws://${IPV4}:8000/ws/tasks/`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

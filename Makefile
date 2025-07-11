@@ -47,7 +47,7 @@ coverage-server:
 # [ FRONTEND TASKS ]
 # =============================================================================
 start-client:
-	cd frontend && npx expo start -c
+	cd frontend && npx expo start --reset-cache
 install-client:
 	cd frontend && npm install
 format-client:
