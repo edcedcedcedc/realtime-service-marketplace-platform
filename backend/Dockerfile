@@ -1,19 +1,19 @@
-FROM python:3.11-slim
+FROM ubuntu:22.04
 
-# set the dependences of the system
-RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
 
-# install the working directory
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-venv build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# copy dependences
-COPY requirements.txt .
+COPY ./ /app/
 
-# install python dependences
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements_asgi_server.txt
 
-# copy all backand code
-COPY . .
+EXPOSE 8000
 
-# the default command (can be redefined in Docker-Compose)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+
