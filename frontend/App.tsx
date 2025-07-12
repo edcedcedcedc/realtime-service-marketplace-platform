@@ -38,7 +38,7 @@ export default function App() {
     const handleDeleteTask = (id: { id: number }) => {
       Toast.show({
         type: "success",
-        text1: `Task with ${id.id} was deleted`,
+        text1: `Task with id ${id.id} was deleted`,
       });
       console.log(id.id, "payload id");
       removeTask(id.id);
