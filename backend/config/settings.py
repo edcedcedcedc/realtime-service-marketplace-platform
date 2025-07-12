@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "channels",
     "rest_framework_simplejwt.token_blacklist",
+    "django_celery_beat",
 ]
 
 REST_FRAMEWORK = {
@@ -105,12 +107,18 @@ DATABASES = {
 
 ASGI_APPLICATION = "config.asgi.application"
 
-# Redis setup
+redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
+
+
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/1"
+
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
@@ -161,9 +169,6 @@ AUTH_USER_MODEL = "api.User"
 
 CORS_ALLOW_ALL_ORIGINS = True  # Temporarily for dev (later restrict by origin)
 
-
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/1"
 CURRENT_TSC_VERSION = "v1.0"
 CURRENT_TSC_TEXT = f"""
  TERMENI ȘI CONDIȚII - PLATFORMĂ TASKOON, versiunea tsc {CURRENT_TSC_VERSION}
