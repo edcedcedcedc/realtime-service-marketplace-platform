@@ -121,9 +121,15 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
               marginTop: 50,
             }}
           >
-            <Text style={{ fontSize: 16, color: COLORS.color25 }}>
-              No tasks found matching your search.
-            </Text>
+            {value.length > 0 ? (
+              <Text style={{ fontSize: 16, color: COLORS.color25 }}>
+                No tasks found matching your search.
+              </Text>
+            ) : tasks.length === 0 ? (
+              <Text style={{ fontSize: 16, color: COLORS.color25 }}>
+                Currently there are no tasks...
+              </Text>
+            ) : null}
           </View>
         }
         scrollEventThrottle={300}

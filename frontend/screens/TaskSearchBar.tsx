@@ -3,6 +3,8 @@ import { View, TextInput, StyleSheet } from "react-native";
 
 import { SPACING } from "../constants/dimensions";
 import { COLORS } from "../constants/colors";
+import useStore from "../store/useStore";
+import { Task } from "../store/useStore";
 
 export default function TaskSearchBar({
   value,
@@ -13,9 +15,14 @@ export default function TaskSearchBar({
   onChangeText: (text: string) => void;
   placeholder?: string;
 }) {
+  const tasks = useStore((state) => state.tasks);
+
+  const isEditable = (tasks: Task[]) => (tasks.length === 0 ? false : true);
+
   return (
     <View style={styles.container}>
       <TextInput
+        editable={isEditable(tasks)}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
