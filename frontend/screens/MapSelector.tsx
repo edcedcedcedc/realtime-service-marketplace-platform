@@ -21,7 +21,6 @@ import { COLORS } from "../constants/colors";
 type Props = {
   address: string;
   isSearching: boolean;
-  onDoubleTap?: () => void;
   onExit: (region: Region) => void;
   onChange: () => void;
   handleGetLocation: (region: Region) => void;
@@ -89,28 +88,6 @@ export default function MapSelectorScreen({
     }
     lastTap.current = now;
   };
-
-  /*   const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout | null = null;
-    return (...args: any[]) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }; */
-
-  /* const updatePosition = useRef(
-    debounce(async () => {
-      if (!fullMapRef.current || !selectedRegion) return;
-      try {
-        const point =
-          await fullMapRef.current.pointForCoordinate(selectedRegion);
-        setMarkerPointFull(point);
-      } catch {
-        setMarkerPointFull(lastValidPositionRef.current);
-      }
-    }, 16)
-  ).current; */
-
   useEffect(() => {
     let frameId: number | null = null;
 
@@ -225,8 +202,9 @@ export default function MapSelectorScreen({
   const handleExit = () => {
     Keyboard.dismiss();
     setIsFullMapVisible(false);
+    //setShow!(false);
     if (isSearching) return;
-    if (miniMapReady) onExit(selectedRegion);
+    if (miniMapReady) onExit!(selectedRegion);
   };
 
   return (

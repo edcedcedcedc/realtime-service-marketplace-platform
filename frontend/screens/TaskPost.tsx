@@ -569,11 +569,15 @@ export default function TaskPost({ navigation }: any) {
                   width: "100%",
                 }}
               >
-                <View style={{ display: "flex", flexDirection: "row" }}>
+                <View
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                  }}
+                >
                   <Text style={styles.infoLabel}>Incoming requests:</Text>
                   <Text style={styles.infoValue}>5</Text>
                 </View>
-
                 <Button title="Inspect Requests" onPress={() => {}} />
               </View>
             </>

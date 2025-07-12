@@ -6,6 +6,7 @@ import {
   Text,
   TouchableWithoutFeedback,
   Keyboard,
+  ViewToken,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -14,7 +15,6 @@ import useStore, { Task } from "../store/useStore";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../constants/dimensions";
 import { COLORS } from "../constants/colors";
-
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
 
@@ -30,10 +30,30 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   console.log(loading, "loading");
   const setLoading = useStore().setLoading;
   const lastRefreshRef = useRef(0);
-  const [hasPulled, setHasPulled] = useState(false);
   const scrollOffsetRef = useRef(0);
-  const wsRef = useRef<WebSocket | null>(null);
   const [value, setValue] = useState("");
+  const [visibleTaskIds, setVisibleTaskIds] = useState<Set<number | string>>(
+    new Set()
+  );
+
+  /**
+   * Keeps track of which tasks are currently visible in the FlatList.
+   *
+   * Whenever the list scrolls and items come into or go out of view,
+   * this gets called with the updated visible items.
+   * We extract their IDs and store them in a Set so we can later
+   * show things like the mini-map only for tasks that are on screen.
+   */
+  const onViewableItemsChanged = React.useCallback(
+    (info: {
+      viewableItems: ViewToken<Task>[];
+      changed: ViewToken<Task>[];
+    }) => {
+      const visibleIds = new Set(info.viewableItems.map((v) => v.item.id));
+      setVisibleTaskIds(visibleIds);
+    },
+    []
+  );
 
   useEffect(() => {
     fetchTasks();
@@ -111,7 +131,12 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
           }
           return item.id.toString();
         }}
-        renderItem={({ item }) => <TaskCard item={item} />}
+        renderItem={({ item }) => (
+          <TaskCard
+            item={item}
+            isMiniMapVisible={visibleTaskIds.has(item.id)}
+          />
+        )}
         ListEmptyComponent={
           <View
             style={{
@@ -136,6 +161,10 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         scrollEnabled={!loading}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{
+          itemVisiblePercentThreshold: 1,
+        }}
       />
     </View>
   );

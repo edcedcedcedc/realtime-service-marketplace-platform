@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
 
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
+import MapSelector from "./MapSelector";
 
 const { width } = Dimensions.get("window");
 
@@ -11,7 +12,7 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 const statusColorMap = STATUS_OPTIONS.reduce(
@@ -19,7 +20,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 type TaskCardProps = {
@@ -33,9 +34,18 @@ type TaskCardProps = {
     status: string;
     category: string;
   };
+  isMiniMapVisible: boolean;
 };
 
-export default function TaskCard({ item }: TaskCardProps) {
+export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (!isMiniMapVisible && show) {
+      setShow(false);
+    }
+  }, [isMiniMapVisible]);
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{item.title}</Text>
@@ -101,9 +111,21 @@ export default function TaskCard({ item }: TaskCardProps) {
       </View>
 
       <View style={{ display: "flex", flexDirection: "row" }}>
-        <Button title="View Location" onPress={() => {}} />
+        <Button
+          title={show ? "Hide Location" : "View Location"}
+          onPress={() => setShow((show) => !show)}
+        />
         <Button title="Accept" />
       </View>
+      {show && (
+        <MapSelector
+          address={item.location}
+          isSearching={false}
+          onExit={() => {}}
+          onChange={() => {}}
+          handleGetLocation={() => {}}
+        />
+      )}
     </View>
   );
 }
