@@ -1,10 +1,10 @@
-// __tests__/api.test.ts
+import { API_BASE_URL } from "../services/api";
 
 //Mock axios before importing anything that uses it
 jest.mock("axios", () => {
   const actualAxios = jest.requireActual("axios");
   const instance = actualAxios.create({
-    baseURL: "http://192.168.1.4:8000/api/",
+    baseURL: API_BASE_URL,
   });
 
   instance.post = jest.fn();

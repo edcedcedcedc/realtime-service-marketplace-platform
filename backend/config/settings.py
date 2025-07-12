@@ -261,3 +261,30 @@ Platforma își rezervă dreptul de a modifica Termenii și Condițiile. Orice m
 * bloca transferurile de fonduri aferente taskului respectiv;
 * notifica autoritățile competente, conform obligațiilor legale.
 """
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",  # or DEBUG
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

@@ -34,28 +34,24 @@ import {
   TouchableOpacity,
   Button,
   Alert,
-  TouchableWithoutFeedback,
-  Keyboard,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Dimensions,
 } from "react-native";
-import { Controller, set, SubmitHandler, useForm } from "react-hook-form";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore, {
-  Region,
-  TaskFormInput,
-  DEFAULT_DELTA,
-  DEFAULT_REGION,
-} from "../store/useStore";
-import { SPACING } from "../utils/spacings";
-import MapSelector from "./MapSelector";
 import Toast from "react-native-toast-message";
+import * as Location from "expo-location";
+import { yupResolver } from "@hookform/resolvers/yup";
+
+import useStore, { Region, TaskFormInput } from "../store/useStore";
 import api from "../services/api";
 import { taskPostSchema } from "../validation/validationSchema";
-import { yupResolver } from "@hookform/resolvers/yup";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
-import * as Location from "expo-location";
+import { COLORS } from "../constants/colors";
+import { SPACING } from "../constants/dimensions";
+
+import MapSelector from "./MapSelector";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
@@ -85,8 +81,10 @@ export default function TaskPost({ navigation }: any) {
       category: "repair",
     },
   });
+
   const urgency = watch("urgency");
   console.log("render");
+
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
@@ -96,6 +94,7 @@ export default function TaskPost({ navigation }: any) {
       );
       return;
     }
+
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
 
@@ -115,6 +114,7 @@ export default function TaskPost({ navigation }: any) {
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
+
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
@@ -124,15 +124,7 @@ export default function TaskPost({ navigation }: any) {
           longitude: coordinates?.longitude,
         };
         const res = await api.post("/tasks/create/", payload);
-        setTimeout(() => {
-          Toast.show({
-            type: "info",
-            text1: "Created Task Id",
-            text2: res.data.id,
-          });
-        }, 50);
         taskToBeCancelledIdRef.current = res.data.id;
-        addTask(res.data);
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -145,6 +137,7 @@ export default function TaskPost({ navigation }: any) {
         taskCreationTimeout.current = null;
       }
     }, 5000);
+
     return () => {
       if (taskCreationTimeout.current) {
         clearTimeout(taskCreationTimeout.current);
@@ -206,15 +199,9 @@ export default function TaskPost({ navigation }: any) {
       "Cancel search called, taskToBeCancelledId:",
       taskToBeCancelledIdRef.current
     );
-    setTimeout(() => {
-      Toast.show({
-        type: "info",
-        text1: "Cancel search called, taskToBeCancelledId:",
-        text2: `taskToBeCancelledIdRef.current ${taskToBeCancelledIdRef.current}`,
-      });
-    }, 50);
     setIsSearching(false);
     setTempTaskData(null);
+
     if (taskToBeCancelledIdRef.current) {
       deleteTaskById();
     }
@@ -227,19 +214,6 @@ export default function TaskPost({ navigation }: any) {
     if (!taskId) return;
     try {
       const res = await api.delete(`/tasks/delete/${taskId}/`);
-      console.log(
-        res.data,
-        " <= res.data for const res = await api.delete(`/tasks/delete/${taskId}/`);"
-      );
-      setTimeout(() => {
-        Toast.show({
-          type: "success",
-          text1: "Task deleted",
-          text2: `Task #${JSON.stringify(res.data, null, 2)}`,
-        });
-      }, 50);
-      const removeTask = useStore.getState().removeTask;
-      removeTask(taskId);
       setTempTaskData(null);
       taskToBeCancelledIdRef.current = null;
     } catch (err: any) {
@@ -250,7 +224,6 @@ export default function TaskPost({ navigation }: any) {
           err.response?.data?.error ||
           "Failed to cancel the task. Please try again later.",
       });
-    } finally {
     }
   };
 
@@ -358,10 +331,10 @@ export default function TaskPost({ navigation }: any) {
                   style={[
                     styles.input,
                     errors.title && styles.inputError,
-                    { color: isSearching ? "#999" : "#212121" },
+                    { color: isSearching ? COLORS.color25 : COLORS.color27 },
                   ]}
                   placeholder="Task title (e.g walk with my dog)"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={COLORS.color25}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -388,10 +361,10 @@ export default function TaskPost({ navigation }: any) {
                     styles.input,
                     styles.descriptionInput,
                     errors.description && styles.inputError,
-                    { color: isSearching ? "#999" : "#212121" },
+                    { color: isSearching ? COLORS.color25 : COLORS.color27 },
                   ]}
                   placeholder="Description"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={COLORS.color25}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -422,10 +395,10 @@ export default function TaskPost({ navigation }: any) {
                   style={[
                     styles.input,
                     errors.budget && styles.inputError,
-                    { color: isSearching ? "#999" : "#212121" },
+                    { color: isSearching ? COLORS.color25 : COLORS.color27 },
                   ]}
                   placeholder="Budget"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={COLORS.color25}
                   value={value ? value.toString() : ""}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -455,10 +428,10 @@ export default function TaskPost({ navigation }: any) {
                   style={[
                     styles.input,
                     errors.location && styles.inputError,
-                    { color: isSearching ? "#999" : "#212121" },
+                    { color: isSearching ? COLORS.color25 : COLORS.color27 },
                   ]}
                   placeholder="Location"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={COLORS.color25}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -470,6 +443,7 @@ export default function TaskPost({ navigation }: any) {
                   importantForAutofill="no"
                   secureTextEntry={false}
                 />
+
                 {errors.location && (
                   <Text style={styles.errorText}>
                     {errors.location.message}
@@ -502,9 +476,7 @@ export default function TaskPost({ navigation }: any) {
                     address={value || ""}
                     isSearching={isSearching}
                     onExit={(region: Region) => {
-                      const latlng = `${region.latitude.toFixed(
-                        6
-                      )}, ${region.longitude.toFixed(6)}`;
+                      const latlng = `${region.latitude.toFixed(6)}, ${region.longitude.toFixed(6)}`;
                       setValue("location", latlng);
                     }}
                     onChange={onChange}
@@ -556,7 +528,9 @@ export default function TaskPost({ navigation }: any) {
                       <Text
                         style={[
                           styles.urgencyText,
-                          selected ? { color: color } : { color: "#888" },
+                          selected
+                            ? { color: color }
+                            : { color: COLORS.color30 },
                         ]}
                       >
                         {label}
@@ -595,11 +569,15 @@ export default function TaskPost({ navigation }: any) {
                   width: "100%",
                 }}
               >
-                <View style={{ display: "flex", flexDirection: "row" }}>
+                <View
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                  }}
+                >
                   <Text style={styles.infoLabel}>Incoming requests:</Text>
                   <Text style={styles.infoValue}>5</Text>
                 </View>
-
                 <Button title="Inspect Requests" onPress={() => {}} />
               </View>
             </>
@@ -629,171 +607,18 @@ export default function TaskPost({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: SPACING.md,
-  },
-  wrapper: {
-    marginBottom: 16,
-  },
-  helperText: {
-    marginTop: 6,
-    fontSize: 13,
-    color: "#777",
-    textAlign: "center",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "stretch",
-    paddingVertical: SPACING.md,
-  },
-  heading: {
-    fontSize: 30,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#212121",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+  categoryButton: {
+    backgroundColor: COLORS.color31,
+    borderColor: COLORS.color30,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#BDBDBD",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: "#212121",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    margin: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  inputError: {
-    borderColor: "#D32F2F",
-  },
-  errorText: {
-    color: "#D32F2F",
-    marginTop: -12,
-    marginBottom: 12,
-    fontSize: 13,
-  },
-  descriptionInput: {
-    height: 50,
-    paddingTop: 13,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "400",
-    marginBottom: 10,
-    color: "#666",
-  },
-  urgencyLabelWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  helpIcon: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#FF3B30",
-
-    borderColor: "#FF3B30",
-    borderRadius: 4,
-    width: 20,
-    height: 20,
-    textAlign: "center",
-    lineHeight: 18,
-  },
-  urgencyHelperBox: {
-    backgroundColor: "#fff7f7",
-    borderColor: "#FF3B30",
-
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
-  },
-  urgencyHelperText: {
-    color: "#212121",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  urgencyContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
-  },
-  urgencyButton: {
-    borderBottomWidth: 2,
-    borderColor: "transparent",
-    paddingVertical: 6,
-  },
-  urgencyText: {
-    fontSize: 16,
-  },
-  searchButtonFind: {
-    backgroundColor: "#2962FF",
-    borderRadius: 8,
-    paddingVertical: 14,
-    height: 50,
-    alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 3,
-  },
-  searchButtonStop: {
-    backgroundColor: "#F44336",
-    borderRadius: 8,
-    paddingVertical: 14,
-    height: 50,
-    alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 3,
-  },
-  searchButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  infoFieldsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  infoField: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    width: "50%",
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "400",
-    lineHeight: 18,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#212121",
-    lineHeight: 18,
-    marginLeft: 8,
-  },
-  subcategoryWrapper: {
-    display: "flex",
-    flexDirection: "column",
+  categoryButtonSelected: {
+    backgroundColor: COLORS.color16,
+    borderColor: COLORS.color16,
   },
   categoryContainer: {
     flexDirection: "row",
@@ -801,25 +626,178 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 16,
   },
-  categoryButton: {
-    borderWidth: 1,
-    borderColor: "#888",
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    margin: 4,
-    backgroundColor: "#f0f0f0",
-  },
-  categoryButtonSelected: {
-    backgroundColor: "#2962FF",
-    borderColor: "#2962FF",
-  },
   categoryText: {
-    color: "#333",
+    color: COLORS.color11,
     fontSize: 14,
   },
   categoryTextSelected: {
-    color: "#fff",
+    color: COLORS.color19,
     fontWeight: "bold",
+  },
+  container: {
+    backgroundColor: COLORS.color19,
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+  },
+  descriptionInput: {
+    height: 50,
+    paddingTop: 13,
+  },
+  errorText: {
+    color: COLORS.color5,
+    fontSize: 13,
+    marginBottom: 12,
+    marginTop: -12,
+  },
+  heading: {
+    color: COLORS.color27,
+    fontSize: 30,
+    fontWeight: "700",
+    marginBottom: 32,
+    textAlign: "center",
+  },
+  helpIcon: {
+    borderColor: COLORS.color7,
+    borderRadius: 4,
+    color: COLORS.color7,
+    fontSize: 16,
+
+    fontWeight: "bold",
+    height: 20,
+    lineHeight: 18,
+    marginLeft: 8,
+    textAlign: "center",
+    width: 20,
+  },
+  helperText: {
+    color: COLORS.color32,
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
+  },
+  infoField: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "50%",
+  },
+  infoFieldsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  infoLabel: {
+    color: COLORS.color15,
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 18,
+  },
+  infoValue: {
+    color: COLORS.color27,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 18,
+    marginLeft: 8,
+  },
+  input: {
+    backgroundColor: COLORS.color19,
+    borderColor: COLORS.color26,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: COLORS.color27,
+    elevation: 2,
+    fontSize: 16,
+    height: 50,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    width: "100%",
+  },
+  inputError: {
+    borderColor: COLORS.color5,
+  },
+  label: {
+    color: COLORS.color15,
+    fontSize: 14,
+    fontWeight: "400",
+    marginBottom: 10,
+  },
+  scrollContent: {
+    alignItems: "stretch",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: SPACING.md,
+  },
+  searchButtonFind: {
+    alignItems: "center",
+    backgroundColor: COLORS.color16,
+    borderRadius: 8,
+    elevation: 3,
+    height: 50,
+    marginBottom: 16,
+    paddingVertical: 14,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  searchButtonStop: {
+    alignItems: "center",
+    backgroundColor: COLORS.color33,
+    borderRadius: 8,
+    elevation: 3,
+    height: 50,
+    marginBottom: 16,
+    paddingVertical: 14,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  searchButtonText: {
+    color: COLORS.color19,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  subcategoryWrapper: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  urgencyButton: {
+    borderBottomWidth: 2,
+    borderColor: "transparent",
+    paddingVertical: 6,
+  },
+  urgencyContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 10,
+  },
+  urgencyHelperBox: {
+    backgroundColor: COLORS.color34,
+    borderColor: COLORS.color7,
+
+    borderRadius: 8,
+    marginBottom: 10,
+    padding: 10,
+  },
+  urgencyHelperText: {
+    color: COLORS.color27,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  urgencyLabelWrapper: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+  urgencyText: {
+    fontSize: 16,
+  },
+  wrapper: {
+    marginBottom: 16,
   },
 });

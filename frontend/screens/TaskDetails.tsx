@@ -1,8 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { Text, StyleSheet, ScrollView } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
-import useStore, { Task } from "../store/useStore";
+
+import useStore from "../store/useStore";
+import { COLORS } from "../constants/colors";
 
 export default function TaskDetailsScreen() {
   const route = useRoute<RouteProp<{ params: { taskId: number } }, "params">>();
@@ -32,33 +34,33 @@ export default function TaskDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: COLORS.color19,
     flex: 1,
-    backgroundColor: "#fff",
   },
   content: {
     padding: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#222",
-    marginBottom: 16,
+  errorText: {
+    alignSelf: "center",
+    color: COLORS.color5,
+    fontSize: 18,
+    marginTop: 40,
   },
   label: {
+    color: COLORS.color10,
     fontSize: 16,
     fontWeight: "600",
-    color: "#6200ee",
     marginTop: 12,
   },
   text: {
+    color: COLORS.color11,
     fontSize: 15,
-    color: "#333",
     marginTop: 4,
   },
-  errorText: {
-    fontSize: 18,
-    color: "#d32f2f",
-    alignSelf: "center",
-    marginTop: 40,
+  title: {
+    color: COLORS.color14,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
   },
 });

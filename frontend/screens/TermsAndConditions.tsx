@@ -13,7 +13,7 @@ import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
 import { logout } from "../utils/logout";
 import api from "../services/api";
-import TinySpinner from "../utils/TinySpinner";
+import TinySpinner from "../components/TinySpinner";
 
 interface Props {
   modalVisible: boolean;

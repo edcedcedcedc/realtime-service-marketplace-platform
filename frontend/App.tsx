@@ -1,39 +1,47 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Button, StyleSheet, ScrollView } from "react-native";
-import Toast from "react-native-toast-message";
-import useStore, { Task } from "./store/useStore";
-import { socketManager } from "./utils/socketManager";
-import { WS_URL } from "./services/api";
-import { NavigationContainer } from "@react-navigation/native";
-import { navigationRef } from "./utils/navigationRef";
-import AppLayout from "./AppLayout";
 import { PaperProvider } from "react-native-paper";
-import RootNavigator from "./navigation/RootNavigator";
+import Toast from "react-native-toast-message";
 import {
   SafeAreaProvider,
   SafeAreaInsetsContext,
   EdgeInsets,
 } from "react-native-safe-area-context";
+import { NavigationContainer } from "@react-navigation/native";
+
+import RootNavigator from "./navigation/RootNavigator";
+import AppLayout from "./components/AppLayout";
+import useStore, { Task } from "./store/useStore";
+import { socketManager } from "./utils/socketManager";
+import { navigationRef } from "./utils/navigationRef";
+import { WS_URL } from "./services/api";
+import { COLORS } from "./constants/colors";
 
 export default function App() {
+  const addTask = useStore.getState().addTask;
+  const removeTask = useStore.getState().removeTask;
+
   useEffect(() => {
     socketManager.connect(WS_URL);
+
     const handleNewTask = (payload: Task) => {
-      Toast.show({
-        type: "info",
-        text1: "New task received",
-      });
-      useStore.getState().addTask(payload);
+      setTimeout(() => {
+        Toast.show({
+          type: "info",
+          text1: `New task received, id:  ${payload.id}`,
+        });
+      }, 50);
+      console.log(payload, " payload", payload.id, " id");
+      addTask(payload);
     };
 
-    type Id = { id: number };
-
-    const handleDeleteTask = (id: Id) => {
+    const handleDeleteTask = (id: { id: number }) => {
       Toast.show({
-        type: "info",
-        text1: `Task with ${JSON.stringify(id)} was deleted`,
+        type: "success",
+        text1: `Task with id ${id.id} was deleted`,
       });
-      useStore.getState().removeTask(id.id);
+      console.log(id.id, "payload id");
+      removeTask(id.id);
     };
 
     const handleSocketOnOpen = () =>
@@ -72,10 +80,6 @@ export default function App() {
   };
 
   const [selectedDevice, setSelectedDevice] = useState("Android (No notch)");
-  Toast.show({
-    type: "info",
-    text1: `the selected device is ${selectedDevice}`,
-  });
   const insets = fakeInsetsForDevices[selectedDevice];
 
   return (
@@ -89,7 +93,7 @@ export default function App() {
                 key={device}
                 title={device}
                 onPress={() => setSelectedDevice(device)}
-                color={device === selectedDevice ? "#007AFF" : undefined}
+                color={device === selectedDevice ? COLORS.color23 : undefined}
               />
             ))}
           </ScrollView>
@@ -109,11 +113,11 @@ export default function App() {
 
 const styles = StyleSheet.create({
   deviceSelector: {
+    backgroundColor: COLORS.color17,
     padding: 10,
-    backgroundColor: "#f2f2f2",
   },
   title: {
-    marginBottom: 8,
     fontWeight: "bold",
+    marginBottom: 8,
   },
 });

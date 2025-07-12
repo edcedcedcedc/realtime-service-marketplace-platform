@@ -1,9 +1,9 @@
-import axios from "axios";
-import useStore from "../store/useStore";
 import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
+import useStore from "../store/useStore";
 import Constants from 'expo-constants';
+import axios from "axios";
 
 const IPV4 = Constants.expoConfig!.extra!.IPV4;
 

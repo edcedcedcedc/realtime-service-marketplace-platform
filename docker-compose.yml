@@ -16,6 +16,8 @@ services:
       - redis
     environment:
       - REDIS_HOST=redis
+    command: >
+      sh -c "cd /app && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
   celery:
     build:
       context: ./backend
@@ -33,8 +35,8 @@ services:
   celery-beat:
     build:
       context: ./backend
-    command: >
-      sh -c "cd /app && celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    #command: >
+    #  sh -c "cd /app && celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     working_dir: /app
     volumes:
       - ./backend:/app
