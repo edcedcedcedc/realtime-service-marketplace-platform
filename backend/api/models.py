@@ -17,6 +17,23 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    @property
+    def latest_terms_acceptance(self):
+        return self.terms_logs.order_by("-accepted_at").first()
+
+
+class TermsAcceptanceLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tsc_logs")
+    accepted_at = models.DateTimeField(auto_now_add=True)
+    accepted_version = models.CharField(
+        max_length=20, default=settings.CURRENT_TSC_VERSION
+    )
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user.username} accepted {self.accepted_version} at {self.accepted_at}"
+
 
 class Profile(models.Model):
     user = models.OneToOneField(
@@ -81,6 +98,7 @@ class Task(models.Model):
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
 
     # Relations
     client = models.ForeignKey(
@@ -95,7 +113,20 @@ class Task(models.Model):
         null=True,
         blank=True,
     )
-
+    terms_accepted_client_at = models.ForeignKey(
+        TermsAcceptanceLog,
+        on_delete=models.SET_NULL,
+        related_name="tasks_as_client",
+        null=True,
+        blank=True,
+    )
+    terms_accepted_tasker_at = models.ForeignKey(
+        TermsAcceptanceLog,
+        on_delete=models.SET_NULL,
+        related_name="tasks_as_tasker",
+        null=True,
+        blank=True,
+    )
     # New fields
     category = models.CharField(
         max_length=30,

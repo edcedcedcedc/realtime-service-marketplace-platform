@@ -148,6 +148,7 @@ interface State {
   miniMapReady: boolean;
   fullMapReady: boolean;
   isFullMapVisible: boolean;
+  isLoggedIn: boolean;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -163,7 +164,9 @@ interface State {
   setTempTaskData: (data: TaskFormInput | null) => void;
   setSelectedRegion: (region: Region | null) => void;
   setSelectedLatLng: (latLng: LatLng | null) => void;
+  setIsLoggedIn: (param: boolean) => void;
   resetStore: () => void;
+  
 }
 
 const useStore = create<State>()(
@@ -187,6 +190,8 @@ const useStore = create<State>()(
       miniMapReady: false,
       fullMapReady: false,
       isFullMapVisible: false,
+      isLoggedIn: false,
+      setIsLoggedIn: (param) => set({isLoggedIn: param}),
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
