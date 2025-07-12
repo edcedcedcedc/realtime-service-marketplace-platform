@@ -53,7 +53,6 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       });
     } finally {
       setLoading(false);
-      setHasPulled(false);
     }
   };
 
@@ -92,7 +91,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       task.description?.toLowerCase().includes(value.toLowerCase()) ||
       task.urgency.toLowerCase().includes(value.toLowerCase()) ||
       task.location.toLowerCase().includes(value.toLowerCase()) ||
-      task.status.toLowerCase().includes(value.toLowerCase()),
+      task.status.toLowerCase().includes(value.toLowerCase())
   );
 
   return (
@@ -103,6 +102,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
 
       <TaskSearchBar value={value} onChangeText={setValue} />
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={filteredTasks}
         keyExtractor={(item, index) => {
           if (!item?.id) {

@@ -90,7 +90,7 @@ export default function TaskPost({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position.",
+        "Location permission is required to fetch your position."
       );
       return;
     }
@@ -124,15 +124,7 @@ export default function TaskPost({ navigation }: any) {
           longitude: coordinates?.longitude,
         };
         const res = await api.post("/tasks/create/", payload);
-        setTimeout(() => {
-          Toast.show({
-            type: "info",
-            text1: "Created Task Id",
-            text2: res.data.id,
-          });
-        }, 50);
         taskToBeCancelledIdRef.current = res.data.id;
-        addTask(res.data);
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -172,7 +164,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -191,7 +183,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -205,17 +197,8 @@ export default function TaskPost({ navigation }: any) {
   const cancelSearch = () => {
     console.log(
       "Cancel search called, taskToBeCancelledId:",
-      taskToBeCancelledIdRef.current,
+      taskToBeCancelledIdRef.current
     );
-
-    setTimeout(() => {
-      Toast.show({
-        type: "info",
-        text1: "Cancel search called, taskToBeCancelledId:",
-        text2: `taskToBeCancelledIdRef.current ${taskToBeCancelledIdRef.current}`,
-      });
-    }, 50);
-
     setIsSearching(false);
     setTempTaskData(null);
 
@@ -226,24 +209,11 @@ export default function TaskPost({ navigation }: any) {
 
   const deleteTaskById = async () => {
     const taskId = tasks.find(
-      (task) => taskToBeCancelledIdRef.current == task.id,
+      (task) => taskToBeCancelledIdRef.current == task.id
     )?.id;
     if (!taskId) return;
     try {
       const res = await api.delete(`/tasks/delete/${taskId}/`);
-      console.log(
-        res.data,
-        " <= res.data for const res = await api.delete(`/tasks/delete/${taskId}/`);",
-      );
-      setTimeout(() => {
-        Toast.show({
-          type: "success",
-          text1: "Task deleted",
-          text2: `Task #${JSON.stringify(res.data, null, 2)}`,
-        });
-      }, 50);
-      const removeTask = useStore.getState().removeTask;
-      removeTask(taskId);
       setTempTaskData(null);
       taskToBeCancelledIdRef.current = null;
     } catch (err: any) {

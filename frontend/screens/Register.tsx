@@ -51,21 +51,19 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        }),
+        })
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user,
+          res.data.user
         );
       Toast.show({
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace(
-        res.data.user.role === "client" ? "Search a tasker" : "Task feed",
-      );
+      navigation.replace("Start");
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -262,7 +260,7 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.color21,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 20.84,
+    shadowRadius: 3.84,
   },
   buttonText: {
     color: COLORS.color19,

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../constants/network";
+import { API_BASE_URL } from "../services/api";
 
 //Mock axios before importing anything that uses it
 jest.mock("axios", () => {

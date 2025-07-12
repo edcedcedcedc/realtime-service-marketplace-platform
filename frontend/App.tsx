@@ -14,27 +14,34 @@ import AppLayout from "./components/AppLayout";
 import useStore, { Task } from "./store/useStore";
 import { socketManager } from "./utils/socketManager";
 import { navigationRef } from "./utils/navigationRef";
-import { WS_URL } from "./constants/network";
+import { WS_URL } from "./services/api";
 import { COLORS } from "./constants/colors";
 
 export default function App() {
+  const addTask = useStore.getState().addTask;
+  const removeTask = useStore.getState().removeTask;
+
   useEffect(() => {
     socketManager.connect(WS_URL);
 
     const handleNewTask = (payload: Task) => {
-      Toast.show({
-        type: "info",
-        text1: "New task received",
-      });
-      useStore.getState().addTask(payload);
+      setTimeout(() => {
+        Toast.show({
+          type: "info",
+          text1: `New task received, id:  ${payload.id}`,
+        });
+      }, 50);
+      console.log(payload, " payload", payload.id, " id");
+      addTask(payload);
     };
 
     const handleDeleteTask = (id: { id: number }) => {
       Toast.show({
-        type: "info",
-        text1: `Task with ${JSON.stringify(id)} was deleted`,
+        type: "success",
+        text1: `Task with ${id.id} was deleted`,
       });
-      useStore.getState().removeTask(id.id);
+      console.log(id.id, "payload id");
+      removeTask(id.id);
     };
 
     const handleSocketOnOpen = () =>
@@ -73,11 +80,6 @@ export default function App() {
   };
 
   const [selectedDevice, setSelectedDevice] = useState("Android (No notch)");
-  Toast.show({
-    type: "info",
-    text1: `the selected device is ${selectedDevice}`,
-  });
-
   const insets = fakeInsetsForDevices[selectedDevice];
 
   return (

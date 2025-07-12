@@ -1,34 +1,47 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    volumes:
-      - ./backend:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-    env_file:
-      - .env
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        daphne -b 0.0.0.0 -p 8000 config.asgi:application
-      "
-
   redis:
     image: redis:7
     ports:
       - "6379:6379"
 
+  django:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/:/app/
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    command: >
+      sh -c "cd /app && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
   celery:
     build:
       context: ./backend
-    command: celery -A config worker --loglevel=info
-    depends_on:
-      - backend
-      - redis
+    command: >
+      sh -c "cd /app && celery -A config worker --loglevel=info"
+    working_dir: /app
     volumes:
       - ./backend:/app
-    env_file:
-      - .env
+    depends_on:
+      - redis
+      - django
+    environment:
+      - REDIS_HOST=redis
+
+  celery-beat:
+    build:
+      context: ./backend
+    #command: >
+    #  sh -c "cd /app && celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+      - django
+    environment:
+      - REDIS_HOST=redis

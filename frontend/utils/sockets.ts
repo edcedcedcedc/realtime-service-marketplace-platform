@@ -1,5 +1,5 @@
 import { Task } from "../store/useStore";
-import { WS_URL } from "../constants/network";
+import { WS_URL } from "../services/api";
 
 let socket: WebSocket | null = null;
 

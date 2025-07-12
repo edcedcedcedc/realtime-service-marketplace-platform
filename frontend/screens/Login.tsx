@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Keyboard,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
 import { yupResolver } from "@hookform/resolvers/yup";
 
@@ -20,20 +19,24 @@ import { loginSchema } from "../validation/validationSchema";
 import { withTimeout } from "../utils/withTimeout";
 import { SPACING } from "../constants/dimensions";
 import { COLORS } from "../constants/colors";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import TermsAndConditions from "./TermsAndConditions";
 
 export default function LoginScreen({ navigation }: any) {
-  const auth = useStore((state) => state.auth);
-  const { setAuth, setLoading } = useStore.getState();
+  const { setAuth, setLoading, setIsLoggedIn } = useStore.getState();
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
 
   useEffect(() => {
+    setIsLoggedIn(false);
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
       scrollRef.current?.scrollToPosition(0, 0, false);
+      reset();
     };
   }, []);
 
@@ -60,16 +63,15 @@ export default function LoginScreen({ navigation }: any) {
           password: data.password,
         }),
         5000,
-        "Request timed out. Please try again",
+        "Request timed out. Please try again"
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-
-      navigation.replace(
-        user.role === "client" ? "Search a tasker" : "Task feed",
-      );
+      setLoading(false);
+      setIsLoggedIn(true);
+      setModalVisible(true);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -95,7 +97,7 @@ export default function LoginScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <Image source={require("../assets/icon.png")} style={styles.logo} />
-        <Text style={styles.title}>Your App Name</Text>
+        <Text style={styles.title}>Taskoon</Text>
 
         {/* Username */}
         <Controller
@@ -155,18 +157,15 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Terms */}
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Terms and Conditions", "Display your terms here")
-          }
-          style={{ alignSelf: "center", marginTop: 10 }}
-        >
-          <Text style={styles.terms}>Terms and Conditions</Text>
-        </TouchableOpacity>
+        {isLoggedIn && (
+          <TermsAndConditions
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            handleLogin={handleLogin}
+            navigation={navigation}
+          />
+        )}
       </KeyboardAwareScrollView>
-      {/*  </ScrollView> */}
     </View>
   );
 }

@@ -11,11 +11,11 @@ interface HeaderMenuProps {
 
 export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const [visible, setVisible] = useState(false);
-  const user = useStore((state) => state.auth.user);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
 
-  if (!user) {
+  if (!isLoggedIn) {
     return;
   }
   return (

@@ -1,10 +1,15 @@
 import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
+import { navigationRef } from "../utils/navigationRef";
+import useStore from "../store/useStore";
+import Constants from 'expo-constants';
 import axios from "axios";
 
-import useStore from "../store/useStore";
-import { navigationRef } from "../utils/navigationRef";
-import { API_BASE_URL } from "../constants/network";
+const IPV4 = Constants.expoConfig!.extra!.IPV4;
+
+const API_BASE_URL = `http://${IPV4}:8000/api/`;
+
+export const WS_URL = `ws://${IPV4}:8000/ws/tasks/`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
