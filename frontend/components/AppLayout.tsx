@@ -7,11 +7,13 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import useStore from "./store/useStore";
 import Toast from "react-native-toast-message";
-import GlobalLoading from "./utils/GlobalLoading";
-import ToastConfig from "./config/ToastConfig";
-import { SPACING } from "./utils/spacings";
+
+import GlobalLoading from "./GlobalLoading";
+import ToastConfig from "../config/ToastConfig";
+import useStore from "../store/useStore";
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const loading = useStore((state) => state.loading);
@@ -27,15 +29,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-    paddingHorizontal: SPACING.md,
-  },
   container: {
+    backgroundColor: COLORS.color19,
     flex: 1,
-    backgroundColor: "#fff",
     paddingVertical: SPACING.sm,
+  },
+  safeArea: {
+    backgroundColor: COLORS.color19,
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
 });

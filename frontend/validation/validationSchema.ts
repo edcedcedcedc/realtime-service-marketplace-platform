@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+
 import { SUBCATEGORY_OPTIONS } from "../store/useStore";
 
 export const usernameSchema = Yup.string()

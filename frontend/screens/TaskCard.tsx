@@ -1,6 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
+
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
+import { COLORS } from "../constants/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -9,7 +11,7 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 const statusColorMap = STATUS_OPTIONS.reduce(
@@ -17,7 +19,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 type TaskCardProps = {
@@ -59,7 +61,7 @@ export default function TaskCard({ item }: TaskCardProps) {
             Status:{" "}
             <Text
               style={{
-                color: statusColorMap[item.status] || "#444",
+                color: statusColorMap[item.status] || COLORS.color12,
                 fontWeight: "600",
               }}
             >
@@ -83,7 +85,9 @@ export default function TaskCard({ item }: TaskCardProps) {
           </Text>
           <Text style={styles.infoText}>
             Urgency:
-            <Text style={{ color: urgencyColorMap[item.urgency] || "#444" }}>
+            <Text
+              style={{ color: urgencyColorMap[item.urgency] || COLORS.color12 }}
+            >
               {" " + item.urgency}
             </Text>
           </Text>
@@ -108,26 +112,35 @@ const styles = StyleSheet.create({
   card: {
     alignContent: "center",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    width: width - 32,
     alignSelf: "center",
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.color19,
+    borderColor: COLORS.color18,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 16,
+    width: width - 32,
   },
-  title: {
-    fontSize: 18,
-    marginBottom: 8,
-    color: "#333",
-    fontWeight: "bold",
+  centeredRow: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+
+    width: "100%",
+  },
+  centeredText: {
+    maxWidth: "90%",
+    textAlign: "center",
   },
   description: {
+    color: COLORS.color13,
     fontSize: 14,
-    color: "#555",
     marginBottom: 12,
     textAlign: "center",
+  },
+  infoText: {
+    color: COLORS.color12,
+    fontSize: 13,
   },
   row: {
     flexDirection: "row",
@@ -137,19 +150,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 8,
   },
-  centeredRow: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-
-    paddingHorizontal: 8,
-  },
-  centeredText: {
-    textAlign: "center",
-    maxWidth: "90%",
-  },
-  infoText: {
-    fontSize: 13,
-    color: "#444",
+  title: {
+    color: COLORS.color11,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
 });

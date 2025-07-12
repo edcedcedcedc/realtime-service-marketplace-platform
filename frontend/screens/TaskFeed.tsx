@@ -3,24 +3,23 @@ import {
   View,
   FlatList,
   StyleSheet,
-  Dimensions,
   Text,
   TouchableWithoutFeedback,
-  TouchableOpacity,
   Keyboard,
 } from "react-native";
+import Toast from "react-native-toast-message";
+
 import api from "../services/api";
 import useStore, { Task } from "../store/useStore";
-import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
-import { SPACING } from "../utils/spacings";
-import MapSelector from "./MapSelector";
-import * as Location from "expo-location";
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
+
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
 
+// REVIEW: Should this be a separate constant?
 const HEADER_HEIGHT = 120; // approx header + logout button height
-const COOLDOWN_MS = 5000;
 
 export default function TaskFeed({ navigation }: { navigation: any }) {
   const tasks = useStore((state) => state.tasks);
@@ -69,15 +68,18 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   const onScroll = (event: any) => {
     scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
   };
-  const onScrollEndDrag = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
 
+  const onScrollEndDrag = (event: any) => {
+    const cooldownMS = 5000;
     const now = Date.now();
+    const offsetY = event.nativeEvent.contentOffset.y;
+
+    scrollOffsetRef.current = offsetY;
+
     if (
       offsetY < -80 &&
       !loading &&
-      now - lastRefreshRef.current > COOLDOWN_MS
+      now - lastRefreshRef.current > cooldownMS
     ) {
       lastRefreshRef.current = now;
       fetchTasks();
@@ -90,7 +92,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       task.description?.toLowerCase().includes(value.toLowerCase()) ||
       task.urgency.toLowerCase().includes(value.toLowerCase()) ||
       task.location.toLowerCase().includes(value.toLowerCase()) ||
-      task.status.toLowerCase().includes(value.toLowerCase())
+      task.status.toLowerCase().includes(value.toLowerCase()),
   );
 
   return (
@@ -119,7 +121,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
               marginTop: 50,
             }}
           >
-            <Text style={{ fontSize: 16, color: "#999" }}>
+            <Text style={{ fontSize: 16, color: COLORS.color25 }}>
               No tasks found matching your search.
             </Text>
           </View>
@@ -134,82 +136,77 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
 }
 
 const statusColors: Record<string, object> = {
-  open: { color: "#1976d2" }, // Blue
-  confirmed: { color: "#fbc02d" },
-  "in-progress": { color: "#388e3c" }, // Green
-  completed: { color: "#388E3C" },
-  cancelled: { color: "#d32f2f" }, // Red
-  expired: { color: "#757575" }, // Grey
+  open: { color: COLORS.color1 }, // Blue
+  confirmed: { color: COLORS.color2 },
+  "in-progress": { color: COLORS.color3 }, // Green
+  completed: { color: COLORS.color3 },
+  cancelled: { color: COLORS.color5 }, // Red
+  expired: { color: COLORS.color28 }, // Grey
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
+  blueButton: {
+    backgroundColor: COLORS.color10, // same as login/register
+  },
+  button: {
     alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    backgroundColor: "#fff",
-  },
-  mascotPlaceholder: {
-    height: 100, // or whatever height fits your mascot image
-    width: "100%",
-    // Optionally center or add background color if you want visual debugging:
-    // backgroundColor: '#eee',
-    marginBottom: SPACING.sm, // space below mascot before search bar
-  },
-  headerContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: HEADER_HEIGHT,
-    backgroundColor: "#fff",
-    zIndex: 10,
-    elevation: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 40, // status bar height padding
-  },
-  header: {
-    fontWeight: "700",
-    fontSize: 28,
-    color: "#222",
-  },
-  logoutButton: {
-    position: "absolute",
-    right: 16,
-    bottom: 10,
-    borderColor: "#6200ee", // same as login/register
-    borderWidth: 1.5,
-    paddingHorizontal: 30,
+    borderRadius: 4,
+    flex: 1,
+    marginHorizontal: 4,
     paddingVertical: 10,
-    borderRadius: 6,
   },
-  logoutButtonText: {
-    color: "#6200ee",
+  buttonText: {
+    color: COLORS.color19,
+    fontSize: 14,
     fontWeight: "600",
-    fontSize: 16,
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
   },
   card: {
     alignContent: "center",
     alignItems: "center",
-
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
     alignSelf: "center",
+    borderColor: COLORS.color18,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 16,
   },
-  title: {
-    fontSize: 18,
-    marginBottom: 8,
-    color: "#555",
+  container: {
+    alignItems: "center",
+    backgroundColor: COLORS.color19,
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: SPACING.md,
   },
   description: {
+    color: COLORS.color13,
     fontSize: 14,
-    color: "#555",
     marginBottom: 12,
+  },
+  greenButton: {
+    backgroundColor: COLORS.color3,
+  },
+  header: {
+    color: COLORS.color14,
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  headerContainer: {
+    alignItems: "center",
+    backgroundColor: COLORS.color19,
+    elevation: 10,
+    height: HEADER_HEIGHT,
+    justifyContent: "center",
+    left: 0,
+    paddingTop: 40,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 10, // status bar height padding
   },
   infoRow: {
     flexDirection: "row",
@@ -217,38 +214,42 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoText: {
+    color: COLORS.color12,
     fontSize: 13,
-    color: "#444",
+  },
+  logoutButton: {
+    position: "absolute",
+    right: 16,
+    bottom: 10,
+    borderColor: COLORS.color10, // same as login/register
+    borderWidth: 1.5,
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  logoutButtonText: {
+    color: COLORS.color10,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  mascotPlaceholder: {
+    height: 100, // or whatever height fits your mascot image
+    width: "100%",
+    // Optionally center or add background color if you want visual debugging:
+    // backgroundColor: 'rgb(238, 238, 238)',
+    marginBottom: SPACING.sm, // space below mascot before search bar
   },
   status: {
-    fontWeight: "700",
     fontSize: 13,
+    fontWeight: "700",
     textTransform: "uppercase",
   },
-  buttonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 4,
-    borderRadius: 4,
-    alignItems: "center",
-  },
-  blueButton: {
-    backgroundColor: "#6200ee", // same as login/register
+  title: {
+    color: COLORS.color13,
+    fontSize: 18,
+    marginBottom: 8,
   },
   yellowButton: {
-    backgroundColor: "#fbc02d",
-  },
-  greenButton: {
-    backgroundColor: "#388e3c",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
+    backgroundColor: COLORS.color2,
   },
 });

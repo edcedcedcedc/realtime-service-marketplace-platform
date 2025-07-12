@@ -1,7 +1,7 @@
-// components/HeaderMenu.tsx
 import React, { useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Menu, Text } from "react-native-paper";
+
 import { logout } from "../utils/logout";
 import useStore from "../store/useStore";
 

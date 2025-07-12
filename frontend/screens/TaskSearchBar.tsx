@@ -1,7 +1,8 @@
-// components/JobSearchBar.tsx
 import React from "react";
 import { View, TextInput, StyleSheet } from "react-native";
-import { SPACING } from "../utils/spacings";
+
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
 
 export default function TaskSearchBar({
   value,
@@ -19,8 +20,8 @@ export default function TaskSearchBar({
         onChangeText={onChangeText}
         placeholder={placeholder}
         style={styles.input}
-        placeholderTextColor="#999"
-        selectionColor="#388E3C"
+        placeholderTextColor={COLORS.color25}
+        selectionColor={COLORS.color3}
       />
     </View>
   );
@@ -28,17 +29,17 @@ export default function TaskSearchBar({
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
     marginBottom: SPACING.xs,
+    width: "100%",
   },
   input: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: COLORS.color31,
+    borderColor: COLORS.color18,
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#333",
     borderWidth: 1,
-    borderColor: "#ddd",
+    color: COLORS.color11,
+    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
 });

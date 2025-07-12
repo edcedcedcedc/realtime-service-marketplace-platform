@@ -1,24 +1,24 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { sortTasksByDate } from "../utils/sortTasks"
+
+import { sortTasksByDate } from "../utils/sortTasks";
+import { COLORS } from "../constants/colors";
 
 export const URGENCY_OPTIONS = [
-  { label: "Now", value: "now", color: "#ff3b30" },
-  { label: "Soon", value: "soon", color: "#ff9500" },
-  { label: "Flexible", value: "flexible", color: "#34c759" },
+  { label: "Now", value: "now", color: COLORS.color7 },
+  { label: "Soon", value: "soon", color: COLORS.color8 },
+  { label: "Flexible", value: "flexible", color: COLORS.color9 },
 ];
 
 export const STATUS_OPTIONS = [
-  { label: "Open", value: "open", color: "#1976d2" }, // MUI Blue 700
-  { label: "Confirmed", value: "confirmed", color: "#fbc02d" }, // MUI Yellow 700
-  { label: "In Progress", value: "in-progress", color: "#388e3c" }, // MUI Green 700
-  { label: "Completed", value: "completed", color: "#2e7d32" }, // MUI Green 800
-  { label: "Cancelled", value: "cancelled", color: "#d32f2f" }, // MUI Red 700
-  { label: "Expired", value: "expired", color: "#616161" }, // MUI Grey 700
+  { label: "Open", value: "open", color: COLORS.color1 }, // MUI Blue 700
+  { label: "Confirmed", value: "confirmed", color: COLORS.color2 }, // MUI Yellow 700
+  { label: "In Progress", value: "in-progress", color: COLORS.color3 }, // MUI Green 700
+  { label: "Completed", value: "completed", color: COLORS.color4 }, // MUI Green 800
+  { label: "Cancelled", value: "cancelled", color: COLORS.color5 }, // MUI Red 700
+  { label: "Expired", value: "expired", color: COLORS.color6 }, // MUI Grey 700
 ];
-
-
 
 export const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
   repair: ["electrical", "plumbing", "appliance", "furniture", "other"],
@@ -125,13 +125,12 @@ export interface Task {
   subcategory: string;
   subtasks?: [];
 }
+
 interface Jwt {
   access: string | null;
   refresh: string | null;
 }
-interface Loading {
-  loading: boolean;
-}
+
 interface State {
   auth: {
     jwt: Jwt | null;
@@ -148,6 +147,7 @@ interface State {
   miniMapReady: boolean;
   fullMapReady: boolean;
   isFullMapVisible: boolean;
+
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -187,19 +187,23 @@ const useStore = create<State>()(
       miniMapReady: false,
       fullMapReady: false,
       isFullMapVisible: false,
+
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
       setMarkerPoint: (point) => set({ markerPoint: point }),
+
       setSelectedRegion: (region) => {
         if (!region) {
           set({ selectedRegion: null });
           return;
         }
-        let latitude = Number(region.latitude.toFixed(6));
-        let longitude = Number(region.longitude.toFixed(6));
-        let latitudeDelta = region.latitudeDelta;
-        let longitudeDelta = region.longitudeDelta;
+
+        const latitude = Number(region.latitude.toFixed(6));
+        const longitude = Number(region.longitude.toFixed(6));
+        const latitudeDelta = region.latitudeDelta;
+        const longitudeDelta = region.longitudeDelta;
+
         set({
           selectedRegion: {
             latitude,
@@ -208,6 +212,7 @@ const useStore = create<State>()(
             longitudeDelta,
           },
         });
+
         set({
           selectedLatLng: {
             latitude,
@@ -215,10 +220,12 @@ const useStore = create<State>()(
           },
         });
       },
+
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
       setTempTaskData: (data) => set({ tempTaskData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
+
       clearAuth: () =>
         set((state) => ({
           auth: {
@@ -226,6 +233,7 @@ const useStore = create<State>()(
             user: state.auth.user, // keep user info if you want
           },
         })),
+
       addTasker: (tasker: User) =>
         set((state) => {
           const exists = state.taskers.some((t) => t.id === tasker.id);
@@ -239,6 +247,7 @@ const useStore = create<State>()(
           if (exists) return {};
           return { clients: [...state.clients, client] };
         }),
+
       addTask: (task: Task) =>
         set((state) => {
           const normalizedTask = { ...task, id: Number(task.id) };
@@ -246,16 +255,19 @@ const useStore = create<State>()(
           if (exists) return {};
           return { tasks: sortTasksByDate([...state.tasks, normalizedTask]) };
         }),
+
       removeTask: (id: number) =>
         set((state) => ({
           tasks: state.tasks.filter((task) => task.id !== Number(id)),
         })),
+
       setTasks: (tasks: Task[]) =>
         set({
           tasks: sortTasksByDate(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
+
       resetStore: () => set({ ...initialState }),
     }),
     {

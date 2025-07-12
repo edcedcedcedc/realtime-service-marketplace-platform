@@ -2,6 +2,8 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
 
+import { COLORS } from "../constants/colors";
+
 type Props = {
   x: number;
   y: number;
@@ -50,11 +52,11 @@ export default function AnimatedCircle({ x, y }: Props) {
 
 const styles = StyleSheet.create({
   circle: {
+    backgroundColor: COLORS.color35,
+    borderRadius: 25,
+    height: 40,
     position: "absolute",
     width: 40,
-    height: 40,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 59, 48, 0.55)",
     zIndex: 5,
   },
 });

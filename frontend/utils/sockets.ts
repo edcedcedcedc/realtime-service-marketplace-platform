@@ -1,8 +1,9 @@
-import { Job } from "../store/useStore";
-import { WS_URL } from "../services/api";
+import { Task } from "../store/useStore";
+import { WS_URL } from "../constants/network";
+
 let socket: WebSocket | null = null;
 
-export function startSocket(onMessage: (job: Job) => void) {
+export function startSocket(onMessage: (task: Task) => void) {
   if (socket) return; // avoid reconnecting if already connected
   socket = new WebSocket(WS_URL);
 

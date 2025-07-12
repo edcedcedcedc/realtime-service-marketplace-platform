@@ -11,10 +11,13 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+
+import AnimatedCircle from "../components/AnimatedCircle";
+import TinySpinner from "../components/TinySpinner";
 import useStore, { Region } from "../store/useStore";
-import AnimatedCircle from "../utils/AnimatedCircle";
 import { DEFAULT_DELTA } from "../store/useStore";
-import TinySpinner from "../utils/TinySpinner";
+import { COLORS } from "../constants/colors";
+
 type Props = {
   address: string;
   isSearching: boolean;
@@ -46,10 +49,12 @@ export default function MapSelectorScreen({
     x: number;
     y: number;
   } | null>(null);
+
   const [markerPointFull, setMarkerPointFull] = useState<{
     x: number;
     y: number;
   } | null>(null);
+
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
 
@@ -291,62 +296,62 @@ export default function MapSelectorScreen({
 }
 
 const styles = StyleSheet.create({
-  mapWrapper: {
-    position: "relative",
-    width: "100%",
-    height: 150,
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 16,
+  buttonText: {
+    color: COLORS.color19,
+    fontSize: 16,
+    fontWeight: "700",
   },
-  mapMini: {
-    width: "100%",
-    height: "100%",
+  dot: {
+    backgroundColor: COLORS.color22,
+    borderColor: COLORS.color19,
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 12,
+    position: "absolute",
+    width: 12,
+    zIndex: 10,
+  },
+  exitButton: {
+    backgroundColor: COLORS.color16,
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    position: "absolute",
+    right: 20,
+    top: 50,
+    //zIndex: 10,
   },
   fullContainer: {
     flex: 1,
   },
+  infoText: {
+    color: COLORS.color15,
+    marginBottom: 16,
+    textAlign: "center",
+  },
   mapFull: {
-    width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
+    width: Dimensions.get("window").width,
   },
-  exitButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: "#2962FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  mapMini: {
+    height: "100%",
+    width: "100%",
+  },
+  mapWrapper: {
     borderRadius: 8,
-    //zIndex: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
+    height: 150,
+    marginBottom: 16,
+    overflow: "hidden",
+    position: "relative",
+    width: "100%",
   },
   pulseRing: {
+    backgroundColor: COLORS.color39,
+    borderRadius: 20,
+    height: 40,
+    pointerEvents: "none",
     position: "absolute",
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 59, 48, 0.4)",
     zIndex: 5,
-    pointerEvents: "none",
-  },
-  infoText: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: 16,
-  },
-  dot: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "red",
-    borderWidth: 2,
-    borderColor: "#fff",
-    zIndex: 10,
   },
 });

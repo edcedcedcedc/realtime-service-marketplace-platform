@@ -1,5 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
 import Auth from "../screens/Auth";
 import TaskFeed from "../screens/TaskFeed";
 import TaskDetails from "../screens/TaskDetails";

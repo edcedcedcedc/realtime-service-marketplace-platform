@@ -1,11 +1,10 @@
-import axios from "axios";
-import useStore from "../store/useStore";
 import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
-import { navigationRef } from "../utils/navigationRef";
+import axios from "axios";
 
-const API_BASE_URL = "http://192.168.1.4:8000/api/";
-export const WS_URL = "ws://192.168.1.4:8000/ws/tasks/";
+import useStore from "../store/useStore";
+import { navigationRef } from "../utils/navigationRef";
+import { API_BASE_URL } from "../constants/network";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
