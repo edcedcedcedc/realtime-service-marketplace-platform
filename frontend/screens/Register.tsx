@@ -61,9 +61,7 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace(
-        res.data.user.role === "client" ? "Search a tasker" : "Task feed"
-      );
+      navigation.replace("Start");
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -310,7 +308,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 20.84,
+    shadowRadius: 3.84,
   },
   registerButton: {
     backgroundColor: "#FF6F00",
