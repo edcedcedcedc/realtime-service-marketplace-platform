@@ -4,7 +4,7 @@ update-client install-server format-client lint-client \
 reset-db test-client coverage-server start-server-r stop-server-r start-celery start-celery-windows \
 docker-build docker-up docker-down docker-shell docker-migrate docker-migrations \
 docker-create-superuser docker-test docker-reset-db docker-restart docker-logs docker-up-d \
-docker-running-containers \
+docker-running-containers docker-collectstatic \
 
 # =============================================================================
 # [ BACKEND TASKS ]
@@ -104,6 +104,12 @@ docker-reset-db:
 	docker-compose exec django rm -f db.sqlite3 && \
 	docker-compose exec django find . -path "*/migrations/*.py" -not -name "__init__.py" -delete && \
 	docker-compose exec django python3 manage.py migrate
+
+docker-collectstatic:
+	docker-compose exec django python3 manage.py collectstatic --noinput
+
+docker-admin:
+	docker-compose exec django python3 manage.py runserver 0.0.0.0:8000
 
 
 

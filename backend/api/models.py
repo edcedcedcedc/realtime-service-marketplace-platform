@@ -98,7 +98,7 @@ class Task(models.Model):
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
-    finished_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     # Relations
     client = models.ForeignKey(
@@ -218,3 +218,55 @@ class Rating(models.Model):
         return (
             f"Rating {self.score} for {self.worker.username} by {self.client.username}"
         )
+
+
+class TaskLog(models.Model):
+    EVENT_CHOICES = [
+        ("tasks_created", "Tasks Created"),
+        ("tasks_completed", "Tasks Completed"),
+        ("tasks_cancelled", "Tasks Cancelled"),
+        ("user_login", "User Login"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES)
+    related_task = models.ForeignKey(
+        Task, null=True, blank=True, on_delete=models.SET_NULL
+    )
+
+    # Copy of important task fields to keep snapshot of task info at event time
+    task_created_at = models.DateTimeField(null=True, blank=True)
+    task_completed_at = models.DateTimeField(null=True, blank=True)
+    task_client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="tasklog_task_client",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    task_tasker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="tasklog_task_tasker",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    task_category = models.CharField(max_length=50, null=True, blank=True)
+
+    timestamp = models.DateTimeField(auto_now_add=True)
+    details = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.event_type} at {self.timestamp}"
+
+    def save(self, *args, **kwargs):
+        # If related_task is set, copy task info
+        if self.related_task:
+            self.task_created_at = self.related_task.created_at
+            self.task_completed_at = self.related_task.completed_at
+            self.task_client = self.related_task.client
+            self.task_tasker = self.related_task.tasker
+            self.task_category = self.related_task.category
+        super().save(*args, **kwargs)

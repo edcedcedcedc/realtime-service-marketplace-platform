@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import TaskSerializer
-from .models import Task, TermsAcceptanceLog
+from .models import TaskLog, Task, TermsAcceptanceLog
 from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted, get_user_ip
 from api.tasks import delete_task_if_still_open
 
@@ -140,6 +140,12 @@ def task_create(request):
             )
         task_instance = serializer.save(
             client=request.user, terms_accepted_client_at=terms_log
+        )
+        TaskLog.objects.create(
+            user=request.user,
+            event_type="task_created",
+            related_task=task_instance,
+            details=f"Task '{task_instance.title}' was created.",
         )
         taskfeed_broadcast_new(task_instance)
         re_serializer = TaskSerializer(task_instance)
