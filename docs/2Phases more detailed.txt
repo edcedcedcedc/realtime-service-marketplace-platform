@@ -283,19 +283,6 @@ Optional: Grocery pickup could include a **“list” or “store name”** fiel
 
 Optional: Let user select “I will help lift” vs “Tasker brings help” to change price tier.
 
-**✅ Always fixed fee**
-
----
-
-### 💳 Stripe Integration Summary
-
-| Task Category  | Stripe Flow                   | Variability |
-| -------------- | ----------------------------- | ----------- |
-| Fix & Repair   | Base + Optional Add Cost      | Medium–High |
-| Personal Help  | Fixed price                   | Low         |
-| Move & Deliver | Fixed price (possibly tiered) | Low–Medium  |
-
----
 
 ## 🗂 Example Feed Categories in UI:
 
@@ -318,34 +305,115 @@ Sure! Here's a clear categorization of your **task categories and subtasks** pai
 | **Personal Help**  | Dog Walking, Grocery Pickup, Waiting in Line, Elderly Assistance | Fixed Price                   | - Client sets total budget upfront <br> - Tasker accepts and completes job <br> - Stripe captures payment once after completion                                                                   |
 | **Move & Delivery** | Package Delivery, Furniture Moving, Heavy Lifting                | Fixed or Tiered Price         | - Client pays a flat or tiered fee based on service <br> - Tasker accepts job <br> - Stripe processes single fixed payment                                                                        |
 
----
-DETAILS ABOUT PAYMENT:
 
-How to implement this in your flow:
-Client posts task → status "open"
 
-Worker accepts → status "accepted"
+PHASE 5
+⸻
 
-Client confirms the task → status "confirmed" triggers payment authorization
+✅ Final Task Flow (Simplified)
 
-App immediately asks client to pay or pre-authorize the agreed amount via Stripe
+🟡 1. OPEN
+ • Task is visible to nearby taskers.
+ • Timer (e.g. 5 minutes) counts down.
+ • First tasker to accept → goes to client for approval.
+ • When client presses “Accept”, move to:
 
-Until payment success, task cannot move forward to "in-progress" or worker cannot start
+⸻
 
-Once payment is authorized, worker starts task → status "in-progress"
+🔵 2. IN_PROGRESS
+ • Task is now live.
+ • Tasker sees:
+ • 📍 Client’s address & map
+ • 🕒 Arrival timer (e.g. 15 min, 30 min, etc.)
+ • 🚫 No client’s phone number
+ • ✅ Call button (uses masked number)
+ • 💬 Optional chat (filtered, can’t send phones, names, or URLs)
+ • Task must begin within arrival window.
+ • If tasker doesn’t arrive in time (GPS & timer check):
+ • ❌ Task is auto-cancelled
+ • 🔻 Tasker is penalized (karma/rating)
+ • 💰 Client is auto-refunded
 
-After completion → status "completed" and payment is captured (if pre-authorized) or charged
+⸻
 
-UX considerations:
-When client hits Confirm, show a payment screen/modal for immediate payment/pre-authorization
+🔵 While IN_PROGRESS:
 
-If payment fails or is canceled, task stays in "accepted" or "open" status and cannot proceed
+Once tasker enters GPS radius (e.g. within 100–300 meters):
+ • Either:
+ • ✅ System auto-starts work timer
+ • or tasker taps “Start” (if you allow a button)
 
-Notify worker when payment is confirmed and task is ready to start
+Chat & masked call can now unlock fully.
 
-Summary:
-Payment must happen at "confirmed" step inside app, before work starts
+⸻
 
-This prevents off-app cash or direct payments between client & worker
+🔵 Task Completion
+ • Tasker presses “Finish” (if using buttons), or task ends automatically after estimated time.
+ • Client has a short time (e.g. 30 mins) to:
+ • ✅ Confirm task done
+ • ❌ Dispute (upload optional proof)
+ • If no action → system auto-completes & pays tasker.
 
-Protects all parties and ensures app gets commission if applicable
+⸻
+
+🚫 Security Features
+
+🔐 Communication Rules
+ • ✅ Call via masked number (Twilio or similar).
+ • ✅ Filter chat messages:
+ • Block phone numbers (regex detect: 07X XXX XXX / +373…)
+ • Block URLs
+ • Block names (optional — detect capitalized words)
+ • Optional: no copy/paste
+
+🚫 No Chat Before Start
+ • Chat is locked until:
+ • Tasker enters GPS radius
+ • OR taps “Start Job” (if you want a button)
+
+⸻
+
+💰 Payment Handling (Stripe)
+ • 💳 When client accepts tasker:
+ • Use Stripe SetupIntent to pre-authorize payment.
+ • 💸 When job ends:
+ • Use PaymentIntent.capture() to charge.
+ • Pay tasker (70%), keep 30% commission.
+
+⸻
+
+🛡️ Task Failures
+
+Case System Action
+Tasker no-show Auto-cancel, refund client, penalty for tasker
+Tasker late Optional: Allow 1-time preset chat (“I’m 5 min late”) — client can cancel
+Tasker & client finish Payment released, rating exchange
+Client disputes Goes to DISPUTED (optional review team or auto decision logic)
+
+
+⸻
+
+✅ Summary: Your System in 3 States
+
+Status Who Sees What Transition Triggers
+OPEN Taskers see task Client accepts tasker
+IN_PROGRESS Tasker gets map, timer, chat/call (limited) Timer & GPS tracking
+CANCELLED or COMPLETED Task ends No-show, manual finish, or timeout
+
+
+⸻
+
+➕ Optional Future Upgrades
+ • ✅ Karma system → rank taskers secretly.
+ • ✅ Auto-payout after COMPLETED.
+ • ✅ Verified GPS screenshot at start & end.
+ • ✅ Weekly/monthly summary reports for taskers.
+ • ✅ Dynamic tasker pricing (later phase).
+
+⸻
+
+Would you like a visual flowchart diagram of this, or a basic Django model + logic structure to match it?
+
+Or maybe help writing the chat filter logic to block numbers and names?
+
+Let me know what’s next!
