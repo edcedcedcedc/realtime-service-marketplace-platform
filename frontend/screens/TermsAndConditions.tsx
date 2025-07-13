@@ -55,7 +55,6 @@ export default function TermsAndConditions({
 
   const handleAccept = async () => {
     try {
-      setLoading(true);
       const res = await withTimeout(
         api.post("/accept-terms/", {}),
         5000,
