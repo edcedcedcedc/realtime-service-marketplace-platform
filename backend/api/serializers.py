@@ -36,7 +36,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "must_start_by",
             "created_at",
             "updated_at",
-            "finished_at",
+            "completed_at",
             "latitude",
             "longitude",
             "category",

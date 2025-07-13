@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import TaskSerializer
-from .models import Task, TermsAcceptanceLog
+from .models import TaskLog, Task, TermsAcceptanceLog
 from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted, get_user_ip
 from api.tasks import delete_task_if_still_open
 
@@ -141,8 +141,26 @@ def task_create(request):
         task_instance = serializer.save(
             client=request.user, terms_accepted_client_at=terms_log
         )
+
+        TaskLog.objects.create(
+            user=request.user,
+            event_type="tasks_created",
+            related_task=task_instance,
+            terms_accepted_client_at=terms_log,
+            task_client=task_instance.client,
+            task_tasker=task_instance.tasker,
+            task_title=task_instance.title,
+            task_description=task_instance.description,
+            task_budget=task_instance.budget,
+            task_created_at=task_instance.created_at,
+            task_completed_at=task_instance.completed_at,
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+
         taskfeed_broadcast_new(task_instance)
+
         re_serializer = TaskSerializer(task_instance)
+
         delete_task_if_still_open.apply_async(args=[task_instance.id], countdown=300)
         return Response(re_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -98,18 +98,18 @@ class Task(models.Model):
     expires_from_feed = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
-    finished_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     # Relations
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="tasks_posted",
+        related_name="tasks_posted",  # related name within client object
     )
     tasker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name="tasks_taken",
+        related_name="tasks_taken",  # related name within tasker object
         null=True,
         blank=True,
     )
@@ -218,3 +218,65 @@ class Rating(models.Model):
         return (
             f"Rating {self.score} for {self.worker.username} by {self.client.username}"
         )
+
+
+class TaskLog(models.Model):
+    EVENT_CHOICES = [
+        ("tasks_created", "Tasks Created"),
+        ("tasks_completed", "Tasks Completed"),
+        ("tasks_cancelled", "Tasks Cancelled"),
+        ("user_login", "User Login"),
+        ("terms_accepted_client_at", "Terms Accepted By Client"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES)
+    related_task = models.ForeignKey(
+        "Task", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    terms_accepted_client_at = models.ForeignKey(
+        "TermsAcceptanceLog",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasklogs_terms_client",
+    )
+    task_client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tasklogs_as_client",
+    )
+    task_tasker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tasklogs_as_tasker",
+    )
+    task_title = models.CharField(max_length=255, null=True, blank=True)
+    task_description = models.TextField(null=True, blank=True)
+    task_budget = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    task_created_at = models.DateTimeField(null=True, blank=True)
+    task_completed_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.event_type} at {self.timestamp}"
+
+    def save(self, *args, **kwargs):
+        if self.related_task:
+            self.task_client = self.related_task.client
+            self.task_tasker = self.related_task.tasker
+            self.task_title = self.related_task.title
+            self.task_description = self.related_task.description
+            self.task_budget = self.related_task.budget
+            self.task_created_at = self.related_task.created_at
+            self.task_completed_at = self.related_task.completed_at
+        super().save(*args, **kwargs)

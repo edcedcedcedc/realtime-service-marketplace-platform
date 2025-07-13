@@ -121,6 +121,7 @@ export interface Task {
   must_start_by: string | null;
   created_at: string;
   updated_at: string | null;
+  completed_at: string | null;
   category: "repair" | "delivery" | "personal_help" | "other";
   subcategory: string;
   subtasks?: [];
