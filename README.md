@@ -256,7 +256,24 @@ From the root folder (`./`), run the commands in this order:
 6. **start-client**  
    Launch the React Native client app.
 
+### HOW TO LAUNCH or START WITH DOCKER AS SERVER
 
+ПЕРВЫЙ РАЗ 
+git pull origin branchname 
+make reset-db
+make migrate
+make loaddata && make docker-loaddata
+make docker-restart or make docker-build && make docker-up
+
+
+ПОСЛЕДУЮЩИЕ РАЗЫ
+git pull origin branchname
+make migrate 
+make docker-restart or make docker-build make docker-up
+
+КРЕДЕНЦИАЛЫ 
+username: user1 password: user1 role: client
+username: user2 password: user2 role: tasker
 
 **Optional before committing:**  
 - **format-client**  
@@ -290,4 +307,8 @@ test-client
 ## Branch Naming Conventions
 
 Please follow the branch naming guidelines described in [`docs/git-branching.txt`](docs/git-branching.txt).
+
+## HOW
+
+
 

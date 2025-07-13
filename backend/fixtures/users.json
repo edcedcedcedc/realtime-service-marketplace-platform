@@ -1,0 +1,28 @@
+[
+  {
+    "model": "api.user",
+    "pk": 1,
+    "fields": {
+      "username": "user1",
+      "email": "user1@mail.com",
+      "role": "client",
+      "password": "pbkdf2_sha256$1000000$ZGT67yb23dWGJ8DxDKAMFE$uMsjoFYHORTvmj6b0WrVLuGqeQs1wZ0vkNuRD6BQOOs=",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false
+    }
+  },
+  {
+    "model": "api.user",
+    "pk": 2,
+    "fields": {
+      "username": "user2",
+      "email": "user2@mail.com",
+      "role": "tasker",
+      "password": "pbkdf2_sha256$1000000$T3g7B1bYNedvcsKRGe3QmC$Lt3qCvBlcEpvTOwOiSSEP1/SO3T1I+2QAewi9BtAxG0=",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false
+    }
+  }
+]
