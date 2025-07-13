@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
+import TaskSubmitted from "./TaskSubmitted";
 
 const { width } = Dimensions.get("window");
 
@@ -38,11 +39,12 @@ type TaskCardProps = {
 };
 
 export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
-  const [show, setShow] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+  const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
 
   useEffect(() => {
-    if (!isMiniMapVisible && show) {
-      setShow(false);
+    if (!isMiniMapVisible && showMiniMap) {
+      setShowMiniMap(false);
     }
   }, [isMiniMapVisible]);
 
@@ -112,18 +114,24 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
       <View style={{ display: "flex", flexDirection: "row" }}>
         <Button
-          title={show ? "Hide Location" : "View Location"}
-          onPress={() => setShow((show) => !show)}
+          title={showMiniMap ? "Hide Location" : "View Location"}
+          onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button title="Accept" />
+        <Button title="Accept" onPress={() => setShowTaskSubmitted(true)} />
       </View>
-      {show && (
+      {showMiniMap && (
         <MapSelector
           address={item.location}
           isSearching={false}
           onExit={() => {}}
           onChange={() => {}}
           handleGetLocation={() => {}}
+        />
+      )}
+      {showTaskSubmitted && (
+        <TaskSubmitted
+          title={item.title}
+          onCancel={() => setShowTaskSubmitted(false)}
         />
       )}
     </View>

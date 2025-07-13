@@ -490,28 +490,7 @@ export default function TaskPost({ navigation }: any) {
           {/* Urgency Label with Help Icon */}
           <View style={styles.urgencyLabelWrapper}>
             <Text style={styles.label}>Urgency</Text>
-            {/*  <TouchableOpacity
-                onPress={() => setShowUrgencyHelp(!showUrgencyHelp)}
-              >
-                <Text style={styles.helpIcon}>?</Text>
-              </TouchableOpacity> */}
           </View>
-
-          {/* Urgency Help Text */}
-          {/* {showUrgencyHelp && (
-              <View style={styles.urgencyHelperBox}>
-                <Text style={styles.urgencyHelperText}>
-                  <Text style={{ fontWeight: "bold" }}>Now</Text> - tasker will
-                  come in 15 minutes or the task will be canceled.{"\n"}
-                  <Text style={{ fontWeight: "bold" }}>Soon</Text> - tasker will
-                  come in 30 minutes or the task will be canceled.{"\n"}
-                  <Text style={{ fontWeight: "bold" }}>Flexible</Text> - the
-                  tasker will come in 1 hour.
-                </Text>
-              </View>
-            )} */}
-
-          {/* Urgency Buttons */}
           {!isSearching ? (
             <>
               <View style={styles.urgencyContainer}>

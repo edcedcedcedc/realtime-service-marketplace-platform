@@ -13,7 +13,7 @@ const TinySpinner = ({ message = "Loading…" }: { message?: string }) => {
         duration: 800,
         useNativeDriver: true,
         easing: Easing.linear,
-      }),
+      })
     ).start();
   }, []);
 
@@ -34,8 +34,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
   },
   loadingText: {
     color: COLORS.color15,
