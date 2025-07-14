@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Button,
+  Alert,
+} from "react-native";
 
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
-import TaskSubmitted from "./TaskSubmitted";
 
 const { width } = Dimensions.get("window");
 
@@ -42,6 +48,21 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
 
+  function showTaskSubmittedAlert(onCancel: () => void) {
+    Alert.alert(
+      "Request Sent",
+      `Waiting for client to respond`,
+      [
+        {
+          text: "Cancel",
+          onPress: onCancel,
+          style: "destructive",
+        },
+      ],
+      { cancelable: true }
+    );
+  }
+
   useEffect(() => {
     if (!isMiniMapVisible && showMiniMap) {
       setShowMiniMap(false);
@@ -58,7 +79,6 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
       <View
         style={{
-          display: "flex",
           flexDirection: "row",
           width: "100%",
           justifyContent: "space-evenly",
@@ -85,13 +105,13 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         <View>
           <Text style={styles.infoText}>
             Category:{" "}
-            {item.category == "repair"
+            {item.category === "repair"
               ? "Fix & Repair"
-              : item.category == "personal_help"
+              : item.category === "personal_help"
                 ? "Personal Help"
-                : item.category == "delivery"
+                : item.category === "delivery"
                   ? "Move & Deliver"
-                  : item.category == "other"
+                  : item.category === "other"
                     ? "Other"
                     : item.category}
           </Text>
@@ -112,26 +132,29 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         </Text>
       </View>
 
-      <View style={{ display: "flex", flexDirection: "row" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
         <Button
           title={showMiniMap ? "Hide Location" : "View Location"}
           onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button title="Accept" onPress={() => setShowTaskSubmitted(true)} />
+        <Button
+          title="Accept"
+          onPress={() =>
+            showTaskSubmittedAlert(() => {
+              console.log("Task Cancelled");
+              setShowTaskSubmitted(false);
+            })
+          }
+        />
       </View>
+
       {showMiniMap && (
         <MapSelector
           address={item.location}
           isSearching={false}
-          onExit={() => {}}
+          onExit={() => setShowMiniMap(false)}
           onChange={() => {}}
           handleGetLocation={() => {}}
-        />
-      )}
-      {showTaskSubmitted && (
-        <TaskSubmitted
-          title={item.title}
-          onCancel={() => setShowTaskSubmitted(false)}
         />
       )}
     </View>
@@ -155,7 +178,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
-
     width: "100%",
   },
   centeredText: {
@@ -171,14 +193,6 @@ const styles = StyleSheet.create({
   infoText: {
     color: COLORS.color12,
     fontSize: 13,
-  },
-  row: {
-    flexDirection: "row",
-    //justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 8,
-    paddingHorizontal: 8,
   },
   title: {
     color: COLORS.color11,

@@ -40,7 +40,7 @@ export default function TermsAndConditions({
         setTinyLoading(true);
         const res = await withTimeout(
           api.get("/current-tsc-text/"),
-          3000,
+          5000,
           "Request timed out. Please try again"
         );
         setTermsText(res.data.tsc);
