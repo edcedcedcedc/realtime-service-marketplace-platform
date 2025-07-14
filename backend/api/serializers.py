@@ -1,7 +1,8 @@
 # api/serializers.py
 
+from django.conf import settings
 from rest_framework import serializers
-from .models import Task, Subtask
+from .models import Profile, Task, Subtask, User
 
 
 class SubtaskSerializer(serializers.ModelSerializer):
@@ -71,3 +72,41 @@ class TaskSerializer(serializers.ModelSerializer):
         if obj.terms_accepted_tasker_at:
             return obj.terms_accepted_tasker_at.accepted_at.isoformat()
         return None
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "role"]
+
+
+class ClientProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "name",
+            "family_name",
+            "bio",
+            "rating",
+            "tasks_posted",
+        ]
+
+
+class TaskerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "name",
+            "family_name",
+            "bio",
+            "rating",
+            "tasks_done",
+            "category",
+            "eta",
+        ]

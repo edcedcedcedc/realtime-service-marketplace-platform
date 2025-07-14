@@ -3,6 +3,7 @@ from .views import (
     all_tasks,
     completed_tasks,
     current_tsc_text,
+    profile_detail_update,
     task_create,
     in_progress_tasks,
     task_delete,
@@ -36,4 +37,6 @@ urlpatterns = [
     path("api/tasks/create/", task_create, name="task-create"),
     path("api/tasks/update/<int:id>/", task_update, name="task-update"),
     path("api/tasks/delete/<int:id>/", task_delete, name="task-delete"),
+    # profile endpoint
+    path("api/profile/", profile_detail_update, name="profile-detail-update"),
 ]

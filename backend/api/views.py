@@ -6,8 +6,12 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import TaskSerializer
-from .models import TaskLog, Task, TermsAcceptanceLog
+from .serializers import (
+    ClientProfileSerializer,
+    TaskSerializer,
+    TaskerProfileSerializer,
+)
+from .models import TaskLog, Task, TermsAcceptanceLog, Profile
 from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted, get_user_ip
 from api.tasks import delete_task_if_still_open
 
@@ -46,6 +50,7 @@ def register(request):
     user = User.objects.create_user(
         username=username, password=password, email=email, role=role
     )
+    Profile.objects.create(user=user)
     refresh = RefreshToken.for_user(user)
 
     return Response(
@@ -251,3 +256,28 @@ def all_tasks(request):
     tasks = Task.objects.all().order_by("-id")
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def profile_detail_update(request):
+    if not request.user.is_authenticated:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    profile, created = Profile.objects.get_or_create(user=request.user)
+
+    if request.user.role == "tasker":
+        SerializerClass = TaskerProfileSerializer
+    else:
+        SerializerClass = ClientProfileSerializer
+
+    if request.method == "GET":
+        serializer = SerializerClass(profile)
+        return Response(serializer.data)
+
+    if request.method == "PATCH":
+        serializer = SerializerClass(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

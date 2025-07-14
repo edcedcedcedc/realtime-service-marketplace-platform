@@ -18,8 +18,7 @@ import { COLORS } from "../constants/colors";
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
 
-// REVIEW: Should this be a separate constant?
-const HEADER_HEIGHT = 120; // approx header + logout button height
+const HEADER_HEIGHT = 120;
 
 export default function TaskFeed({ navigation }: { navigation: any }) {
   const tasks = useStore((state) => state.tasks);

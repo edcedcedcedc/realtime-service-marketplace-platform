@@ -13,7 +13,6 @@ export const URGENCY_OPTIONS = [
 
 export const STATUS_OPTIONS = [
   { label: "Open", value: "open", color: COLORS.color1 }, // MUI Blue 700
-  { label: "Confirmed", value: "confirmed", color: COLORS.color2 }, // MUI Yellow 700
   { label: "In Progress", value: "in-progress", color: COLORS.color3 }, // MUI Green 700
   { label: "Completed", value: "completed", color: COLORS.color4 }, // MUI Green 800
   { label: "Cancelled", value: "cancelled", color: COLORS.color5 }, // MUI Red 700
@@ -58,6 +57,36 @@ const initialState = {
   isFullMapVisible: false,
 };
 
+const initialProfile: ProfileType = {
+  user: {
+    id: 0,
+    username: "",
+    email: "",
+    role: "client",
+  }, 
+  name: "",
+  family_name: "",
+  rating: 0,
+  bio: "",
+}
+
+interface ProfileType {
+  user: User, // must always be present
+  name: string;
+  family_name: string;
+  rating: number;
+  bio: string;
+
+  // tasker-only fields (optional for client)
+  tasks_done?: number;
+  eta?: string;
+  category?: Category;
+
+  // client-only fields (optional for tasker)
+  tasks_posted?: number;
+}
+
+
 interface User {
   id: number;
   username: string;
@@ -98,18 +127,20 @@ export type TaskFormInput = {
 
 type Status =
   | "open"
-  | "confirmed"
   | "in-progress"
   | "completed"
   | "cancelled"
   | "expired";
 
+export type Category = "repair" | "delivery" | "personal_help" | "other";
+export type Specialization = Category | `other: ${string}`;
+export type Urgency = "now" | "soon" | "flexible";
 export interface Task {
   id: number;
   title: string;
   description?: string;
   budget: number;
-  urgency: "now" | "soon" | "flexible";
+  urgency: Urgency;
   location: string;
   latitude: number;
   longitude: number;
@@ -122,10 +153,11 @@ export interface Task {
   created_at: string;
   updated_at: string | null;
   completed_at: string | null;
-  category: "repair" | "delivery" | "personal_help" | "other";
+  category: Category;
   subcategory: string;
   subtasks?: [];
 }
+
 
 interface Jwt {
   access: string | null;
@@ -137,6 +169,7 @@ interface State {
     jwt: Jwt | null;
     user: User | null;
   };
+  profile: ProfileType
   taskers: User[];
   clients: User[];
   tasks: Task[];
@@ -166,6 +199,8 @@ interface State {
   setSelectedLatLng: (latLng: LatLng | null) => void;
   setIsLoggedIn: (param: boolean) => void;
   resetStore: () => void;
+  setProfile: (profile: ProfileType) => void;
+  resetProfile: () => void;
   
 }
 
@@ -191,6 +226,9 @@ const useStore = create<State>()(
       fullMapReady: false,
       isFullMapVisible: false,
       isLoggedIn: false,
+      profile: initialProfile,
+      setProfile: (profile: ProfileType) => set({ profile }),
+      resetProfile: () => set({ profile: initialProfile }),
       setIsLoggedIn: (param) => set({isLoggedIn: param}),
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
@@ -271,24 +309,35 @@ const useStore = create<State>()(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-
-      resetStore: () => set({ ...initialState }),
+      resetStore: () =>
+          set({
+            ...initialState,
+            profile: initialProfile,
+          }),
     }),
     {
-      name: "my-app-storage",
-      storage: {
-        getItem: async (key) => {
-          const value = await AsyncStorage.getItem(key);
-          return value ? JSON.parse(value) : null;
-        },
-        setItem: async (key, value: any) => {
-          await AsyncStorage.setItem(key, JSON.stringify(value));
-        },
-        removeItem: async (key) => {
-          await AsyncStorage.removeItem(key);
-        },
-      },
+  name: "my-app-storage",
+  storage: {
+    getItem: async (key) => {
+      const value = await AsyncStorage.getItem(key);
+      return value ? JSON.parse(value) : null;
     },
+    setItem: async (key, value: any) => {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    },
+    removeItem: async (key) => {
+      await AsyncStorage.removeItem(key);
+    },
+  },
+ /*  merge: (persistedState, currentState) => {
+    return {
+      ...currentState,
+      ...(persistedState as any),
+      profile: (persistedState as any)?.profile ?? initialProfile,
+    };
+  }, */
+},
+
   ),
 );
 

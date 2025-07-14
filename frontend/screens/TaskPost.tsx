@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     color: COLORS.color27,
     fontSize: 30,
     fontWeight: "700",
-    marginBottom: 32,
+    marginBottom: SPACING.md,
     textAlign: "center",
   },
   helpIcon: {

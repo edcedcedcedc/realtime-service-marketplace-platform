@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,67 +6,173 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import Toast from "react-native-toast-message";
+
+import api from "../services/api";
+import useStore, { Category } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { withTimeout } from "../utils/withTimeout";
 
-export interface Profile {
-  name: string;
-  familyName: string;
-  username: string;
-  rating: number;
-  tasksDone: number;
-  specialization: string[]; // e.g., ["repair", "other: plumbing"]
-  bio: string;
-  eta: string;
-}
+const profileSchema = Yup.object().shape({
+  name: Yup.string().required("Name is required"),
+  family_name: Yup.string().required("Family name is required"),
+  eta: Yup.string()
+    .test(
+      "max-60",
+      "ETA must be a number less than or equal to 60",
+      (value) => {
+        if (!value) return true;
+        const num = Number(value);
+        return !isNaN(num) && num <= 60 && num >= 0;
+      }
+    )
+    .max(32, "ETA must be at most 32 characters"),
+  bio: Yup.string()
+    .max(128, "Bio must be at most 128 characters")
+    .matches(/^[^\d]*$/, "About Tasker cannot contain digits"),
+  category: Yup.string()
+    .oneOf(
+      ["repair", "personal_help", "delivery", "other"],
+      "Select a valid category"
+    )
+    .when("role", {
+      is: "tasker",
+      then: (schema) => schema.required("Category is required"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+});
 
-export default function ProfileScreen() {
+export default function Profile() {
+  const profile = useStore((state) => state.profile);
+  const setProfile = useStore().setProfile;
+  const setLoading = useStore().setLoading;
   const [isEditable, setIsEditable] = useState(false);
 
-  const [name, setName] = useState("John");
-  const [familyName, setFamilyName] = useState("Doe");
-  const [username, setUsername] = useState("johndoe123");
-  const [rating] = useState(4.5);
-  const [tasksDone, setTasksDone] = useState("87");
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    trigger,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      family_name: "",
+      eta: "",
+      bio: "",
+    },
+  });
 
-  const [specialization, setSpecialization] = useState<string[]>(["repair"]);
-  const [otherSpec, setOtherSpec] = useState("");
+  const watchAll = watch();
+  useEffect(() => {
+    console.log("Form State:", watchAll);
+  }, [watchAll]);
 
-  const [bio, setBio] = useState(
-    "Experienced handyman with 5+ years fixing everything from appliances to plumbing."
-  );
-  const [eta, setEta] = useState("10-15 min");
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-  const specs = ["repair", "personal help", "delivery", "other"];
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await withTimeout(api.get("/profile/"));
+      console.log(response.data);
 
-  const isSpecSelected = (spec: string) => specialization.includes(spec);
+      setProfile(response.data);
 
-  const toggleSpec = (spec: string) => {
-    if (!isEditable) return;
-    if (specialization.includes(spec)) {
-      setSpecialization(specialization.filter((s) => s !== spec));
-      if (spec === "other") setOtherSpec("");
-    } else {
-      setSpecialization([...specialization, spec]);
+      setValue("name", response.data.name || "");
+      setValue("family_name", response.data.family_name || "");
+      setValue("bio", response.data.bio || "");
+
+      if (response.data.user.role == "tasker") {
+        setValue("eta", response.data.eta || "");
+        setValue("category", response.data.category || "");
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Profile fetched",
+      });
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Cannot fetch profile",
+        text2: err.response?.data?.error || "Check your internet connection",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const buildProfileData = (): Profile => {
-    const specsWithOther = specialization.map((spec) =>
-      spec === "other" && otherSpec.trim() ? `other: ${otherSpec.trim()}` : spec
-    );
+  const patchProfile = async (formData: any) => {
+    try {
+      setLoading(true);
+      const patchData = {
+        ...formData,
+        category: formData.category,
+      };
+      console.log(patchData, "patchData", formData, "formData");
+      const response = await withTimeout(api.patch("/profile/", patchData));
+      console.log(response.data, "respone data from patch");
 
-    return {
-      name,
-      familyName,
-      username,
-      rating,
-      tasksDone: parseInt(tasksDone, 10),
-      specialization: specsWithOther,
-      bio,
-      eta,
-    };
+      setProfile(response.data);
+
+      setValue("name", response.data.name || "");
+      setValue("family_name", response.data.family_name || "");
+      setValue("bio", response.data.bio || "");
+
+      if (response.data.user.role === "tasker") {
+        setValue("eta", response.data.eta || "");
+        setValue("category", response.data.category || "");
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Profile Patched",
+        text2: JSON.stringify(response.data),
+      });
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to update profile",
+        text2: err.response?.data?.error || "Check your internet connection",
+      });
+    } finally {
+      setIsEditable(false);
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    if (isEditable) {
+      const wrapped = handleSubmit((data) => {
+        patchProfile(data);
+      });
+      wrapped();
+    } else {
+      setIsEditable(true);
+    }
+  };
+
+  const categories: Category[] = [
+    "repair",
+    "personal_help",
+    "delivery",
+    "other",
+  ];
+
+  const toggleCategory = async (cat: Category) => {
+    if (!isEditable) return;
+    setProfile({ ...profile, category: cat });
+    setValue("category", cat, { shouldValidate: true, shouldDirty: true });
+    await trigger("category");
   };
 
   return (
@@ -79,98 +185,151 @@ export default function ProfileScreen() {
         keyboardOpeningTime={250}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <Text style={styles.heading}>Account Info</Text>
-          <TouchableOpacity
-            onPress={() => {
-              if (isEditable) {
-                const profile = buildProfileData();
-                console.log("💾 Profile Data:", profile);
-              }
-              setIsEditable((prev) => !prev);
+        <View style={{ marginBottom: SPACING.md }}>
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            <Text style={styles.editButtonText}>
-              {isEditable ? "Save" : "Edit"}
-            </Text>
-          </TouchableOpacity>
+            <Text style={styles.heading}>Account Info</Text>
+            <TouchableOpacity onPress={handleEdit}>
+              <Text style={styles.editButtonText}>
+                {isEditable ? "Save" : "Edit"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.card}>
-          <EditableField
-            label="Name"
-            value={name}
-            onChange={setName}
-            editable={isEditable}
-          />
-          <EditableField
-            label="Family Name"
-            value={familyName}
-            onChange={setFamilyName}
-            editable={isEditable}
-          />
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Username</Text>
-            <Text style={styles.staticValue}>{username}</Text>
-          </View>
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Rating</Text>
-            <Text style={styles.staticValue}>{rating}</Text>
-          </View>
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Tasks Done</Text>
-            <Text style={styles.staticValue}>{tasksDone}</Text>
-          </View>
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Specializations</Text>
-            <View style={styles.categoryContainer}>
-              {specs.map((spec) => {
-                const selected = isSpecSelected(spec);
-                return (
-                  <TouchableOpacity
-                    key={spec}
-                    onPress={() => toggleSpec(spec)}
-                    style={[
-                      styles.categoryButton,
-                      selected && styles.categoryButtonSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryText,
-                        selected && styles.categoryTextSelected,
-                      ]}
-                    >
-                      {spec.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            {isEditable && isSpecSelected("other") && (
+          <StaticField label="ID" value={profile.user.id} />
+          <StaticField label="Username" value={profile.user.username} />
+          <StaticField label="Email" value={profile.user.email} />
+          <StaticField label="Role" value={profile.user.role} />
+          <StaticField label="Rating" value={profile.rating} />
+          {profile.user.role === "tasker" ? (
+            <>
+              <StaticField label="Tasks Done" value={profile.tasks_done!} />
+            </>
+          ) : (
+            <>
+              <StaticField label="Tasks Posted" value={profile.tasks_posted!} />
+            </>
+          )}
+
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, value } }) => (
               <EditableField
-                label="What else you could do"
-                placeholder="e.g excellent at cleaning"
-                value={otherSpec}
-                onChange={setOtherSpec}
-                editable={true}
+                label="Name"
+                value={value}
+                onChange={(value) => {
+                  setProfile({ ...profile, name: value });
+                  onChange(value);
+                }}
+                editable={isEditable}
+                error={errors.name?.message}
               />
             )}
-          </View>
-
-          <EditableField
-            label="ETA"
-            value={eta}
-            onChange={setEta}
-            placeholder="Estimated Time of Arrival"
-            editable={isEditable}
           />
-          <EditableField
-            label="About Tasker"
-            value={bio}
-            onChange={setBio}
-            multiline
-            editable={isEditable}
+          <Controller
+            control={control}
+            name="family_name"
+            render={({ field: { onChange, value } }) => (
+              <EditableField
+                label="Family Name"
+                value={value}
+                onChange={(value) => {
+                  setProfile({ ...profile, family_name: value });
+                  onChange(value);
+                }}
+                editable={isEditable}
+                error={errors.family_name?.message}
+              />
+            )}
+          />
+
+          {profile.user.role === "tasker" && (
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Category</Text>
+                  <View style={styles.categoryContainer}>
+                    {categories.map((cat) => {
+                      const selected = field.value === cat;
+                      return (
+                        <TouchableOpacity
+                          key={cat}
+                          onPress={() => toggleCategory(cat)}
+                          style={[
+                            styles.categoryButton,
+                            selected && styles.categoryButtonSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.categoryText,
+                              selected && styles.categoryTextSelected,
+                            ]}
+                          >
+                            {cat.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {!!errors.category && (
+                    <Text style={styles.errorText}>
+                      {errors.category.message}
+                    </Text>
+                  )}
+                </View>
+              )}
+            />
+          )}
+
+          {profile.user.role === "tasker" && (
+            <Controller
+              control={control}
+              name="eta"
+              render={({ field: { onChange, value } }) => (
+                <EditableField
+                  label="ETA"
+                  value={value || ""}
+                  onChange={(value) => {
+                    setProfile({ ...profile, eta: value });
+                    onChange(value);
+                  }}
+                  editable={isEditable}
+                  placeholder="Estimated Time of Arrival in minutes"
+                  error={errors.eta?.message}
+                />
+              )}
+            />
+          )}
+
+          <Controller
+            control={control}
+            name="bio"
+            render={({ field: { onChange, value } }) => (
+              <EditableField
+                label="About Me"
+                placeholder="More information regarding your skills "
+                value={value || ""}
+                onChange={(value) => {
+                  setProfile({ ...profile, bio: value });
+                  onChange(value);
+                }}
+                editable={isEditable}
+                multiline
+                error={errors.bio?.message}
+              />
+            )}
           />
         </View>
       </KeyboardAwareScrollView>
@@ -178,15 +337,18 @@ export default function ProfileScreen() {
   );
 }
 
-type FieldProps = {
+const StaticField = ({
+  label,
+  value,
+}: {
   label: string;
-  value: string;
-  onChange: (val: string) => void;
-  editable: boolean;
-  multiline?: boolean;
-  keyboardType?: "default" | "numeric";
-  placeholder?: string;
-};
+  value: string | number;
+}) => (
+  <View style={styles.fieldContainer}>
+    <Text style={styles.label}>{label}</Text>
+    <Text style={styles.staticValue}>{value}</Text>
+  </View>
+);
 
 const EditableField = ({
   label,
@@ -196,7 +358,17 @@ const EditableField = ({
   multiline = false,
   keyboardType = "default",
   placeholder,
-}: FieldProps) => (
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  editable: boolean;
+  multiline?: boolean;
+  keyboardType?: "default" | "numeric";
+  placeholder?: string;
+  error?: string;
+}) => (
   <View style={styles.fieldContainer}>
     <Text style={styles.label}>{label}</Text>
     <TextInput
@@ -204,6 +376,7 @@ const EditableField = ({
         styles.input,
         !editable && styles.readOnlyInput,
         multiline && styles.multilineInput,
+        error && styles.inputError,
       ]}
       value={value}
       onChangeText={onChange}
@@ -213,10 +386,38 @@ const EditableField = ({
       placeholderTextColor={COLORS.color25}
       keyboardType={keyboardType}
     />
+    {!!error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.color19,
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+  },
+  scrollContent: {
+    alignItems: "stretch",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: SPACING.md,
+  },
+  input: {
+    fontSize: 16,
+    color: COLORS.color27,
+    backgroundColor: COLORS.color19,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    height: 50,
+    alignContent: "center",
+    width: "100%",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.color26,
+  },
+  inputError: {
+    borderColor: COLORS.color5,
+  },
   heading: {
     fontSize: 28,
     fontWeight: "700",
@@ -231,12 +432,12 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 16,
     color: COLORS.color16,
+    paddingTop: 9,
     fontWeight: "600",
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: SPACING.xs,
   },
   fieldContainer: {
     marginBottom: 18,
@@ -246,15 +447,11 @@ const styles = StyleSheet.create({
     color: COLORS.color15,
     marginBottom: 6,
   },
-  input: {
-    fontSize: 16,
-    color: COLORS.color27,
-    backgroundColor: COLORS.color19,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.color26,
+
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 4,
   },
   readOnlyInput: {
     backgroundColor: "#f0f0f0",
@@ -262,6 +459,25 @@ const styles = StyleSheet.create({
   multilineInput: {
     height: 100,
     textAlignVertical: "top",
+  },
+  staticValue: {
+    fontSize: 16,
+    color: COLORS.color27,
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    height: 50,
+    alignContent: "center",
+    justifyContent: "center",
+    textAlignVertical: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.color26,
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   categoryButton: {
     backgroundColor: COLORS.color31,
@@ -276,12 +492,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.color16,
     borderColor: COLORS.color16,
   },
-  categoryContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
   categoryText: {
     color: COLORS.color11,
     fontSize: 14,
@@ -289,26 +499,5 @@ const styles = StyleSheet.create({
   categoryTextSelected: {
     color: COLORS.color19,
     fontWeight: "bold",
-  },
-  container: {
-    backgroundColor: COLORS.color19,
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-  },
-  staticValue: {
-    fontSize: 16,
-    color: COLORS.color27,
-    backgroundColor: "#f0f0f0",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.color26,
-  },
-  scrollContent: {
-    alignItems: "stretch",
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingVertical: SPACING.md,
   },
 });
