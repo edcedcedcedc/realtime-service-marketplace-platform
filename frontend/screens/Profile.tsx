@@ -99,6 +99,7 @@ export default function Profile() {
       Toast.show({
         type: "success",
         text1: "Profile fetched",
+        text2: JSON.stringify(response.data),
       });
     } catch (err: any) {
       Toast.show({
