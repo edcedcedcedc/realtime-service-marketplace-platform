@@ -13,15 +13,17 @@ import { COLORS } from "../constants/colors";
 const { width } = Dimensions.get("window");
 
 interface Request {
+  id: number;
   task_id: number;
   tasker_id: number;
   tasker_username: string;
   tasker_name: string;
   tasker_family_name: string;
   rating: number;
-  specialization: string; //category
   tasks_done: number;
+  category: string;
   eta: number;
+  created_at: string;
 }
 
 type InspectRequestsModalProps = {
@@ -46,7 +48,7 @@ export default function InspectRequestsModal({
           <Text style={styles.heading}>Incoming Requests</Text>
           <FlatList
             data={requests}
-            keyExtractor={(item) => item.task_id.toString()}
+            keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.list}
             renderItem={({ item }) => (
@@ -57,7 +59,7 @@ export default function InspectRequestsModal({
                   Family: {item.tasker_family_name}
                 </Text>
                 <Text style={styles.infoText}>
-                  Specialization: {item.specialization}
+                  Specialization: {item.category}
                 </Text>
                 <Text style={styles.infoText}>
                   Task Done: {item.tasks_done}

@@ -13,13 +13,13 @@ from .views import (
     open_tasks,
     register,
     login,
+    protected_view,
 )
 from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import protected_view
 
 urlpatterns = [
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),

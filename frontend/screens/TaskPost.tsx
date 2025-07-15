@@ -18,7 +18,8 @@ import * as Location from "expo-location";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import useStore, { Region, TaskFormInput } from "../store/useStore";
-import api, { IPV4 } from "../services/api";
+import { WS_TASKREQUEST_BASE_URL } from "../constants/network";
+
 import { taskPostSchema } from "../validation/validationSchema";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
@@ -26,6 +27,7 @@ import { SPACING } from "../constants/dimensions";
 import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
 import { SocketManager } from "../utils/socketManager";
+import api from "../services/api";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
@@ -192,7 +194,7 @@ export default function TaskPost({ navigation }: any) {
 
         setCurrentTaskId(res.data.id);
 
-        wsUrl = `ws://${IPV4}:8000/ws/task-requests/${res.data.id}/`;
+        wsUrl = `${WS_TASKREQUEST_BASE_URL}${res.data.id}/`;
 
         await connectWithRetries(
           wsUrl,

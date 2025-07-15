@@ -2,7 +2,7 @@
 
 from django.conf import settings
 from rest_framework import serializers
-from .models import Profile, Task, Subtask, User
+from .models import Profile, Task, Subtask, TaskRequest, User
 
 
 class SubtaskSerializer(serializers.ModelSerializer):
@@ -109,4 +109,37 @@ class TaskerProfileSerializer(serializers.ModelSerializer):
             "tasks_done",
             "category",
             "eta",
+        ]
+
+
+class TaskRequestSerializer(serializers.ModelSerializer):
+    task_id = serializers.IntegerField(source="task.id", read_only=True)
+    tasker_id = serializers.IntegerField(source="tasker.id", read_only=True)
+    tasker_username = serializers.CharField(source="tasker.username", read_only=True)
+
+    tasker_name = serializers.CharField(source="tasker.profile.name", read_only=True)
+    tasker_family_name = serializers.CharField(
+        source="tasker.profile.family_name", read_only=True
+    )
+    rating = serializers.FloatField(source="tasker.profile.rating", read_only=True)
+    tasks_done = serializers.IntegerField(
+        source="tasker.profile.tasks_done", read_only=True
+    )
+    category = serializers.CharField(source="tasker.profile.category", read_only=True)
+    eta = serializers.CharField(source="tasker.profile.eta", read_only=True)
+
+    class Meta:
+        model = TaskRequest
+        fields = [
+            "id",
+            "task_id",
+            "tasker_id",
+            "tasker_username",
+            "tasker_name",
+            "tasker_family_name",
+            "rating",
+            "tasks_done",
+            "category",
+            "eta",
+            "created_at",
         ]

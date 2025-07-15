@@ -58,7 +58,6 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
       await api.post("task_request/", {
         task_id: item.id,
-        eta,
       });
 
       Alert.alert(

@@ -14,16 +14,21 @@ import AppLayout from "./components/AppLayout";
 import useStore, { Task } from "./store/useStore";
 import { SocketManager } from "./utils/socketManager";
 import { navigationRef } from "./utils/navigationRef";
-import { WS_URL } from "./services/api";
+
 import { COLORS } from "./constants/colors";
+import { WS_TASKFEED_URL } from "./constants/network";
 
 export default function App() {
   const taskFeedSocket = new SocketManager();
   const addTask = useStore.getState().addTask;
   const removeTask = useStore.getState().removeTask;
+  const user = useStore((state) => state.auth.user);
 
   useEffect(() => {
-    taskFeedSocket.connect(WS_URL, "task feed");
+    if (user?.role != "tasker") {
+      return;
+    }
+    taskFeedSocket.connect(WS_TASKFEED_URL, "task feed");
 
     const handleNewTask = (payload: Task) => {
       setTimeout(() => {
@@ -64,7 +69,7 @@ export default function App() {
       taskFeedSocket.off("socket:onopen", handleSocketOnOpen);
       taskFeedSocket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   // Predefined fake insets for devices
   const fakeInsetsForDevices: Record<string, EdgeInsets> = {

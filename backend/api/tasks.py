@@ -1,5 +1,5 @@
 # api/tasks.py
-from api.utils import taskfeed_broadcast_deleted
+from api.broadcast import taskfeed_broadcast_deleted
 from .models import Task
 from celery import shared_task
 from django.utils import timezone

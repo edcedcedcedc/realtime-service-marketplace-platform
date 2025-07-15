@@ -1,13 +1,13 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .serializers import TaskSerializer
+from .serializers import TaskRequestSerializer, TaskSerializer
 
 
 def taskfeed_broadcast_new(task_instance: object):
     channel_layer = get_channel_layer()
     message = {
         "type": "task:new",  # the event type your frontend listens for
-        "payload": TaskSerializer(task_instance).data,  # the actual job data
+        "payload": TaskSerializer(task_instance).data,  # the actual task data
     }
     async_to_sync(channel_layer.group_send)(
         "taskfeed",
@@ -22,7 +22,7 @@ def taskfeed_broadcast_deleted(task_id: int):
     channel_layer = get_channel_layer()
     message = {
         "type": "task:delete",  # event type for deletion
-        "payload": {"id": task_id},  # minimal data to identify which job was deleted
+        "payload": {"id": task_id},  # minimal data to identify which task was deleted
     }
     async_to_sync(channel_layer.group_send)(
         "taskfeed",
@@ -59,28 +59,18 @@ def broadcast_task_requests(task):
     )
 
 
-def broadcast_task_request(task, tasker, eta):
-    profile = getattr(tasker, "profile", None)
-    payload = {
-        "task_id": task.id,
-        "tasker_id": tasker.id,
-        "tasker_username": tasker.username,
-        "tasker_name": getattr(profile, "name", ""),
-        "tasker_family_name": getattr(profile, "family_name", ""),
-        "rating": getattr(profile, "rating", None),
-        "specialization": getattr(profile, "category", ""),
-        "tasks_done": getattr(profile, "tasks_done", 0),
-        "eta": eta,
+def broadcast_task_request(task_request):
+    payload = TaskRequestSerializer(task_request).data
+    group_name = f"task_request_{payload["task_id"]}"
+    message = {
+        "type": "task:requests",
+        "payload": payload,
     }
-
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        f"task_request_{task.id}",
+        group_name,
         {
             "type": "update",
-            "data": {
-                "type": "task:requests",
-                "payload": payload,
-            },
+            "data": message,
         },
     )

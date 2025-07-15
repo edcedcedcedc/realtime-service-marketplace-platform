@@ -3,7 +3,13 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from .constants import CATEGORY_CHOICES
+from .constants import (
+    CATEGORY_CHOICES,
+    EVENT_CHOICES,
+    STATUS_CHOICES,
+    SUBCATEGORY_CHOICES,
+    URGENCY_CHOICES,
+)
 
 
 class User(AbstractUser):
@@ -78,18 +84,6 @@ class Profile(models.Model):
 
 
 class Task(models.Model):
-    STATUS_CHOICES = [
-        ("open", "Open"),
-        ("in-progress", "In-Progress"),
-        ("completed", "Completed"),
-        ("cancelled", "Cancelled"),
-        ("expired", "Expired"),
-    ]
-    URGENCY_CHOICES = [
-        ("now", "Now - 5 minutes"),
-        ("soon", "Soon - 30 minutes"),
-        ("flexible", "Later - 1 hour"),
-    ]
 
     # Main fields
     title = models.CharField(max_length=255)
@@ -173,16 +167,7 @@ class Task(models.Model):
 
     def clean(self):
         super().clean()
-        SUBCATEGORY_CHOICES = {
-            "repair": ["electrical", "plumbing", "appliance", "furniture"],
-            "personal_help": [
-                "dog_walking",
-                "grocery_pickup",
-                "waiting_line",
-                "elderly_help",
-            ],
-            "delivery": ["package_delivery", "furniture_moving", "heavy_lifting"],
-        }
+
         if self.subcategory:
             valid_subcats = SUBCATEGORY_CHOICES.get(self.category, [])
             if self.subcategory not in valid_subcats:
@@ -250,14 +235,6 @@ class Rating(models.Model):
 
 
 class TaskLog(models.Model):
-    EVENT_CHOICES = [
-        ("tasks_created", "Tasks Created"),
-        ("tasks_completed", "Tasks Completed"),
-        ("tasks_cancelled", "Tasks Cancelled"),
-        ("user_login", "User Login"),
-        ("terms_accepted_client_at", "Terms Accepted By Client"),
-    ]
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
@@ -314,5 +291,4 @@ class TaskLog(models.Model):
 class TaskRequest(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     tasker = models.ForeignKey(User, on_delete=models.CASCADE)
-    eta = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)

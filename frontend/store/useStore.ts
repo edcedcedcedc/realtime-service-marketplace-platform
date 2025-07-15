@@ -164,17 +164,20 @@ export interface Task {
   subtasks?: [];
 }
 /* Tasker request, when he clicks accept on any task  */
- export interface Request { 
-    task_id: number;
-    tasker_id: number;
-    tasker_username: string;
-    tasker_name: string;
-    tasker_family_name: string;
-    rating: number;
-    specialization: string;
-    tasks_done: number;
-    eta: number;
-  }
+export interface Request {
+  id: number;
+  task_id: number;
+  tasker_id: number;
+  tasker_username: string;
+  tasker_name: string;
+  tasker_family_name: string;
+  rating: number;
+  tasks_done: number;
+  category: string;
+  eta: number;
+  created_at: string;
+}
+
 
 interface Jwt {
   access: string | null;

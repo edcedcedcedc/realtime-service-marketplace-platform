@@ -12,15 +12,14 @@ from .serializers import (
     TaskerProfileSerializer,
 )
 from .models import TaskLog, Task, TaskRequest, TermsAcceptanceLog, Profile
-from .utils import (
+from .broadcast import (
     broadcast_task_request,
     taskfeed_broadcast_new,
     taskfeed_broadcast_deleted,
     get_user_ip,
 )
 from api.tasks import delete_task_if_still_open
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+
 
 User = get_user_model()
 
@@ -301,17 +300,21 @@ def profile_detail_update(request):
 @permission_classes([IsAuthenticated])
 def task_request(request):
     task_id = request.data.get("task_id")
-    eta = request.data.get("eta")
 
     try:
         task = Task.objects.get(id=task_id, status="open")
         if task.client == request.user:
-            return Response({"error": "You cannot accept your own task."}, status=403)
+            return Response(
+                {"error": "You cannot accept your own task."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
     except Task.DoesNotExist:
-        return Response({"error": "Task not found or closed."}, status=404)
+        return Response(
+            {"error": "Task not found or closed."}, status=status.HTTP_404_NOT_FOUND
+        )
 
-    TaskRequest.objects.create(task=task, tasker=request.user, eta=eta)
+    task_request = TaskRequest.objects.create(task=task, tasker=request.user)
 
-    broadcast_task_request(task, request.user, eta)
+    broadcast_task_request(task_request)
 
-    return Response({"message": "Request sent"}, status=201)
+    return Response({"message": "Request sent"}, status=status.HTTP_201_CREATED)
