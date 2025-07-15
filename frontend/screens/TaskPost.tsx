@@ -17,7 +17,7 @@ import Toast from "react-native-toast-message";
 import * as Location from "expo-location";
 import { yupResolver } from "@hookform/resolvers/yup";
 
-import useStore, { Region, TaskFormInput } from "../store/useStore";
+import useStore, { Region, Request, TaskFormInput } from "../store/useStore";
 import { WS_TASKREQUEST_BASE_URL } from "../constants/network";
 
 import { taskPostSchema } from "../validation/validationSchema";
@@ -41,43 +41,25 @@ export default function TaskPost({ navigation }: any) {
   const [requestsVisible, setRequestsVisible] = useState(false);
 
   const addRequest = useStore().addRequest;
-  const requests = useStore((state) => state.requests);
+  const clearRequest = useStore().clearRequest;
   const setCurrentTaskId = useStore().setCurrentTaskId;
   const currentTaskId = useStore((state) => state.currentTaskId);
   const clearRequests = useStore().clearRequests;
 
   const inspectRequestsSocket = new SocketManager();
 
-  const requests1 = [
-    { id: 1, tasker: "Alex V.", rating: 4.9, eta: "15" },
-    { id: 2, tasker: "Maria C.", rating: 4.7, eta: "10" },
-    { id: 3, tasker: "Maria C.", rating: 4.7, eta: "10" },
-    { id: 4, tasker: "Maria C.", rating: 4.7, eta: "10" },
-    { id: 5, tasker: "Maria C.", rating: 4.7, eta: "10" },
-  ];
-
-  interface Request {
-    task_id: number;
-    tasker_id: number;
-    tasker_username: string;
-    tasker_name: string;
-    tasker_family_name: string;
-    rating: number;
-    specialization: string;
-    tasks_done: number;
-    eta: number;
-  }
-
   function connectWithRetries(
     wsUrl: string,
     id: number,
     maxAttempts = 3,
     delayMs = 3000,
-    onRequest: (payload: any) => void,
-    onOpen?: () => void
+    onAddRequest: (payload: Request) => void,
+    onRemoveRequest: (payload: number) => void,
+    onOpen?: () => void,
   ): Promise<void> {
     let attempts = 0;
     let connected = false;
+    let task_request_id = 0;
 
     return new Promise((resolve, reject) => {
       function tryConnect() {
@@ -93,9 +75,15 @@ export default function TaskPost({ navigation }: any) {
 
         inspectRequestsSocket.connect(wsUrl, `task ${id}`);
 
-        function handleRequest(payload: any) {
+        function handleAddRequest(payload: any) {
           connected = true;
-          onRequest(payload);
+          onAddRequest(payload);
+        }
+
+        function handleDeleteRequest(payload: any) {
+          connected = true;
+          task_request_id = payload["task_request_id"]; //you need request id
+          onRemoveRequest(task_request_id);
         }
 
         function handleOpen() {
@@ -104,12 +92,17 @@ export default function TaskPost({ navigation }: any) {
           resolve();
         }
 
-        inspectRequestsSocket.on("task:requests", handleRequest);
+        inspectRequestsSocket.on("task:requests-new", handleAddRequest);
+        inspectRequestsSocket.on("task:requests-delete", handleDeleteRequest);
         inspectRequestsSocket.on("socket:onopen", handleOpen);
 
         setTimeout(() => {
           if (!connected && attempts < maxAttempts) {
-            inspectRequestsSocket.off("task:requests", handleRequest);
+            inspectRequestsSocket.off("task:requests-new", handleAddRequest);
+            inspectRequestsSocket.off(
+              "task:requests-delete",
+              handleDeleteRequest,
+            );
             inspectRequestsSocket.off("socket:onopen", handleOpen);
             inspectRequestsSocket.disconnect();
             tryConnect();
@@ -147,7 +140,7 @@ export default function TaskPost({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position."
+        "Location permission is required to fetch your position.",
       );
       return;
     }
@@ -204,13 +197,16 @@ export default function TaskPost({ navigation }: any) {
           (payload) => {
             addRequest(payload);
           },
+          (payload) => {
+            clearRequest(payload); //id
+          },
           () => {
             Toast.show({
               type: "success",
               text1: `Connected to requests for task ${res.data.id}`,
               text2: "Inspect requests",
             });
-          }
+          },
         );
       } catch (err: any) {
         Toast.show({
@@ -255,7 +251,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -274,7 +270,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -288,7 +284,7 @@ export default function TaskPost({ navigation }: any) {
   const cancelSearch = () => {
     console.log(
       "Cancel search called, taskToBeCancelledId:",
-      taskToBeCancelledIdRef.current
+      taskToBeCancelledIdRef.current,
     );
     setIsSearching(false);
     setTempTaskData(null);
@@ -681,7 +677,6 @@ export default function TaskPost({ navigation }: any) {
               onClose={() => setRequestsVisible(false)}
               onAccept={(id) => console.log("Accepted:", id)}
               onDecline={(id) => console.log("Declined:", id)}
-              requests={requests}
             />
           )}
         </View>

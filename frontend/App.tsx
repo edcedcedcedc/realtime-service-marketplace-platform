@@ -54,11 +54,13 @@ export default function App() {
     };
 
     const handleSocketOnOpen = () =>
-      Toast.show({
-        type: "success",
-        text1: "Websocket connected!",
-        text2: "Task feed",
-      });
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Websocket connected!",
+          text2: "Task feed",
+        });
+      }, 8000);
 
     taskFeedSocket.on("task:new", handleNewTask);
     taskFeedSocket.on("task:delete", handleDeleteTask);

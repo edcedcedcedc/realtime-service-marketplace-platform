@@ -63,7 +63,7 @@ export default function LoginScreen({ navigation }: any) {
           password: data.password,
         }),
         5000,
-        "Request timed out. Please try again"
+        "Request timed out. Please try again",
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };

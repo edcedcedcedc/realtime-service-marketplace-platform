@@ -17,7 +17,7 @@ export const logout = () => {
       CommonActions.reset({
         index: 0,
         routes: [{ name: "Start" }],
-      })
+      }),
     );
     setLoading(false);
   }, 10);

@@ -1,6 +1,7 @@
 from .views import (
     accept_terms,
     all_tasks,
+    cancel_task_request,
     completed_tasks,
     current_tsc_text,
     profile_detail_update,
@@ -40,6 +41,8 @@ urlpatterns = [
     path("api/tasks/delete/<int:id>/", task_delete, name="task-delete"),
     # profile endpoint
     path("api/profile/", profile_detail_update, name="profile-detail-update"),
-    # tasker sends a request to
-    path("api/task-request/", task_request, name="task_request"),
+    # tasker emit and unemit messages to add them and delete them
+    # from client that listens incoming requests from taskers
+    path("api/task-request/", task_request, name="task-request"),
+    path("api/cancel-task-request/", cancel_task_request, name="cancel-task-request"),
 ]

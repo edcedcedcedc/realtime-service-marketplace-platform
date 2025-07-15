@@ -9,6 +9,7 @@ import {
   Button,
 } from "react-native";
 import { COLORS } from "../constants/colors";
+import useStore from "../store/useStore";
 
 const { width } = Dimensions.get("window");
 
@@ -31,7 +32,6 @@ type InspectRequestsModalProps = {
   onClose: () => void;
   onAccept: (id: string | number) => void;
   onDecline: (id: string | number) => void;
-  requests: Request[];
 };
 
 export default function InspectRequestsModal({
@@ -39,8 +39,8 @@ export default function InspectRequestsModal({
   onClose,
   onAccept,
   onDecline,
-  requests,
 }: InspectRequestsModalProps) {
+  const requests = useStore((state) => state.requests);
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>

@@ -29,7 +29,7 @@ const profileSchema = Yup.object().shape({
         if (!value) return true;
         const num = Number(value);
         return !isNaN(num) && num <= 60 && num >= 0;
-      }
+      },
     )
     .max(32, "ETA must be at most 32 characters"),
   bio: Yup.string()
@@ -38,7 +38,7 @@ const profileSchema = Yup.object().shape({
   category: Yup.string()
     .oneOf(
       ["repair", "personal_help", "delivery", "other"],
-      "Select a valid category"
+      "Select a valid category",
     )
     .when("role", {
       is: "tasker",

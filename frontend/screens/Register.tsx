@@ -51,13 +51,13 @@ export default function RegisterScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
           role: data.role,
-        })
+        }),
       );
       useStore
         .getState()
         .setAuth(
           { access: res.data.access, refresh: res.data.refresh },
-          res.data.user
+          res.data.user,
         );
       Toast.show({
         type: "success",

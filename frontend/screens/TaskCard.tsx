@@ -11,7 +11,7 @@ import {
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
-import api from "../services/api"; // your axios instance
+import api from "../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -20,7 +20,7 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 const statusColorMap = STATUS_OPTIONS.reduce(
@@ -28,7 +28,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 type TaskCardProps = {
@@ -49,15 +49,12 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
 
-  // For demo: hardcoded ETA, can be user input if you want
-  const eta = "15 min";
-
   async function handleAccept() {
     try {
       setShowTaskSubmitted(true);
 
-      await api.post("task_request/", {
-        task_id: item.id,
+      await api.post("task-request/", {
+        task_id: Number(item.id),
       });
 
       Alert.alert(
@@ -66,11 +63,21 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         [
           {
             text: "Cancel",
-            onPress: () => setShowTaskSubmitted(false),
+            onPress: async () => {
+              try {
+                await api.post("cancel-task-request/", {
+                  task_id: Number(item.id),
+                });
+                setShowTaskSubmitted(false);
+              } catch (error) {
+                Alert.alert("Error", "Failed to cancel request.");
+                console.error(error);
+              }
+            },
             style: "destructive",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     } catch (error) {
       setShowTaskSubmitted(false);

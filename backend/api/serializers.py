@@ -131,7 +131,7 @@ class TaskRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskRequest
         fields = [
-            "id",
+            "id",  # task request id, rendered in the UI, InspectRequestModal and used as an ID for the flatlist
             "task_id",
             "tasker_id",
             "tasker_username",

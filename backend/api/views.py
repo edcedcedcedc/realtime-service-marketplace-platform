@@ -14,8 +14,9 @@ from .serializers import (
 from .models import TaskLog, Task, TaskRequest, TermsAcceptanceLog, Profile
 from .broadcast import (
     broadcast_task_request,
-    taskfeed_broadcast_new,
-    taskfeed_broadcast_deleted,
+    broadcast_task_request_deleted,
+    broadcast_taskfeed_new,
+    broadcast_taskfeed_deleted,
     get_user_ip,
 )
 from api.tasks import delete_task_if_still_open
@@ -175,7 +176,7 @@ def task_create(request):
             ip_address=request.META.get("REMOTE_ADDR"),
         )
 
-        taskfeed_broadcast_new(task_instance)
+        broadcast_taskfeed_new(task_instance)
 
         re_serializer = TaskSerializer(task_instance)
 
@@ -197,7 +198,8 @@ def task_delete(request, id):
             {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
         )
     task_id = task.id
-    taskfeed_broadcast_deleted(task_id)
+    broadcast_taskfeed_deleted(task_id)
+    # broadcast_task_request_deleted(task_id)
     task.delete()
     return Response({"message": "Task deleted successfully"}, status=status.HTTP_200_OK)
 
@@ -222,7 +224,7 @@ def task_update(request, id):
     )
     if serializer.is_valid():
         updated_task_instance = serializer.save()
-        taskfeed_broadcast_new(updated_task_instance)
+        broadcast_taskfeed_new(updated_task_instance)
         re_serializer = TaskSerializer(updated_task_instance)
         return Response(re_serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -318,3 +320,23 @@ def task_request(request):
     broadcast_task_request(task_request)
 
     return Response({"message": "Request sent"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel_task_request(request):
+    task_id = request.data.get("task_id")
+
+    try:
+        task = Task.objects.get(id=task_id)
+        task_request = TaskRequest.objects.get(task=task, tasker=request.user)
+    except (Task.DoesNotExist, TaskRequest.DoesNotExist):
+        return Response(
+            {"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+    task_request_id = task_request.id
+    task_request.delete()
+
+    broadcast_task_request_deleted(task.id, request.user.id, task_request_id)
+
+    return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)

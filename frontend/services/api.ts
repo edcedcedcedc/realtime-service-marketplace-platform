@@ -5,7 +5,6 @@ import useStore from "../store/useStore";
 import { HTTP_BASE_URL } from "../constants/network";
 import axios from "axios";
 
-
 const api = axios.create({
   baseURL: HTTP_BASE_URL,
 });

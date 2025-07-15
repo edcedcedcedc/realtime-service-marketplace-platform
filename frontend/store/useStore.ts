@@ -2,7 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { sortTasksByDate } from "../utils/sortTasks";
+import {
+  sortTasksByDateDesc,
+  sortRequestsByDateDesc,
+} from "../utils/sort";
 import { COLORS } from "../constants/colors";
 
 export const URGENCY_OPTIONS = [
@@ -45,12 +48,12 @@ const initialProfile: ProfileType = {
     username: "",
     email: "",
     role: "client",
-  }, 
+  },
   name: "",
   family_name: "",
   rating: 0,
   bio: "",
-}
+};
 
 const initialState = {
   auth: {
@@ -71,13 +74,11 @@ const initialState = {
   requests: [],
   currentTaskId: 0,
   isLoggedIn: false,
-  profile: initialProfile
+  profile: initialProfile,
 };
 
-
-
 interface ProfileType {
-  user: User, // must always be present
+  user: User; // must always be present
   name: string;
   family_name: string;
   rating: number;
@@ -91,7 +92,6 @@ interface ProfileType {
   // client-only fields (optional for tasker)
   tasks_posted?: number;
 }
-
 
 interface User {
   id: number;
@@ -131,12 +131,7 @@ export type TaskFormInput = {
   subcategory: string;
 };
 
-type Status =
-  | "open"
-  | "in-progress"
-  | "completed"
-  | "cancelled"
-  | "expired";
+type Status = "open" | "in-progress" | "completed" | "cancelled" | "expired";
 
 export type Category = "repair" | "delivery" | "personal_help" | "other";
 export type Specialization = Category | `other: ${string}`;
@@ -178,7 +173,6 @@ export interface Request {
   created_at: string;
 }
 
-
 interface Jwt {
   access: string | null;
   refresh: string | null;
@@ -189,7 +183,7 @@ interface State {
     jwt: Jwt | null;
     user: User | null;
   };
-  profile: ProfileType
+  profile: ProfileType;
   taskers: User[];
   clients: User[];
   tasks: Task[];
@@ -205,6 +199,7 @@ interface State {
   currentTaskId: number;
   requests: Request[];
   addRequest: (request: Request) => void;
+  clearRequest: (request: number) => void;
   clearRequests: () => void;
   setCurrentTaskId: (id: number) => void;
   setMiniMapReady: (ready: boolean) => void;
@@ -226,7 +221,6 @@ interface State {
   resetStore: () => void;
   setProfile: (profile: ProfileType) => void;
   resetProfile: () => void;
-  
 }
 
 const useStore = create<State>()(
@@ -256,16 +250,23 @@ const useStore = create<State>()(
       requests: [],
       setCurrentTaskId: (id) => set({ currentTaskId: id }),
       addRequest: (request) =>
-      set((state) => ({ requests: [...state.requests, request] })),
+        set((state) => ({
+          requests: sortRequestsByDateDesc([...state.requests, request]),
+        })),
+      clearRequest: (task_request_id: number) =>
+        set((state) => ({
+          requests: sortRequestsByDateDesc(
+            state.requests.filter((r) => r.id !== task_request_id),
+          ),
+        })),
       clearRequests: () => set({ requests: [] }),
       setProfile: (profile: ProfileType) => set({ profile }),
       resetProfile: () => set({ profile: initialProfile }),
-      setIsLoggedIn: (param) => set({isLoggedIn: param}),
+      setIsLoggedIn: (param) => set({ isLoggedIn: param }),
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
       setMarkerPoint: (point) => set({ markerPoint: point }),
-
       setSelectedRegion: (region) => {
         if (!region) {
           set({ selectedRegion: null });
@@ -303,7 +304,7 @@ const useStore = create<State>()(
         set((state) => ({
           auth: {
             jwt: { access: null, refresh: null },
-            user: null, 
+            user: null,
           },
         })),
 
@@ -326,7 +327,9 @@ const useStore = create<State>()(
           const normalizedTask = { ...task, id: Number(task.id) };
           const exists = state.tasks.some((t) => t.id === normalizedTask.id);
           if (exists) return {};
-          return { tasks: sortTasksByDate([...state.tasks, normalizedTask]) };
+          return {
+            tasks: sortTasksByDateDesc([...state.tasks, normalizedTask]),
+          };
         }),
 
       removeTask: (id: number) =>
@@ -336,39 +339,38 @@ const useStore = create<State>()(
 
       setTasks: (tasks: Task[]) =>
         set({
-          tasks: sortTasksByDate(
+          tasks: sortTasksByDateDesc(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
       resetStore: () =>
-          set({
-            ...initialState,
-            profile: initialProfile,
-          }),
+        set({
+          ...initialState,
+          profile: initialProfile,
+        }),
     }),
     {
-  name: "my-app-storage",
-  storage: {
-    getItem: async (key) => {
-      const value = await AsyncStorage.getItem(key);
-      return value ? JSON.parse(value) : null;
-    },
-    setItem: async (key, value: any) => {
-      await AsyncStorage.setItem(key, JSON.stringify(value));
-    },
-    removeItem: async (key) => {
-      await AsyncStorage.removeItem(key);
-    },
-  },
- /*  merge: (persistedState, currentState) => {
+      name: "my-app-storage",
+      storage: {
+        getItem: async (key) => {
+          const value = await AsyncStorage.getItem(key);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: async (key, value: any) => {
+          await AsyncStorage.setItem(key, JSON.stringify(value));
+        },
+        removeItem: async (key) => {
+          await AsyncStorage.removeItem(key);
+        },
+      },
+      /*  merge: (persistedState, currentState) => {
     return {
       ...currentState,
       ...(persistedState as any),
       profile: (persistedState as any)?.profile ?? initialProfile,
     };
   }, */
-},
-
+    },
   ),
 );
 
