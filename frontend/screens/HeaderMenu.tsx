@@ -23,7 +23,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
     <Menu
       visible={visible}
       onDismiss={closeMenu}
-      contentStyle={{ backgroundColor: COLORS.color37 }}
+      contentStyle={{ backgroundColor: COLORS.color38 }}
       anchor={
         <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
           <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
