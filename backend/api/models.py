@@ -123,6 +123,12 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True, null=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    requests = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of incoming tasker requests with tasker ID, rating, ETA, etc.",
+    )
+
     # Relations
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -303,3 +309,10 @@ class TaskLog(models.Model):
             self.task_created_at = self.related_task.created_at
             self.task_completed_at = self.related_task.completed_at
         super().save(*args, **kwargs)
+
+
+class TaskRequest(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    tasker = models.ForeignKey(User, on_delete=models.CASCADE)
+    eta = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)

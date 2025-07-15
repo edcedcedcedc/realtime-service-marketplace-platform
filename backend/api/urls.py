@@ -8,6 +8,7 @@ from .views import (
     in_progress_tasks,
     task_delete,
     task_detail,
+    task_request,
     task_update,
     open_tasks,
     register,
@@ -39,4 +40,6 @@ urlpatterns = [
     path("api/tasks/delete/<int:id>/", task_delete, name="task-delete"),
     # profile endpoint
     path("api/profile/", profile_detail_update, name="profile-detail-update"),
+    # tasker sends a request to
+    path("api/task-request/", task_request, name="task_request"),
 ]

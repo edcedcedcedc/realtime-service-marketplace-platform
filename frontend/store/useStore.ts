@@ -39,6 +39,19 @@ export const DEFAULT_REGION: Region = {
   longitudeDelta: 0.01,
 };
 
+const initialProfile: ProfileType = {
+  user: {
+    id: 0,
+    username: "",
+    email: "",
+    role: "client",
+  }, 
+  name: "",
+  family_name: "",
+  rating: 0,
+  bio: "",
+}
+
 const initialState = {
   auth: {
     jwt: { access: null, refresh: null },
@@ -55,20 +68,13 @@ const initialState = {
   miniMapReady: false,
   fullMapReady: false,
   isFullMapVisible: false,
+  requests: [],
+  currentTaskId: 0,
+  isLoggedIn: false,
+  profile: initialProfile
 };
 
-const initialProfile: ProfileType = {
-  user: {
-    id: 0,
-    username: "",
-    email: "",
-    role: "client",
-  }, 
-  name: "",
-  family_name: "",
-  rating: 0,
-  bio: "",
-}
+
 
 interface ProfileType {
   user: User, // must always be present
@@ -157,7 +163,18 @@ export interface Task {
   subcategory: string;
   subtasks?: [];
 }
-
+/* Tasker request, when he clicks accept on any task  */
+ export interface Request { 
+    task_id: number;
+    tasker_id: number;
+    tasker_username: string;
+    tasker_name: string;
+    tasker_family_name: string;
+    rating: number;
+    specialization: string;
+    tasks_done: number;
+    eta: number;
+  }
 
 interface Jwt {
   access: string | null;
@@ -182,6 +199,11 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
+  currentTaskId: number;
+  requests: Request[];
+  addRequest: (request: Request) => void;
+  clearRequests: () => void;
+  setCurrentTaskId: (id: number) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -227,6 +249,12 @@ const useStore = create<State>()(
       isFullMapVisible: false,
       isLoggedIn: false,
       profile: initialProfile,
+      currentTaskId: 0,
+      requests: [],
+      setCurrentTaskId: (id) => set({ currentTaskId: id }),
+      addRequest: (request) =>
+      set((state) => ({ requests: [...state.requests, request] })),
+      clearRequests: () => set({ requests: [] }),
       setProfile: (profile: ProfileType) => set({ profile }),
       resetProfile: () => set({ profile: initialProfile }),
       setIsLoggedIn: (param) => set({isLoggedIn: param}),

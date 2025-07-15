@@ -11,9 +11,16 @@ from .serializers import (
     TaskSerializer,
     TaskerProfileSerializer,
 )
-from .models import TaskLog, Task, TermsAcceptanceLog, Profile
-from .utils import taskfeed_broadcast_new, taskfeed_broadcast_deleted, get_user_ip
+from .models import TaskLog, Task, TaskRequest, TermsAcceptanceLog, Profile
+from .utils import (
+    broadcast_task_request,
+    taskfeed_broadcast_new,
+    taskfeed_broadcast_deleted,
+    get_user_ip,
+)
 from api.tasks import delete_task_if_still_open
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 User = get_user_model()
 
@@ -130,6 +137,13 @@ def current_tsc_text(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def task_create(request):
+
+    if getattr(request.user, "role", None) != "client":
+        return Response(
+            {"error": "Only clients can create tasks."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     serializer = TaskSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         try:
@@ -281,3 +295,23 @@ def profile_detail_update(request):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def task_request(request):
+    task_id = request.data.get("task_id")
+    eta = request.data.get("eta")
+
+    try:
+        task = Task.objects.get(id=task_id, status="open")
+        if task.client == request.user:
+            return Response({"error": "You cannot accept your own task."}, status=403)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found or closed."}, status=404)
+
+    TaskRequest.objects.create(task=task, tasker=request.user, eta=eta)
+
+    broadcast_task_request(task, request.user, eta)
+
+    return Response({"message": "Request sent"}, status=201)

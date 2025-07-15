@@ -11,6 +11,7 @@ import {
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
+import api from "../services/api"; // your axios instance
 
 const { width } = Dimensions.get("window");
 
@@ -48,19 +49,35 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
 
-  function showTaskSubmittedAlert(onCancel: () => void) {
-    Alert.alert(
-      "Request Sent",
-      `Waiting for client to respond`,
-      [
-        {
-          text: "Cancel",
-          onPress: onCancel,
-          style: "destructive",
-        },
-      ],
-      { cancelable: true }
-    );
+  // For demo: hardcoded ETA, can be user input if you want
+  const eta = "15 min";
+
+  async function handleAccept() {
+    try {
+      setShowTaskSubmitted(true);
+
+      await api.post("task_request/", {
+        task_id: item.id,
+        eta,
+      });
+
+      Alert.alert(
+        "Request Sent",
+        "Waiting for client to respond",
+        [
+          {
+            text: "Cancel",
+            onPress: () => setShowTaskSubmitted(false),
+            style: "destructive",
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      setShowTaskSubmitted(false);
+      Alert.alert("Error", "Failed to send accept request.");
+      console.error(error);
+    }
   }
 
   useEffect(() => {
@@ -139,12 +156,8 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         />
         <Button
           title="Accept"
-          onPress={() =>
-            showTaskSubmittedAlert(() => {
-              console.log("Task Cancelled");
-              setShowTaskSubmitted(false);
-            })
-          }
+          onPress={handleAccept}
+          disabled={showTaskSubmitted} // disable while sending
         />
       </View>
 

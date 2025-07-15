@@ -40,3 +40,47 @@ def get_user_ip(request):
     else:
         ip = request.META.get("REMOTE_ADDR")
     return ip
+
+
+def broadcast_task_requests(task):
+    channel_layer = get_channel_layer()
+    group_name = f"task_request_{task.id}"
+    message = {
+        "type": "task:requests",
+        "payload": task.requests,
+    }
+
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "update",
+            "data": message,
+        },
+    )
+
+
+def broadcast_task_request(task, tasker, eta):
+    profile = getattr(tasker, "profile", None)
+    payload = {
+        "task_id": task.id,
+        "tasker_id": tasker.id,
+        "tasker_username": tasker.username,
+        "tasker_name": getattr(profile, "name", ""),
+        "tasker_family_name": getattr(profile, "family_name", ""),
+        "rating": getattr(profile, "rating", None),
+        "specialization": getattr(profile, "category", ""),
+        "tasks_done": getattr(profile, "tasks_done", 0),
+        "eta": eta,
+    }
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"task_request_{task.id}",
+        {
+            "type": "update",
+            "data": {
+                "type": "task:requests",
+                "payload": payload,
+            },
+        },
+    )

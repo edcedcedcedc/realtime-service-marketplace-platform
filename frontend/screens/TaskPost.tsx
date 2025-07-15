@@ -1,30 +1,3 @@
-/**
- * TaskPostScreen Component
- *
- * This screen allows clients to create and submit a task request.
- * It features form fields for entering task title, description, budget,
- * location (manual or GPS-based), and urgency level.
- *
- * Key Features:
- * - Form validation via react-hook-form and Yup schema.
- * - Location selection with MapSelector and "Use My Location" option via Expo Location API.
- * - Urgency level buttons with visual feedback.
- * - Search initiation and cancellation logic.
- * - Automatic task creation after a 5-second delay using a timeout.
- * - Task deletion and toast notifications for feedback.
- * - UI adapts based on whether a search is active (`isSearching`).
- *
- * Dependencies:
- * - react-hook-form for form management
- * - yup for schema validation
- * - Zustand for global state management
- * - react-native-keyboard-aware-scroll-view for keyboard handling
- * - Toast notifications for feedback
- *
- * Props:
- * - navigation: React Navigation prop passed from the parent stack
- */
-
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -45,25 +18,108 @@ import * as Location from "expo-location";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import useStore, { Region, TaskFormInput } from "../store/useStore";
-import api from "../services/api";
+import api, { IPV4 } from "../services/api";
 import { taskPostSchema } from "../validation/validationSchema";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
-
+import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
+import { SocketManager } from "../utils/socketManager";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
   const tempTaskData = useStore((state) => state.tempTaskData);
-  const addTask = useStore().addTask;
   const tasks = useStore().tasks;
-  const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const taskToBeCancelledIdRef = useRef<number | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
+  const [requestsVisible, setRequestsVisible] = useState(false);
+
+  const addRequest = useStore().addRequest;
+  const requests = useStore((state) => state.requests);
+  const setCurrentTaskId = useStore().setCurrentTaskId;
+  const currentTaskId = useStore((state) => state.currentTaskId);
+  const clearRequests = useStore().clearRequests;
+
+  const inspectRequestsSocket = new SocketManager();
+
+  const requests1 = [
+    { id: 1, tasker: "Alex V.", rating: 4.9, eta: "15" },
+    { id: 2, tasker: "Maria C.", rating: 4.7, eta: "10" },
+    { id: 3, tasker: "Maria C.", rating: 4.7, eta: "10" },
+    { id: 4, tasker: "Maria C.", rating: 4.7, eta: "10" },
+    { id: 5, tasker: "Maria C.", rating: 4.7, eta: "10" },
+  ];
+
+  interface Request {
+    task_id: number;
+    tasker_id: number;
+    tasker_username: string;
+    tasker_name: string;
+    tasker_family_name: string;
+    rating: number;
+    specialization: string;
+    tasks_done: number;
+    eta: number;
+  }
+
+  function connectWithRetries(
+    wsUrl: string,
+    id: number,
+    maxAttempts = 3,
+    delayMs = 3000,
+    onRequest: (payload: any) => void,
+    onOpen?: () => void
+  ): Promise<void> {
+    let attempts = 0;
+    let connected = false;
+
+    return new Promise((resolve, reject) => {
+      function tryConnect() {
+        if (attempts >= maxAttempts || connected) {
+          if (connected) {
+            resolve();
+          } else {
+            reject(new Error("Max connection attempts reached"));
+          }
+          return;
+        }
+        attempts++;
+
+        inspectRequestsSocket.connect(wsUrl, `task ${id}`);
+
+        function handleRequest(payload: any) {
+          connected = true;
+          onRequest(payload);
+        }
+
+        function handleOpen() {
+          connected = true;
+          if (onOpen) onOpen();
+          resolve();
+        }
+
+        inspectRequestsSocket.on("task:requests", handleRequest);
+        inspectRequestsSocket.on("socket:onopen", handleOpen);
+
+        setTimeout(() => {
+          if (!connected && attempts < maxAttempts) {
+            inspectRequestsSocket.off("task:requests", handleRequest);
+            inspectRequestsSocket.off("socket:onopen", handleOpen);
+            inspectRequestsSocket.disconnect();
+            tryConnect();
+          } else if (!connected) {
+            reject(new Error("Failed to connect after max attempts"));
+          }
+        }, delayMs);
+      }
+
+      tryConnect();
+    });
+  }
 
   const {
     control,
@@ -83,7 +139,6 @@ export default function TaskPost({ navigation }: any) {
   });
 
   const urgency = watch("urgency");
-  console.log("render");
 
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -104,27 +159,57 @@ export default function TaskPost({ navigation }: any) {
 
   useEffect(() => {
     setTempTaskData(null);
+    setCurrentTaskId(0);
     return () => {
       reset();
+      setCurrentTaskId(0);
     };
   }, []);
 
   useEffect(() => {
     if (!tempTaskData) return;
+
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
 
+    let wsUrl = "";
+    let isMounted = true;
+
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
+
         const payload = {
           ...tempTaskData,
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
+
         const res = await api.post("/tasks/create/", payload);
-        taskToBeCancelledIdRef.current = res.data.id;
+
+        if (!isMounted) return;
+
+        setCurrentTaskId(res.data.id);
+
+        wsUrl = `ws://${IPV4}:8000/ws/task-requests/${res.data.id}/`;
+
+        await connectWithRetries(
+          wsUrl,
+          res.data.id,
+          3,
+          3000,
+          (payload) => {
+            addRequest(payload);
+          },
+          () => {
+            Toast.show({
+              type: "success",
+              text1: `Connected to requests for task ${res.data.id}`,
+              text2: "Inspect requests",
+            });
+          }
+        );
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -139,10 +224,14 @@ export default function TaskPost({ navigation }: any) {
     }, 5000);
 
     return () => {
+      isMounted = false;
       if (taskCreationTimeout.current) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
+      clearRequests();
+      inspectRequestsSocket.disconnect();
+      setCurrentTaskId(0);
     };
   }, [tempTaskData]);
 
@@ -202,20 +291,18 @@ export default function TaskPost({ navigation }: any) {
     setIsSearching(false);
     setTempTaskData(null);
 
-    if (taskToBeCancelledIdRef.current) {
+    if (currentTaskId) {
       deleteTaskById();
     }
   };
 
   const deleteTaskById = async () => {
-    const taskId = tasks.find(
-      (task) => taskToBeCancelledIdRef.current == task.id
-    )?.id;
-    if (!taskId) return;
+    const id = tasks.find((task) => currentTaskId == task.id)?.id;
+    if (!id) return;
     try {
-      const res = await api.delete(`/tasks/delete/${taskId}/`);
+      const res = await api.delete(`/tasks/delete/${id}/`);
       setTempTaskData(null);
-      taskToBeCancelledIdRef.current = null;
+      setCurrentTaskId(0);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -557,7 +644,14 @@ export default function TaskPost({ navigation }: any) {
                   <Text style={styles.infoLabel}>Incoming requests:</Text>
                   <Text style={styles.infoValue}>5</Text>
                 </View>
-                <Button title="Inspect Requests" onPress={() => {}} />
+                <View style={{ marginRight: -2 }}>
+                  <Button
+                    title="Inspect Requests"
+                    onPress={() => {
+                      setRequestsVisible(true);
+                    }}
+                  />
+                </View>
               </View>
             </>
           )}
@@ -578,6 +672,15 @@ export default function TaskPost({ navigation }: any) {
             >
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
+          )}
+          {requestsVisible && (
+            <IncomingRequestsModal
+              visible={true}
+              onClose={() => setRequestsVisible(false)}
+              onAccept={(id) => console.log("Accepted:", id)}
+              onDecline={(id) => console.log("Declined:", id)}
+              requests={requests}
+            />
           )}
         </View>
       </KeyboardAwareScrollView>

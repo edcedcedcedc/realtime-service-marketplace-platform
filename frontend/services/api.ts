@@ -5,10 +5,9 @@ import useStore from "../store/useStore";
 import Constants from 'expo-constants';
 import axios from "axios";
 
-const IPV4 = Constants.expoConfig!.extra!.IPV4;
+export const IPV4 = Constants.expoConfig!.extra!.IPV4;
 
 const API_BASE_URL = `http://${IPV4}:8000/api/`;
-
 export const WS_URL = `ws://${IPV4}:8000/ws/tasks/`;
 
 const api = axios.create({
