@@ -27,7 +27,7 @@ def broadcast_taskfeed_deleted(task_id: int):
     async_to_sync(channel_layer.group_send)(
         "taskfeed",
         {
-            "type": "update",  # reuse the same 'update' handler in consumer
+            "type": "update",
             "data": message,
         },
     )

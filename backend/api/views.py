@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import (
     ClientProfileSerializer,
+    TaskRequestSerializer,
     TaskSerializer,
     TaskerProfileSerializer,
 )
@@ -300,7 +301,7 @@ def profile_detail_update(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def task_request(request):
+def task_request(request):  # as tasker
     task_id = request.data.get("task_id")
 
     try:
@@ -309,6 +310,15 @@ def task_request(request):
             return Response(
                 {"error": "You cannot accept your own task."},
                 status=status.HTTP_403_FORBIDDEN,
+            )
+
+        existing_request = TaskRequest.objects.filter(
+            task=task, tasker=request.user
+        ).first()
+        if existing_request:
+            return Response(
+                {"error": "You already sent a request for this task."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
     except Task.DoesNotExist:
         return Response(
@@ -324,7 +334,7 @@ def task_request(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def cancel_task_request(request):
+def cancel_task_request(request):  # as tasker
     task_id = request.data.get("task_id")
 
     try:
@@ -340,3 +350,58 @@ def cancel_task_request(request):
     broadcast_task_request_deleted(task.id, request.user.id, task_request_id)
 
     return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_task_requests_for_task(request, task_id):  # as client
+    try:
+        task = Task.objects.get(id=task_id)
+        if task.client != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    task_requests = TaskRequest.objects.filter(task=task).order_by("-created_at")
+    serializer = TaskRequestSerializer(task_requests, many=True)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def assign_tasker(request):
+    task_id = request.data.get("task_id")
+    tasker_id = request.data.get("tasker_id")
+    try:
+        task = Task.objects.get(id=task_id)
+        tasker = User.objects.get(id=tasker_id)
+
+    except (Task.DoesNotExist, User.DoesNotExist):
+        return Response(
+            {"error": "Task or user not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    try:
+        terms_log = TermsAcceptanceLog.objects.filter(id=tasker_id).latest(
+            "accepted_at"
+        )
+    except TermsAcceptanceLog.DoesNotExist:
+        return Response(
+            {"error": "Terms and Conditions must be accepted before creating a task."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    task.tasker = tasker
+    task.terms_accepted_tasker_at = terms_log
+    task.status = "in-progress"
+    task.save()
+
+    # Remove all other TaskRequests ???
+    TaskRequest.objects.filter(task=task).exclude(tasker=tasker).delete()
+
+    serializer = TaskSerializer(task, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)

@@ -199,8 +199,9 @@ interface State {
   currentTaskId: number;
   requests: Request[];
   addRequest: (request: Request) => void;
-  clearRequest: (request: number) => void;
+  clearRequest: (requestId: number) => void;
   clearRequests: () => void;
+  setRequests: (requests: Request[]) => void;
   setCurrentTaskId: (id: number) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
@@ -253,10 +254,10 @@ const useStore = create<State>()(
         set((state) => ({
           requests: sortRequestsByDateDesc([...state.requests, request]),
         })),
-      clearRequest: (task_request_id: number) =>
+      clearRequest: (request_id: number) =>
         set((state) => ({
           requests: sortRequestsByDateDesc(
-            state.requests.filter((r) => r.id !== task_request_id),
+            state.requests.filter((r) => r.id !== request_id),
           ),
         })),
       clearRequests: () => set({ requests: [] }),
@@ -341,6 +342,12 @@ const useStore = create<State>()(
         set({
           tasks: sortTasksByDateDesc(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
+          ),
+        }),
+      setRequests: (requests: Request[]) =>
+        set({
+          requests: sortRequestsByDateDesc(
+            requests.map((request) => ({ ...request, id: Number(request.id) })),
           ),
         }),
       resetStore: () =>

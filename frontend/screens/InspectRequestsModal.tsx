@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   View,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { COLORS } from "../constants/colors";
 import useStore from "../store/useStore";
+import api from "../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -41,6 +42,28 @@ export default function InspectRequestsModal({
   onDecline,
 }: InspectRequestsModalProps) {
   const requests = useStore((state) => state.requests);
+  const setRequests = useStore().setRequests;
+  const currentTaskId = useStore((state) => state.currentTaskId);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    const fetchTaskRequests = async () => {
+      try {
+        const response = await api.get(`/task-requests/${currentTaskId}/`);
+        const data = response.data;
+        setRequests(data);
+      } catch (error) {
+        console.error("Failed to fetch task requests", error);
+      }
+    };
+
+    fetchTaskRequests();
+    interval = setInterval(fetchTaskRequests, 30000);
+
+    return () => clearInterval(interval);
+  }, [currentTaskId]);
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
