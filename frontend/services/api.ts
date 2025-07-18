@@ -2,17 +2,11 @@ import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
 import useStore from "../store/useStore";
-import Constants from 'expo-constants';
+import { HTTP_BASE_URL } from "../constants/network";
 import axios from "axios";
 
-const IPV4 = Constants.expoConfig!.extra!.IPV4;
-
-const API_BASE_URL = `http://${IPV4}:8000/api/`;
-
-export const WS_URL = `ws://${IPV4}:8000/ws/tasks/`;
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: HTTP_BASE_URL,
 });
 
 api.interceptors.request.use(async (config) => {
@@ -46,7 +40,7 @@ api.interceptors.response.use(
 
       if (refresh) {
         try {
-          const res = await axios.post(`${API_BASE_URL}token/refresh/`, {
+          const res = await axios.post(`${HTTP_BASE_URL}token/refresh/`, {
             refresh,
           });
           store.setAuth(
@@ -68,7 +62,7 @@ api.interceptors.response.use(
                     try {
                       const store = useStore.getState();
                       const loginResponse = await axios.post(
-                        `${API_BASE_URL}login/`,
+                        `${HTTP_BASE_URL}login/`,
                         {
                           username: store.auth.user?.username,
                           password: password,

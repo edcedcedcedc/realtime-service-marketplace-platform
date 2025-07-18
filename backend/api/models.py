@@ -3,6 +3,13 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from .constants import (
+    CATEGORY_CHOICES,
+    EVENT_CHOICES,
+    STATUS_CHOICES,
+    SUBCATEGORY_CHOICES,
+    URGENCY_CHOICES,
+)
 
 
 class User(AbstractUser):
@@ -39,34 +46,44 @@ class Profile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
+    name = models.CharField(max_length=150, blank=True)
+    family_name = models.CharField(max_length=150, blank=True)
     bio = models.TextField(blank=True)
+
     rating = models.FloatField(default=0)
+    tasks_done = models.PositiveIntegerField(default=0)
+    tasks_posted = models.PositiveBigIntegerField(default=0)
+
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        default="repair",
+        blank=True,
+    )
+
+    eta = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        return f"Profile of {self.user.username}"
+
+    @property
+    def id(self):
+        return self.user.id
+
+    @property
+    def username(self):
+        return self.user.username
+
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def role(self):
+        return self.user.role
 
 
 class Task(models.Model):
-    STATUS_CHOICES = [
-        ("open", "Open"),
-        ("confirmed", "Confirmed"),
-        ("in-progress", "In-Progress"),
-        ("completed", "Completed"),
-        ("cancelled", "Cancelled"),
-        ("expired", "Expired"),
-    ]
-    URGENCY_CHOICES = [
-        ("now", "Now - 5 minutes"),
-        ("soon", "Soon - 30 minutes"),
-        ("flexible", "Later - 1 hour"),
-    ]
-
-    CATEGORY_CHOICES = [
-        ("repair", "Fix & Repair"),
-        ("personal_help", "Personal Help"),
-        ("delivery", "Move & Deliver"),
-        ("other", "Other"),
-    ]
 
     # Main fields
     title = models.CharField(max_length=255)
@@ -99,6 +116,12 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+
+    requests = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of incoming tasker requests with tasker ID, rating, ETA, etc.",
+    )
 
     # Relations
     client = models.ForeignKey(
@@ -144,16 +167,7 @@ class Task(models.Model):
 
     def clean(self):
         super().clean()
-        SUBCATEGORY_CHOICES = {
-            "repair": ["electrical", "plumbing", "appliance", "furniture"],
-            "personal_help": [
-                "dog_walking",
-                "grocery_pickup",
-                "waiting_line",
-                "elderly_help",
-            ],
-            "delivery": ["package_delivery", "furniture_moving", "heavy_lifting"],
-        }
+
         if self.subcategory:
             valid_subcats = SUBCATEGORY_CHOICES.get(self.category, [])
             if self.subcategory not in valid_subcats:
@@ -221,14 +235,6 @@ class Rating(models.Model):
 
 
 class TaskLog(models.Model):
-    EVENT_CHOICES = [
-        ("tasks_created", "Tasks Created"),
-        ("tasks_completed", "Tasks Completed"),
-        ("tasks_cancelled", "Tasks Cancelled"),
-        ("user_login", "User Login"),
-        ("terms_accepted_client_at", "Terms Accepted By Client"),
-    ]
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
@@ -280,3 +286,9 @@ class TaskLog(models.Model):
             self.task_created_at = self.related_task.created_at
             self.task_completed_at = self.related_task.completed_at
         super().save(*args, **kwargs)
+
+
+class TaskRequest(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    tasker = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -4,6 +4,7 @@ import { Menu, Text } from "react-native-paper";
 
 import { logout } from "../utils/logout";
 import useStore from "../store/useStore";
+import { COLORS } from "../constants/colors";
 
 interface HeaderMenuProps {
   navigation: any;
@@ -22,6 +23,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
     <Menu
       visible={visible}
       onDismiss={closeMenu}
+      contentStyle={{ backgroundColor: COLORS.color38 }}
       anchor={
         <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
           <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
@@ -31,8 +33,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
       <Menu.Item
         onPress={() => {
           closeMenu();
-          console.log("Profile pressed");
-          // navigation.navigate("ProfileScreen");
+          navigation.navigate("Profile");
         }}
         title="Profile"
       />

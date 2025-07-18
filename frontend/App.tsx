@@ -12,54 +12,66 @@ import { NavigationContainer } from "@react-navigation/native";
 import RootNavigator from "./navigation/RootNavigator";
 import AppLayout from "./components/AppLayout";
 import useStore, { Task } from "./store/useStore";
-import { socketManager } from "./utils/socketManager";
+import { SocketManager } from "./utils/socketManager";
 import { navigationRef } from "./utils/navigationRef";
-import { WS_URL } from "./services/api";
+
 import { COLORS } from "./constants/colors";
+import { WS_TASKFEED_URL } from "./constants/network";
 
 export default function App() {
+  const taskFeedSocket = new SocketManager();
   const addTask = useStore.getState().addTask;
   const removeTask = useStore.getState().removeTask;
+  const user = useStore((state) => state.auth.user);
 
   useEffect(() => {
-    socketManager.connect(WS_URL);
+    if (user?.role != "tasker") {
+      return;
+    }
+    taskFeedSocket.connect(WS_TASKFEED_URL, "task feed");
 
     const handleNewTask = (payload: Task) => {
       setTimeout(() => {
         Toast.show({
           type: "info",
           text1: `New task received, id:  ${payload.id}`,
+          text2: "Task feed",
         });
-      }, 50);
-      console.log(payload, " payload", payload.id, " id");
+      }, 3000);
       addTask(payload);
     };
 
     const handleDeleteTask = (id: { id: number }) => {
-      Toast.show({
-        type: "success",
-        text1: `Task with id ${id.id} was deleted`,
-      });
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: `Task with id ${id.id} was deleted`,
+          text2: "Task feed",
+        });
+      }, 100);
       console.log(id.id, "payload id");
       removeTask(id.id);
     };
 
     const handleSocketOnOpen = () =>
-      Toast.show({
-        type: "success",
-        text1: "Websocket connected!",
-      });
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Websocket connected!",
+          text2: "Task feed",
+        });
+      }, 8000);
 
-    socketManager.on("task:new", handleNewTask);
-    socketManager.on("task:delete", handleDeleteTask);
-    socketManager.on("socket:onopen", handleSocketOnOpen);
+    taskFeedSocket.on("task:new", handleNewTask);
+    taskFeedSocket.on("task:delete", handleDeleteTask);
+    taskFeedSocket.on("socket:onopen", handleSocketOnOpen);
 
     return () => {
-      socketManager.off("task:new", handleNewTask);
-      socketManager.off("socket:onopen", handleSocketOnOpen);
-      socketManager.disconnect();
+      taskFeedSocket.off("task:new", handleNewTask);
+      taskFeedSocket.off("socket:onopen", handleSocketOnOpen);
+      taskFeedSocket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   // Predefined fake insets for devices
   const fakeInsetsForDevices: Record<string, EdgeInsets> = {

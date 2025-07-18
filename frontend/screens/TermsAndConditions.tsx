@@ -40,8 +40,8 @@ export default function TermsAndConditions({
         setTinyLoading(true);
         const res = await withTimeout(
           api.get("/current-tsc-text/"),
-          3000,
-          "Request timed out. Please try again"
+          5000,
+          "Request timed out. Please try again",
         );
         setTermsText(res.data.tsc);
       } catch (err) {
@@ -55,11 +55,10 @@ export default function TermsAndConditions({
 
   const handleAccept = async () => {
     try {
-      setLoading(true);
       const res = await withTimeout(
         api.post("/accept-terms/", {}),
         5000,
-        "Request timed out. Please try again"
+        "Request timed out. Please try again",
       );
       Toast.show({
         type: "success",
@@ -69,7 +68,7 @@ export default function TermsAndConditions({
           "Please check your credentials and internet connection",
       });
       navigation.replace(
-        auth.user?.role === "client" ? "Search a tasker" : "Task feed"
+        auth.user?.role === "client" ? "Search a tasker" : "Task feed",
       );
     } catch (err: any) {
       Toast.show({

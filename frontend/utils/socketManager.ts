@@ -1,24 +1,36 @@
-import { Task } from "../store/useStore";
+import { Request, Task } from "../store/useStore";
 
 type ServerMessage =
   | { type: "task:new"; payload: Task }
-  | { type: "task:delete"; payload: { id: number } }
-  | { type: "socket:onopen"; payload: null };
+  | { type: "task:delete"; payload: { id: number } } //the task id
+  | { type: "task:requests-new"; payload: Request }
+  | {
+      type: "task:requests-delete";
+      payload: {
+        task_request_id: number; //the request id within InspectRequestsModal, used in the flatlist
+        task_id: number;
+        tasker_id: number;
+      };
+    }
+  | { type: "socket:onopen"; payload: null }
+  | { type: "socket:onclose"; payload: null };
 
 type MessageHandler = (payload: any) => void;
 
-class SocketManager {
+export class SocketManager {
   private socket: WebSocket | null = null;
   private listeners: Record<string, MessageHandler[]> = {};
   private url: string = "";
+  private debugName: string = "default";
 
-  connect(url: string) {
+  connect(url: string, debugName: string = "default") {
     if (this.socket) return;
     this.url = url;
     this.socket = new WebSocket(url);
+    this.debugName = debugName;
 
     this.socket.onopen = () => {
-      console.log("WebSocket connected to", url);
+      console.log(`[${this.debugName}] WebSocket connected to`, url);
       this.emit("socket:onopen", null);
     };
 
@@ -35,17 +47,21 @@ class SocketManager {
         }
         this.emit(msg.type, msg.payload);
       } catch (err) {
-        console.error("Failed to parse socket message", err);
+        console.error(
+          `[${this.debugName}] Failed to parse socket message`,
+          err,
+        );
       }
     };
 
-    this.socket.onclose = () => {
-      console.warn("WebSocket closed. You might want to reconnect.");
+    this.socket.onclose = (event) => {
+      console.warn("WebSocket closed at URL:", this.url);
+      console.warn(`[${this.debugName}] WebSocket closed.`, event);
       this.socket = null;
     };
 
     this.socket.onerror = (e) => {
-      console.error("WebSocket error", e);
+      console.error(`[${this.debugName}] WebSocket error`, e);
     };
   }
 
@@ -56,6 +72,7 @@ class SocketManager {
   }
 
   on(eventType: string, handler: MessageHandler) {
+    console.log(eventType, "eventType", handler, "Message Handler");
     if (!this.listeners[eventType]) this.listeners[eventType] = [];
     this.listeners[eventType].push(handler);
   }
@@ -80,5 +97,3 @@ class SocketManager {
     }
   }
 }
-
-export const socketManager = new SocketManager();

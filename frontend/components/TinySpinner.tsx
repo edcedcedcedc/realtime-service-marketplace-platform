@@ -34,8 +34,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
   },
   loadingText: {
     color: COLORS.color15,

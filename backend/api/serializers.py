@@ -1,7 +1,8 @@
 # api/serializers.py
 
+from django.conf import settings
 from rest_framework import serializers
-from .models import Task, Subtask
+from .models import Profile, Task, Subtask, TaskRequest, User
 
 
 class SubtaskSerializer(serializers.ModelSerializer):
@@ -71,3 +72,74 @@ class TaskSerializer(serializers.ModelSerializer):
         if obj.terms_accepted_tasker_at:
             return obj.terms_accepted_tasker_at.accepted_at.isoformat()
         return None
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "role"]
+
+
+class ClientProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "name",
+            "family_name",
+            "bio",
+            "rating",
+            "tasks_posted",
+        ]
+
+
+class TaskerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "name",
+            "family_name",
+            "bio",
+            "rating",
+            "tasks_done",
+            "category",
+            "eta",
+        ]
+
+
+class TaskRequestSerializer(serializers.ModelSerializer):
+    task_id = serializers.IntegerField(source="task.id", read_only=True)
+    tasker_id = serializers.IntegerField(source="tasker.id", read_only=True)
+    tasker_username = serializers.CharField(source="tasker.username", read_only=True)
+
+    tasker_name = serializers.CharField(source="tasker.profile.name", read_only=True)
+    tasker_family_name = serializers.CharField(
+        source="tasker.profile.family_name", read_only=True
+    )
+    rating = serializers.FloatField(source="tasker.profile.rating", read_only=True)
+    tasks_done = serializers.IntegerField(
+        source="tasker.profile.tasks_done", read_only=True
+    )
+    category = serializers.CharField(source="tasker.profile.category", read_only=True)
+    eta = serializers.CharField(source="tasker.profile.eta", read_only=True)
+
+    class Meta:
+        model = TaskRequest
+        fields = [
+            "id",  # task request id, rendered in the UI, InspectRequestModal and used as an ID for the flatlist
+            "task_id",
+            "tasker_id",
+            "tasker_username",
+            "tasker_name",
+            "tasker_family_name",
+            "rating",
+            "tasks_done",
+            "category",
+            "eta",
+            "created_at",
+        ]

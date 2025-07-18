@@ -1,30 +1,3 @@
-/**
- * TaskPostScreen Component
- *
- * This screen allows clients to create and submit a task request.
- * It features form fields for entering task title, description, budget,
- * location (manual or GPS-based), and urgency level.
- *
- * Key Features:
- * - Form validation via react-hook-form and Yup schema.
- * - Location selection with MapSelector and "Use My Location" option via Expo Location API.
- * - Urgency level buttons with visual feedback.
- * - Search initiation and cancellation logic.
- * - Automatic task creation after a 5-second delay using a timeout.
- * - Task deletion and toast notifications for feedback.
- * - UI adapts based on whether a search is active (`isSearching`).
- *
- * Dependencies:
- * - react-hook-form for form management
- * - yup for schema validation
- * - Zustand for global state management
- * - react-native-keyboard-aware-scroll-view for keyboard handling
- * - Toast notifications for feedback
- *
- * Props:
- * - navigation: React Navigation prop passed from the parent stack
- */
-
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -44,26 +17,104 @@ import Toast from "react-native-toast-message";
 import * as Location from "expo-location";
 import { yupResolver } from "@hookform/resolvers/yup";
 
-import useStore, { Region, TaskFormInput } from "../store/useStore";
-import api from "../services/api";
+import useStore, { Region, Request, TaskFormInput } from "../store/useStore";
+import { WS_TASKREQUEST_BASE_URL } from "../constants/network";
+
 import { taskPostSchema } from "../validation/validationSchema";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
-
+import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
+import { SocketManager } from "../utils/socketManager";
+import api from "../services/api";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
   const tempTaskData = useStore((state) => state.tempTaskData);
-  const addTask = useStore().addTask;
   const tasks = useStore().tasks;
-  const setLoading = useStore().setLoading;
   const [isSearching, setIsSearching] = useState(false);
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const taskToBeCancelledIdRef = useRef<number | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
+  const [requestsVisible, setRequestsVisible] = useState(false);
+
+  const addRequest = useStore().addRequest;
+  const clearRequest = useStore().clearRequest;
+  const setCurrentTaskId = useStore().setCurrentTaskId;
+  const currentTaskId = useStore((state) => state.currentTaskId);
+  const clearRequests = useStore().clearRequests;
+
+  const inspectRequestsSocket = new SocketManager();
+
+  function connectWithRetries(
+    wsUrl: string,
+    id: number,
+    maxAttempts = 3,
+    delayMs = 3000,
+    onAddRequest: (payload: Request) => void,
+    onRemoveRequest: (payload: number) => void,
+    onOpen?: () => void,
+  ): Promise<void> {
+    let attempts = 0;
+    let connected = false;
+    let task_request_id = 0;
+
+    return new Promise((resolve, reject) => {
+      function tryConnect() {
+        if (attempts >= maxAttempts || connected) {
+          if (connected) {
+            resolve();
+          } else {
+            reject(new Error("Max connection attempts reached"));
+          }
+          return;
+        }
+        attempts++;
+
+        inspectRequestsSocket.connect(wsUrl, `task ${id}`);
+
+        function handleAddRequest(payload: any) {
+          connected = true;
+          onAddRequest(payload);
+        }
+
+        function handleDeleteRequest(payload: any) {
+          connected = true;
+          task_request_id = payload["task_request_id"]; //you need request id
+          onRemoveRequest(task_request_id);
+        }
+
+        function handleOpen() {
+          connected = true;
+          if (onOpen) onOpen();
+          resolve();
+        }
+
+        inspectRequestsSocket.on("task:requests-new", handleAddRequest);
+        inspectRequestsSocket.on("task:requests-delete", handleDeleteRequest);
+        inspectRequestsSocket.on("socket:onopen", handleOpen);
+
+        setTimeout(() => {
+          if (!connected && attempts < maxAttempts) {
+            inspectRequestsSocket.off("task:requests-new", handleAddRequest);
+            inspectRequestsSocket.off(
+              "task:requests-delete",
+              handleDeleteRequest,
+            );
+            inspectRequestsSocket.off("socket:onopen", handleOpen);
+            inspectRequestsSocket.disconnect();
+            tryConnect();
+          } else if (!connected) {
+            reject(new Error("Failed to connect after max attempts"));
+          }
+        }, delayMs);
+      }
+
+      tryConnect();
+    });
+  }
 
   const {
     control,
@@ -83,14 +134,13 @@ export default function TaskPost({ navigation }: any) {
   });
 
   const urgency = watch("urgency");
-  console.log("render");
 
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position."
+        "Location permission is required to fetch your position.",
       );
       return;
     }
@@ -104,27 +154,60 @@ export default function TaskPost({ navigation }: any) {
 
   useEffect(() => {
     setTempTaskData(null);
+    setCurrentTaskId(0);
     return () => {
       reset();
+      setCurrentTaskId(0);
     };
   }, []);
 
   useEffect(() => {
     if (!tempTaskData) return;
+
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
 
+    let wsUrl = "";
+    let isMounted = true;
+
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
+
         const payload = {
           ...tempTaskData,
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
+
         const res = await api.post("/tasks/create/", payload);
-        taskToBeCancelledIdRef.current = res.data.id;
+
+        if (!isMounted) return;
+
+        setCurrentTaskId(res.data.id);
+
+        wsUrl = `${WS_TASKREQUEST_BASE_URL}${res.data.id}/`;
+
+        await connectWithRetries(
+          wsUrl,
+          res.data.id,
+          3,
+          3000,
+          (payload) => {
+            addRequest(payload);
+          },
+          (payload) => {
+            clearRequest(payload); //id
+          },
+          () => {
+            Toast.show({
+              type: "success",
+              text1: `Connected to requests for task ${res.data.id}`,
+              text2: "Inspect requests",
+            });
+          },
+        );
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -139,10 +222,14 @@ export default function TaskPost({ navigation }: any) {
     }, 5000);
 
     return () => {
+      isMounted = false;
       if (taskCreationTimeout.current) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
+      clearRequests();
+      inspectRequestsSocket.disconnect();
+      setCurrentTaskId(0);
     };
   }, [tempTaskData]);
 
@@ -164,7 +251,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -183,7 +270,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -197,25 +284,23 @@ export default function TaskPost({ navigation }: any) {
   const cancelSearch = () => {
     console.log(
       "Cancel search called, taskToBeCancelledId:",
-      taskToBeCancelledIdRef.current
+      taskToBeCancelledIdRef.current,
     );
     setIsSearching(false);
     setTempTaskData(null);
 
-    if (taskToBeCancelledIdRef.current) {
+    if (currentTaskId) {
       deleteTaskById();
     }
   };
 
   const deleteTaskById = async () => {
-    const taskId = tasks.find(
-      (task) => taskToBeCancelledIdRef.current == task.id
-    )?.id;
-    if (!taskId) return;
+    const id = tasks.find((task) => currentTaskId == task.id)?.id;
+    if (!id) return;
     try {
-      const res = await api.delete(`/tasks/delete/${taskId}/`);
+      const res = await api.delete(`/tasks/delete/${id}/`);
       setTempTaskData(null);
-      taskToBeCancelledIdRef.current = null;
+      setCurrentTaskId(0);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -490,28 +575,7 @@ export default function TaskPost({ navigation }: any) {
           {/* Urgency Label with Help Icon */}
           <View style={styles.urgencyLabelWrapper}>
             <Text style={styles.label}>Urgency</Text>
-            {/*  <TouchableOpacity
-                onPress={() => setShowUrgencyHelp(!showUrgencyHelp)}
-              >
-                <Text style={styles.helpIcon}>?</Text>
-              </TouchableOpacity> */}
           </View>
-
-          {/* Urgency Help Text */}
-          {/* {showUrgencyHelp && (
-              <View style={styles.urgencyHelperBox}>
-                <Text style={styles.urgencyHelperText}>
-                  <Text style={{ fontWeight: "bold" }}>Now</Text> - tasker will
-                  come in 15 minutes or the task will be canceled.{"\n"}
-                  <Text style={{ fontWeight: "bold" }}>Soon</Text> - tasker will
-                  come in 30 minutes or the task will be canceled.{"\n"}
-                  <Text style={{ fontWeight: "bold" }}>Flexible</Text> - the
-                  tasker will come in 1 hour.
-                </Text>
-              </View>
-            )} */}
-
-          {/* Urgency Buttons */}
           {!isSearching ? (
             <>
               <View style={styles.urgencyContainer}>
@@ -578,7 +642,14 @@ export default function TaskPost({ navigation }: any) {
                   <Text style={styles.infoLabel}>Incoming requests:</Text>
                   <Text style={styles.infoValue}>5</Text>
                 </View>
-                <Button title="Inspect Requests" onPress={() => {}} />
+                <View style={{ marginRight: -2 }}>
+                  <Button
+                    title="Inspect Requests"
+                    onPress={() => {
+                      setRequestsVisible(true);
+                    }}
+                  />
+                </View>
               </View>
             </>
           )}
@@ -599,6 +670,14 @@ export default function TaskPost({ navigation }: any) {
             >
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
+          )}
+          {requestsVisible && (
+            <IncomingRequestsModal
+              visible={true}
+              onClose={() => setRequestsVisible(false)}
+              onAccept={(id) => console.log("Accepted:", id)}
+              onDecline={(id) => console.log("Declined:", id)}
+            />
           )}
         </View>
       </KeyboardAwareScrollView>
@@ -653,7 +732,7 @@ const styles = StyleSheet.create({
     color: COLORS.color27,
     fontSize: 30,
     fontWeight: "700",
-    marginBottom: 32,
+    marginBottom: SPACING.md,
     textAlign: "center",
   },
   helpIcon: {

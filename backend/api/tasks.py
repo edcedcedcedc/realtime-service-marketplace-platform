@@ -1,5 +1,5 @@
 # api/tasks.py
-from api.utils import taskfeed_broadcast_deleted
+from api.broadcast import broadcast_taskfeed_deleted
 from .models import Task
 from celery import shared_task
 from django.utils import timezone
@@ -20,7 +20,7 @@ def delete_task_if_still_open(task_id):
         if task.status == "open":
             task.delete()
             logger.info(f"Task {task_id} deleted because it was open.")
-            taskfeed_broadcast_deleted(task_id)
+            broadcast_taskfeed_deleted(task_id)
         else:
             logger.info(f"Task {task_id} NOT deleted because status is '{task.status}'")
     except Task.DoesNotExist:

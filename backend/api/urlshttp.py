@@ -1,23 +1,28 @@
 from .views import (
     accept_terms,
     all_tasks,
+    assign_tasker,
+    cancel_task_request,
     completed_tasks,
     current_tsc_text,
+    get_task_requests_for_task,
+    profile_detail_update,
     task_create,
     in_progress_tasks,
     task_delete,
     task_detail,
+    task_request,
     task_update,
     open_tasks,
     register,
     login,
+    protected_view,
 )
 from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import protected_view
 
 urlpatterns = [
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -36,4 +41,20 @@ urlpatterns = [
     path("api/tasks/create/", task_create, name="task-create"),
     path("api/tasks/update/<int:id>/", task_update, name="task-update"),
     path("api/tasks/delete/<int:id>/", task_delete, name="task-delete"),
+    # profile endpoint
+    path("api/profile/", profile_detail_update, name="profile-detail-update"),
+    # tasker emit and unemit messages to add them and delete them
+    # from client that listens incoming requests from taskers
+    path("api/task-request/", task_request, name="task-request"),  # as tasker
+    path(
+        "api/task-requests/<int:task_id>/",
+        get_task_requests_for_task,
+        name="task-requests",  # as client
+    ),
+    path(
+        "api/cancel-task-request/",
+        cancel_task_request,
+        name="cancel-task-request",  # as tasker
+    ),
+    path("api/assign-tasker/", assign_tasker, name="assign-tasker"),  # as client
 ]

@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Button,
+  Alert,
+} from "react-native";
 
 import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
+import api from "../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -12,7 +20,7 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 const statusColorMap = STATUS_OPTIONS.reduce(
@@ -20,7 +28,7 @@ const statusColorMap = STATUS_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>
+  {} as Record<string, string>,
 );
 
 type TaskCardProps = {
@@ -38,11 +46,49 @@ type TaskCardProps = {
 };
 
 export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
-  const [show, setShow] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+  const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
+
+  async function handleAccept() {
+    try {
+      setShowTaskSubmitted(true);
+
+      await api.post("task-request/", {
+        task_id: Number(item.id),
+      });
+
+      Alert.alert(
+        "Request Sent",
+        "Waiting for client to respond",
+        [
+          {
+            text: "Cancel",
+            onPress: async () => {
+              try {
+                await api.post("cancel-task-request/", {
+                  task_id: Number(item.id),
+                });
+                setShowTaskSubmitted(false);
+              } catch (error) {
+                Alert.alert("Error", "Failed to cancel request.");
+                console.error(error);
+              }
+            },
+            style: "destructive",
+          },
+        ],
+        { cancelable: true },
+      );
+    } catch (error) {
+      setShowTaskSubmitted(false);
+      Alert.alert("Error", "Failed to send accept request.");
+      console.error(error);
+    }
+  }
 
   useEffect(() => {
-    if (!isMiniMapVisible && show) {
-      setShow(false);
+    if (!isMiniMapVisible && showMiniMap) {
+      setShowMiniMap(false);
     }
   }, [isMiniMapVisible]);
 
@@ -56,7 +102,6 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
       <View
         style={{
-          display: "flex",
           flexDirection: "row",
           width: "100%",
           justifyContent: "space-evenly",
@@ -83,13 +128,13 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         <View>
           <Text style={styles.infoText}>
             Category:{" "}
-            {item.category == "repair"
+            {item.category === "repair"
               ? "Fix & Repair"
-              : item.category == "personal_help"
+              : item.category === "personal_help"
                 ? "Personal Help"
-                : item.category == "delivery"
+                : item.category === "delivery"
                   ? "Move & Deliver"
-                  : item.category == "other"
+                  : item.category === "other"
                     ? "Other"
                     : item.category}
           </Text>
@@ -110,18 +155,23 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         </Text>
       </View>
 
-      <View style={{ display: "flex", flexDirection: "row" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
         <Button
-          title={show ? "Hide Location" : "View Location"}
-          onPress={() => setShow((show) => !show)}
+          title={showMiniMap ? "Hide Location" : "View Location"}
+          onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button title="Accept" />
+        <Button
+          title="Accept"
+          onPress={handleAccept}
+          disabled={showTaskSubmitted} // disable while sending
+        />
       </View>
-      {show && (
+
+      {showMiniMap && (
         <MapSelector
           address={item.location}
           isSearching={false}
-          onExit={() => {}}
+          onExit={() => setShowMiniMap(false)}
           onChange={() => {}}
           handleGetLocation={() => {}}
         />
@@ -147,7 +197,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
-
     width: "100%",
   },
   centeredText: {
@@ -163,14 +212,6 @@ const styles = StyleSheet.create({
   infoText: {
     color: COLORS.color12,
     fontSize: 13,
-  },
-  row: {
-    flexDirection: "row",
-    //justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 8,
-    paddingHorizontal: 8,
   },
   title: {
     color: COLORS.color11,

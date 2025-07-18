@@ -18,8 +18,7 @@ import { COLORS } from "../constants/colors";
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
 
-// REVIEW: Should this be a separate constant?
-const HEADER_HEIGHT = 120; // approx header + logout button height
+const HEADER_HEIGHT = 120;
 
 export default function TaskFeed({ navigation }: { navigation: any }) {
   const tasks = useStore((state) => state.tasks);
@@ -33,7 +32,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   const scrollOffsetRef = useRef(0);
   const [value, setValue] = useState("");
   const [visibleTaskIds, setVisibleTaskIds] = useState<Set<number | string>>(
-    new Set()
+    new Set(),
   );
 
   /**
@@ -52,7 +51,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       const visibleIds = new Set(info.viewableItems.map((v) => v.item.id));
       setVisibleTaskIds(visibleIds);
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -111,7 +110,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       task.description?.toLowerCase().includes(value.toLowerCase()) ||
       task.urgency.toLowerCase().includes(value.toLowerCase()) ||
       task.location.toLowerCase().includes(value.toLowerCase()) ||
-      task.status.toLowerCase().includes(value.toLowerCase())
+      task.status.toLowerCase().includes(value.toLowerCase()),
   );
 
   return (

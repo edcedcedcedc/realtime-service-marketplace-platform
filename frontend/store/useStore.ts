@@ -2,7 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { sortTasksByDate } from "../utils/sortTasks";
+import {
+  sortTasksByDateDesc,
+  sortRequestsByDateDesc,
+} from "../utils/sort";
 import { COLORS } from "../constants/colors";
 
 export const URGENCY_OPTIONS = [
@@ -13,7 +16,6 @@ export const URGENCY_OPTIONS = [
 
 export const STATUS_OPTIONS = [
   { label: "Open", value: "open", color: COLORS.color1 }, // MUI Blue 700
-  { label: "Confirmed", value: "confirmed", color: COLORS.color2 }, // MUI Yellow 700
   { label: "In Progress", value: "in-progress", color: COLORS.color3 }, // MUI Green 700
   { label: "Completed", value: "completed", color: COLORS.color4 }, // MUI Green 800
   { label: "Cancelled", value: "cancelled", color: COLORS.color5 }, // MUI Red 700
@@ -40,6 +42,19 @@ export const DEFAULT_REGION: Region = {
   longitudeDelta: 0.01,
 };
 
+const initialProfile: ProfileType = {
+  user: {
+    id: 0,
+    username: "",
+    email: "",
+    role: "client",
+  },
+  name: "",
+  family_name: "",
+  rating: 0,
+  bio: "",
+};
+
 const initialState = {
   auth: {
     jwt: { access: null, refresh: null },
@@ -56,7 +71,27 @@ const initialState = {
   miniMapReady: false,
   fullMapReady: false,
   isFullMapVisible: false,
+  requests: [],
+  currentTaskId: 0,
+  isLoggedIn: false,
+  profile: initialProfile,
 };
+
+interface ProfileType {
+  user: User; // must always be present
+  name: string;
+  family_name: string;
+  rating: number;
+  bio: string;
+
+  // tasker-only fields (optional for client)
+  tasks_done?: number;
+  eta?: string;
+  category?: Category;
+
+  // client-only fields (optional for tasker)
+  tasks_posted?: number;
+}
 
 interface User {
   id: number;
@@ -96,20 +131,17 @@ export type TaskFormInput = {
   subcategory: string;
 };
 
-type Status =
-  | "open"
-  | "confirmed"
-  | "in-progress"
-  | "completed"
-  | "cancelled"
-  | "expired";
+type Status = "open" | "in-progress" | "completed" | "cancelled" | "expired";
 
+export type Category = "repair" | "delivery" | "personal_help" | "other";
+export type Specialization = Category | `other: ${string}`;
+export type Urgency = "now" | "soon" | "flexible";
 export interface Task {
   id: number;
   title: string;
   description?: string;
   budget: number;
-  urgency: "now" | "soon" | "flexible";
+  urgency: Urgency;
   location: string;
   latitude: number;
   longitude: number;
@@ -122,9 +154,23 @@ export interface Task {
   created_at: string;
   updated_at: string | null;
   completed_at: string | null;
-  category: "repair" | "delivery" | "personal_help" | "other";
+  category: Category;
   subcategory: string;
   subtasks?: [];
+}
+/* Tasker request, when he clicks accept on any task  */
+export interface Request {
+  id: number;
+  task_id: number;
+  tasker_id: number;
+  tasker_username: string;
+  tasker_name: string;
+  tasker_family_name: string;
+  rating: number;
+  tasks_done: number;
+  category: string;
+  eta: number;
+  created_at: string;
 }
 
 interface Jwt {
@@ -137,6 +183,7 @@ interface State {
     jwt: Jwt | null;
     user: User | null;
   };
+  profile: ProfileType;
   taskers: User[];
   clients: User[];
   tasks: Task[];
@@ -149,6 +196,13 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
+  currentTaskId: number;
+  requests: Request[];
+  addRequest: (request: Request) => void;
+  clearRequest: (requestId: number) => void;
+  clearRequests: () => void;
+  setRequests: (requests: Request[]) => void;
+  setCurrentTaskId: (id: number) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -166,7 +220,8 @@ interface State {
   setSelectedLatLng: (latLng: LatLng | null) => void;
   setIsLoggedIn: (param: boolean) => void;
   resetStore: () => void;
-  
+  setProfile: (profile: ProfileType) => void;
+  resetProfile: () => void;
 }
 
 const useStore = create<State>()(
@@ -191,12 +246,28 @@ const useStore = create<State>()(
       fullMapReady: false,
       isFullMapVisible: false,
       isLoggedIn: false,
-      setIsLoggedIn: (param) => set({isLoggedIn: param}),
+      profile: initialProfile,
+      currentTaskId: 0,
+      requests: [],
+      setCurrentTaskId: (id) => set({ currentTaskId: id }),
+      addRequest: (request) =>
+        set((state) => ({
+          requests: sortRequestsByDateDesc([...state.requests, request]),
+        })),
+      clearRequest: (request_id: number) =>
+        set((state) => ({
+          requests: sortRequestsByDateDesc(
+            state.requests.filter((r) => r.id !== request_id),
+          ),
+        })),
+      clearRequests: () => set({ requests: [] }),
+      setProfile: (profile: ProfileType) => set({ profile }),
+      resetProfile: () => set({ profile: initialProfile }),
+      setIsLoggedIn: (param) => set({ isLoggedIn: param }),
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
       setMarkerPoint: (point) => set({ markerPoint: point }),
-
       setSelectedRegion: (region) => {
         if (!region) {
           set({ selectedRegion: null });
@@ -234,7 +305,7 @@ const useStore = create<State>()(
         set((state) => ({
           auth: {
             jwt: { access: null, refresh: null },
-            user: null, 
+            user: null,
           },
         })),
 
@@ -257,7 +328,9 @@ const useStore = create<State>()(
           const normalizedTask = { ...task, id: Number(task.id) };
           const exists = state.tasks.some((t) => t.id === normalizedTask.id);
           if (exists) return {};
-          return { tasks: sortTasksByDate([...state.tasks, normalizedTask]) };
+          return {
+            tasks: sortTasksByDateDesc([...state.tasks, normalizedTask]),
+          };
         }),
 
       removeTask: (id: number) =>
@@ -267,12 +340,21 @@ const useStore = create<State>()(
 
       setTasks: (tasks: Task[]) =>
         set({
-          tasks: sortTasksByDate(
+          tasks: sortTasksByDateDesc(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-
-      resetStore: () => set({ ...initialState }),
+      setRequests: (requests: Request[]) =>
+        set({
+          requests: sortRequestsByDateDesc(
+            requests.map((request) => ({ ...request, id: Number(request.id) })),
+          ),
+        }),
+      resetStore: () =>
+        set({
+          ...initialState,
+          profile: initialProfile,
+        }),
     }),
     {
       name: "my-app-storage",
@@ -288,6 +370,13 @@ const useStore = create<State>()(
           await AsyncStorage.removeItem(key);
         },
       },
+      /*  merge: (persistedState, currentState) => {
+    return {
+      ...currentState,
+      ...(persistedState as any),
+      profile: (persistedState as any)?.profile ?? initialProfile,
+    };
+  }, */
     },
   ),
 );
