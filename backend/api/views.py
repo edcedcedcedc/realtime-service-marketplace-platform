@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.dispatch import receiver
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -12,15 +14,24 @@ from .serializers import (
     TaskSerializer,
     TaskerProfileSerializer,
 )
-from .models import TaskLog, Task, TaskRequest, TermsAcceptanceLog, Profile
-from .broadcast import (
-    broadcast_task_request,
+from .models import (
+    TaskChatMessage,
+    TaskLog,
+    Task,
+    TaskRequest,
+    TermsAcceptanceLog,
+    Profile,
+)
+from .utils import (
+    broadcast_task_request_new,
     broadcast_task_request_deleted,
     broadcast_taskfeed_new,
     broadcast_taskfeed_deleted,
     get_user_ip,
+    notify_user,
 )
 from api.tasks import delete_task_if_still_open
+from django.db.models.signals import post_delete
 
 
 User = get_user_model()
@@ -138,7 +149,6 @@ def current_tsc_text(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def task_create(request):
-
     if getattr(request.user, "role", None) != "client":
         return Response(
             {"error": "Only clients can create tasks."},
@@ -158,31 +168,54 @@ def task_create(request):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         task_instance = serializer.save(
-            client=request.user, terms_accepted_client_at=terms_log
+            client=request.user,
+            terms_accepted_client_at=terms_log,
         )
 
+        # Log task creation
         TaskLog.objects.create(
             user=request.user,
             event_type="tasks_created",
             related_task=task_instance,
             terms_accepted_client_at=terms_log,
-            task_client=task_instance.client,
-            task_tasker=task_instance.tasker,
-            task_title=task_instance.title,
-            task_description=task_instance.description,
-            task_budget=task_instance.budget,
-            task_created_at=task_instance.created_at,
-            task_completed_at=task_instance.completed_at,
+            client=task_instance.client,
+            tasker=task_instance.tasker,
+            title=task_instance.title,
+            description=task_instance.description,
+            budget=task_instance.budget,
+            created_at=task_instance.created_at,
+            completed_at=task_instance.completed_at,
             ip_address=request.META.get("REMOTE_ADDR"),
         )
 
         broadcast_taskfeed_new(task_instance)
 
-        re_serializer = TaskSerializer(task_instance)
+        all_taskers = User.objects.filter(role="tasker")
+        for tasker in all_taskers:
+            notify_user(
+                tasker.id,
+                "notify:task-new",
+                {
+                    "task_id": task_instance.id,
+                    "title": task_instance.title,
+                    "budget": float(task_instance.budget),
+                    "urgency": task_instance.urgency,
+                    "location": {
+                        "lat": float(task_instance.latitude),
+                        "lng": float(task_instance.longitude),
+                    },
+                },
+            )
 
+        # Delay cleanup if no taskers accept
         delete_task_if_still_open.apply_async(args=[task_instance.id], countdown=300)
-        return Response(re_serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            TaskSerializer(task_instance).data, status=status.HTTP_201_CREATED
+        )
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -301,40 +334,47 @@ def profile_detail_update(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def task_request(request):  # as tasker
+def accept_task_request_as_tasker(request):
     task_id = request.data.get("task_id")
 
     try:
         task = Task.objects.get(id=task_id, status="open")
-        if task.client == request.user:
-            return Response(
-                {"error": "You cannot accept your own task."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        existing_request = TaskRequest.objects.filter(
-            task=task, tasker=request.user
-        ).first()
-        if existing_request:
-            return Response(
-                {"error": "You already sent a request for this task."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
     except Task.DoesNotExist:
         return Response(
             {"error": "Task not found or closed."}, status=status.HTTP_404_NOT_FOUND
         )
 
+    if task.client == request.user:
+        return Response(
+            {"error": "You cannot accept your own task."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if TaskRequest.objects.filter(task=task, tasker=request.user).exists():
+        return Response(
+            {"error": "You already sent a request for this task."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     task_request = TaskRequest.objects.create(task=task, tasker=request.user)
 
-    broadcast_task_request(task_request)
+    notify_user(
+        task.client.id,
+        "notify:taskrequest-initiate-by-tasker",
+        {
+            "task_id": task.id,
+            "client_id": task.client.id,
+            "action": "add_tasker_to_taskrequests",
+        },
+    )
+    broadcast_task_request_new(task_request, task.client.id)
 
-    return Response({"message": "Request sent"}, status=status.HTTP_201_CREATED)
+    return Response({"message": "Request sent."}, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def cancel_task_request(request):  # as tasker
+def cancel_task_request_as_tasker(request):
     task_id = request.data.get("task_id")
 
     try:
@@ -344,23 +384,184 @@ def cancel_task_request(request):  # as tasker
         return Response(
             {"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND
         )
+
     task_request_id = task_request.id
     task_request.delete()
 
-    broadcast_task_request_deleted(task.id, request.user.id, task_request_id)
+    notify_user(
+        task.client.id,
+        "notify:taskrequest-cancelled-by-tasker",
+        {
+            "task_id": task.id,
+            "client_id": task.client.id,
+            "task_request_id": task_request_id,
+            "action": "delete_tasker_from_taskrequests",
+        },
+    )
+    broadcast_task_request_deleted(
+        subtype="taskrequest:cancelled-by-tasker",
+        action={"tasker": "", "client": "delete_tasker_from_taskrequests"},
+        task_id=task.id,
+        client_id=task.client.id,
+        tasker_id=request.user.id,
+        task_request_id=task_request_id,
+    )
 
     return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def get_task_requests_for_task(request, task_id):  # as client
+def cancel_task_request_as_client(request):
+    task_id = request.data.get("task_id")
+    tasker_id = request.data.get("tasker_id")
+
     try:
         task = Task.objects.get(id=task_id)
-        if task.client != request.user:
-            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        task_request = TaskRequest.objects.get(task=task, tasker=tasker_id)
+    except (Task.DoesNotExist, TaskRequest.DoesNotExist):
+        return Response(
+            {"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    task_request_id = task_request.id
+    task_request.delete()
+
+    notify_user(
+        tasker_id,
+        "notify:taskrequest-cancelled-by-client",
+        {
+            "task_id": task.id,
+            "client_id": task.client.id,
+            "task_request_id": task_request_id,
+            "action": "close_modal",
+        },
+    )
+
+    broadcast_task_request_deleted(
+        subtype="taskrequest:cancelled-by-client",
+        action={"tasker": "close_modal", "client": "delete_tasker_from_taskrequests"},
+        task_id=task.id,
+        client_id=request.user.id,
+        tasker_id=tasker_id,
+        task_request_id=task_request_id,
+    )
+
+    return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def accept_task_request_as_client(request):
+    task_id = request.data.get("task_id")
+    tasker_id = request.data.get("tasker_id")
+
+    try:
+        task = Task.objects.get(id=task_id)
+        tasker = User.objects.get(id=tasker_id)
+    except (Task.DoesNotExist, User.DoesNotExist):
+        return Response(
+            {"error": "Task or user not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    if task.status == "accepted":
+        return Response(
+            {"error": "Task already accepted by another tasker."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized."}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        task_request = TaskRequest.objects.get(task=task, tasker=tasker)
+    except TaskRequest.DoesNotExist:
+        return Response(
+            {"error": "Tasker did not request this task."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        terms_log = TermsAcceptanceLog.objects.filter(user=tasker).latest("accepted_at")
+    except TermsAcceptanceLog.DoesNotExist:
+        return Response(
+            {"error": "Terms and Conditions must be accepted before accepting a task."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    task.tasker = tasker
+    task.terms_accepted_tasker_at = terms_log
+    task.status = "accepted"
+    task.save()
+
+    other_requests = TaskRequest.objects.filter(task=task).exclude(tasker=tasker)
+    for other_request in other_requests:
+        try:
+            broadcast_task_request_deleted(
+                subtype="taskrequest:cancelled-by-client",
+                action={
+                    "tasker": "close_modal",
+                    "client": "delete_tasker_from_taskrequests",
+                },
+                task_id=task.id,
+                tasker_id=other_request.tasker.id,
+                client_id=request.user.id,
+                task_request_id=other_request.id,
+            )
+            other_request.delete()
+        except Exception as e:
+            print(
+                f"[!] Failed to broadcast/delete request for tasker {other_request.tasker.id}: {str(e)}"
+            )
+
+    notify_user(
+        tasker.id,
+        "notify:taskrequest-request-to-confirm",
+        {
+            "task_id": task.id,
+            "client_username": request.user.username,
+            "client_id": request.user.id,
+            "action": "tasker_needs_to_confirm",
+        },
+    )
+
+    broadcast_task_request_deleted(
+        subtype="taskrequest:accepted-by-client",
+        action={
+            "tasker": "needs_to_confirm",
+            "client": "await_tasker_confirmation",
+        },
+        task_id=task.id,
+        tasker_id=tasker.id,
+        client_id=request.user.id,
+        task_request_id=task_request.id,
+    )
+
+    notify_user(
+        request.user.id,
+        "notify:taskrequest-request-to-confirm",
+        {
+            "task_id": task.id,
+            "tasker": tasker.username,
+            "tasker_id": tasker.id,
+            "action": "await_tasker_confirmation",
+        },
+    )
+
+    serializer = TaskSerializer(task, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def task_requests_for_task_as_client(request, task_id):
+    try:
+        task = Task.objects.get(id=task_id)
     except Task.DoesNotExist:
         return Response({"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized."}, status=status.HTTP_403_FORBIDDEN)
 
     task_requests = TaskRequest.objects.filter(task=task).order_by("-created_at")
     serializer = TaskRequestSerializer(task_requests, many=True)
@@ -370,38 +571,129 @@ def get_task_requests_for_task(request, task_id):  # as client
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def assign_tasker(request):
+def confirm_task_request_as_tasker(request):
     task_id = request.data.get("task_id")
-    tasker_id = request.data.get("tasker_id")
+
     try:
         task = Task.objects.get(id=task_id)
-        tasker = User.objects.get(id=tasker_id)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    except (Task.DoesNotExist, User.DoesNotExist):
+    if task.tasker != request.user:
         return Response(
-            {"error": "Task or user not found"}, status=status.HTTP_404_NOT_FOUND
+            {"error": "You are not assigned to this task."},
+            status=status.HTTP_403_FORBIDDEN,
         )
+
+    if task.status != "accepted":
+        return Response(
+            {"error": "Invalid task state."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    task.status = "confirmed"
+    task.tasker = request.user
+    task.save()
 
     try:
-        terms_log = TermsAcceptanceLog.objects.filter(id=tasker_id).latest(
-            "accepted_at"
-        )
-    except TermsAcceptanceLog.DoesNotExist:
+        task_request = TaskRequest.objects.get(task=task, tasker=request.user)
+    except TaskRequest.DoesNotExist:
         return Response(
-            {"error": "Terms and Conditions must be accepted before creating a task."},
+            {"error": "Couldn't find the tasker within this task_request."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    task_request.delete()
+
+    broadcast_task_request_deleted(
+        subtype="taskrequest:confirmed-by-tasker",
+        action={
+            "tasker": "await_client_initiate_payment",
+            "client": "initiate_payment_and_delete_modal",
+        },
+        task_id=task.id,
+        tasker_id=request.user.id,
+        client_id=task.client.id,
+        task_request_id=task_request.id,
+    )
+
+    notify_user(
+        task.client.id,
+        "taskrequest:confirmed",
+        {
+            "task_id": task.id,
+            "tasker": request.user.username,
+            "tasker_id": request.user.id,
+            "client_id": task.client.id,
+            "action": "initiate_payment",
+        },
+    )
+
+    return Response({"message": "Confirmed"}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel_all_task_requests(request):
+    task_id = request.data.get("task_id")
+
+    try:
+        task = Task.objects.get(id=task_id)
+    except Task.DoesNotExist:
+        return Response(
+            {"error": "Task not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
     if task.client != request.user:
-        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"error": "Unauthorized."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
-    task.tasker = tasker
-    task.terms_accepted_tasker_at = terms_log
-    task.status = "in-progress"
-    task.save()
+    task_requests = TaskRequest.objects.filter(task=task)
 
-    # Remove all other TaskRequests ???
-    TaskRequest.objects.filter(task=task).exclude(tasker=tasker).delete()
+    for task_request in task_requests:
+        try:
+            broadcast_task_request_deleted(
+                subtype="taskrequest:cancelled-by-client",
+                action={
+                    "tasker": "close_modal",
+                    "client": "delete_tasker_from_taskrequests",
+                },
+                task_id=task.id,
+                tasker_id=task_request.tasker.id,
+                client_id=request.user.id,
+                task_request_id=task_request.id,
+            )
+            task_request.delete()
+        except Exception as e:
+            print(
+                f"[!] Failed to broadcast/delete request for tasker {task_request.tasker.id}: {str(e)}"
+            )
 
-    serializer = TaskSerializer(task, context={"request": request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(
+        {"message": "All task requests for this task have been cancelled."},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def task_chat_history(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    if request.user != task.client and request.user != task.tasker:
+        return Response({"error": "Not authorized"}, status=403)
+
+    messages = TaskChatMessage.objects.filter(task=task).order_by("sent_at")
+    return Response(
+        [
+            {
+                "id": msg.id,
+                "content": msg.content,
+                "sent_at": msg.sent_at,
+                "sender_id": msg.sender.id,
+                "sender_username": msg.sender.username,
+            }
+            for msg in messages
+        ]
+    )

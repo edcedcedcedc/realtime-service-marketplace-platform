@@ -13,6 +13,8 @@ EVENT_CHOICES = [
 ]
 STATUS_CHOICES = [
     ("open", "Open"),
+    ("accepted", "Accepted by Client"),  # NEW — client selects a tasker
+    ("confirmed", "Confirmed by Tasker"),  # NEW — tasker confirms assignment
     ("in-progress", "In-Progress"),
     ("completed", "Completed"),
     ("cancelled", "Cancelled"),

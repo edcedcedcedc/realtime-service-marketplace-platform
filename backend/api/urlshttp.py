@@ -1,17 +1,22 @@
 from .views import (
+    accept_task_request_as_client,
+    accept_task_request_as_tasker,
     accept_terms,
     all_tasks,
-    assign_tasker,
-    cancel_task_request,
+    cancel_all_task_requests,
+    cancel_task_request_as_tasker,
+    cancel_task_request_as_client,
     completed_tasks,
+    confirm_task_request_as_tasker,
     current_tsc_text,
-    get_task_requests_for_task,
+    task_chat_history,
+    task_requests_for_task_as_client,
     profile_detail_update,
     task_create,
     in_progress_tasks,
     task_delete,
     task_detail,
-    task_request,
+    task_requests_for_task_as_client,
     task_update,
     open_tasks,
     register,
@@ -25,6 +30,9 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
+    ######################################
+    # AUTH and GENERAL
+    ####################################
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", register, name="register"),
@@ -32,7 +40,12 @@ urlpatterns = [
     path("api/protected/", protected_view, name="protected"),
     path("api/accept-terms/", accept_terms, name="accept-terms"),
     path("api/current-tsc-text/", current_tsc_text, name="current-tsc-text"),
-    # tasks endpoints
+    path("api/profile/", profile_detail_update, name="profile-detail-update"),
+    # tasker emit and unemit messages to add them and delete them
+    # from client that listens incoming requests from taskers
+    ######################################
+    # TASKS
+    ####################################
     path("api/tasks/open/", open_tasks, name="tasks-open"),
     path("api/tasks/in-progress/", in_progress_tasks, name="tasks-in-progress-"),
     path("api/tasks/completed/", completed_tasks, name="tasks-completed"),
@@ -41,20 +54,50 @@ urlpatterns = [
     path("api/tasks/create/", task_create, name="task-create"),
     path("api/tasks/update/<int:id>/", task_update, name="task-update"),
     path("api/tasks/delete/<int:id>/", task_delete, name="task-delete"),
-    # profile endpoint
-    path("api/profile/", profile_detail_update, name="profile-detail-update"),
-    # tasker emit and unemit messages to add them and delete them
-    # from client that listens incoming requests from taskers
-    path("api/task-request/", task_request, name="task-request"),  # as tasker
+    #########################################
+    # TASK REQUESTS
+    ########################################
+    path(
+        "api/accept-task-request-as-tasker/",
+        accept_task_request_as_tasker,
+        name="accept-task-request-as-tasker",
+    ),
+    path(
+        "api/accept-task-request-as-client/",
+        accept_task_request_as_client,
+        name="accept-task-request-as-client",
+    ),
+    path(
+        "api/cancel-task-request-as-tasker/",
+        cancel_task_request_as_tasker,
+        name="cancel-task-request-as-tasker",
+    ),
+    path(
+        "api/cancel-task-request-as-client/",
+        cancel_task_request_as_client,
+        name="cancel-task-request-as-client",
+    ),
     path(
         "api/task-requests/<int:task_id>/",
-        get_task_requests_for_task,
-        name="task-requests",  # as client
+        task_requests_for_task_as_client,
+        name="task-requests-by-task-id",
     ),
     path(
-        "api/cancel-task-request/",
-        cancel_task_request,
-        name="cancel-task-request",  # as tasker
+        "api/confirm-task-request-as-tasker/",
+        confirm_task_request_as_tasker,
+        name="confirm-task-request-as-tasker",
     ),
-    path("api/assign-tasker/", assign_tasker, name="assign-tasker"),  # as client
+    path(
+        "api/cancel-all-task-requests/",
+        cancel_all_task_requests,
+        name="cancel-all-task-requests",
+    ),
+    #########################################
+    # CHAT
+    ########################################
+    path(
+        "api/task-chat-history/<int:task_id>/",
+        task_chat_history,
+        name="task-chat-history-by-task-id",
+    ),
 ]

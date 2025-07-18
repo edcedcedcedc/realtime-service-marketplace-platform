@@ -7,7 +7,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.test import TestCase, TransactionTestCase, override_settings
 from channels.layers import InMemoryChannelLayer, get_channel_layer
-from api.broadcast import taskfeed_broadcast_new
+from api.utils import taskfeed_broadcast_new
 from asgiref.sync import sync_to_async
 import asyncio
 import json

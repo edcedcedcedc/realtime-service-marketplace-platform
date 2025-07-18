@@ -17,23 +17,23 @@ import { SPACING } from "../constants/dimensions";
 import { COLORS } from "../constants/colors";
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
-
+import { useTaskFeed } from "../hooks/useTaskFeed";
 const HEADER_HEIGHT = 120;
 
 export default function TaskFeed({ navigation }: { navigation: any }) {
   const tasks = useStore((state) => state.tasks);
-  const removeTask = useStore((state) => state.removeTask);
   const setTasks = useStore().setTasks;
-  const addTask = useStore().addTask;
   const loading = useStore((state) => state.loading);
-  console.log(loading, "loading");
   const setLoading = useStore().setLoading;
   const lastRefreshRef = useRef(0);
   const scrollOffsetRef = useRef(0);
+  const taskRequests = useStore((state) => state.taskRequests);
   const [value, setValue] = useState("");
   const [visibleTaskIds, setVisibleTaskIds] = useState<Set<number | string>>(
     new Set(),
   );
+
+  useTaskFeed();
 
   /**
    * Keeps track of which tasks are currently visible in the FlatList.
@@ -73,14 +73,6 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const onViewDetails = (task: Task) => {
-    navigation.navigate("TaskDetails", { taskId: task.id });
-  };
-
-  const onButtonPress = (task: Task, action: string) => {
-    alert(`${action} pressed for task: ${task.title}`);
   };
 
   const onScroll = (event: any) => {
@@ -132,7 +124,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         }}
         renderItem={({ item }) => (
           <TaskCard
-            item={item}
+            task={item}
             isMiniMapVisible={visibleTaskIds.has(item.id)}
           />
         )}

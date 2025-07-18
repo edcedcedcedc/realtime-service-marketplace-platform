@@ -1,5 +1,5 @@
 # api/tasks.py
-from api.broadcast import broadcast_taskfeed_deleted
+from .utils import broadcast_taskfeed_deleted
 from .models import Task
 from celery import shared_task
 from django.utils import timezone
@@ -34,3 +34,9 @@ def delete_expired_tasks():
         created_at__lt=expiration_time, status="open"
     ).delete()
     print(f"Deleted {deleted_count} expired tasks")
+
+
+""" 
+def delete_old_chat_messages():
+    cutoff_date = now() - timedelta(days=90)  # ~3 months
+    TaskChatMessage.objects.filter(sent_at__lt=cutoff_date).delete() """

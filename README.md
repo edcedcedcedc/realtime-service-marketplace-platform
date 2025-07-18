@@ -180,22 +180,13 @@ Let me know if you want it in markdown syntax or need anything else!
 
 
 
-## WebSocket Endpoint
-
-| Endpoint             | Description                  |
-|----------------------|------------------------------|
-| `ws://<host>/ws/tasks/` | Real-time task feed updates  |
-
-**Django routing:**
-
-```python
-from django.urls import re_path
-from . import consumers
-
-websocket_urlpatterns = [
-    re_path(r"ws/tasks/$", consumers.TaskFeedConsumer.as_asgi()),
-]
-````
+## WebSocket Endpoints
+| Endpoint                      | Method |                                                                                                                              
+| ----------------------------- |------- |------------------------------------------------------------------------------------------------| ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `/ws/taskfeed/`               | WS     | Task Feed channel: broadcast new and deleted tasks to all taskers. No client messages expected.                               
+| `/ws/taskrequests/<task_id>/` | WS     | Task Requests channel for a specific task: broadcasts updates about task requests related to the given task. No client messages expected.|
+| `/ws/notifications/`          | WS     | User Notifications channel: sends direct notifications to individual users (taskers or clients). No client messages expected.|
+| `/ws/taskchat/<task_id>/`     | WS     | Task Chat channel for real-time chat between the client and tasker participants of the task. Client sends and receives chat messages.|
 
 
 
@@ -217,9 +208,10 @@ Each task has a **status** representing its current state in the workflow:
 | Status          | Description                                           |
 | --------------- | ----------------------------------------------------- |
 | **open**        | Newly posted and awaiting bids or acceptance.         |
+  accepted 
+| **confirmed**   | Client confirmed task completion; payment released.    |
 | **in-progress** | Worker started performing the task.                    |
 | **completed**   | Worker marked task done, awaiting client confirmation. |
-| **confirmed**   | Client confirmed task completion; payment released.    |
 | **cancelled**   | Task was cancelled before completion.                  |
 | **expired**     | Task expired without acceptance or completion.         |
 

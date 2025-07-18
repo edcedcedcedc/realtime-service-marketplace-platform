@@ -1,11 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { sortTasksByDateDesc, sortRequestsByDateDesc } from "../utils/sort";
+import type { InitialState } from "@react-navigation/native";
 
-import {
-  sortTasksByDateDesc,
-  sortRequestsByDateDesc,
-} from "../utils/sort";
 import { COLORS } from "../constants/colors";
 
 export const URGENCY_OPTIONS = [
@@ -16,10 +14,12 @@ export const URGENCY_OPTIONS = [
 
 export const STATUS_OPTIONS = [
   { label: "Open", value: "open", color: COLORS.color1 }, // MUI Blue 700
-  { label: "In Progress", value: "in-progress", color: COLORS.color3 }, // MUI Green 700
-  { label: "Completed", value: "completed", color: COLORS.color4 }, // MUI Green 800
-  { label: "Cancelled", value: "cancelled", color: COLORS.color5 }, // MUI Red 700
-  { label: "Expired", value: "expired", color: COLORS.color6 }, // MUI Grey 700
+  { label: "Accepted", value: "accepted", color: COLORS.color2 }, // MUI Blue 700
+  { label: "Confirmed", value: "confirmed", color: COLORS.color3 }, // MUI Blue 700
+  { label: "In Progress", value: "in-progress", color: COLORS.color4 }, // MUI Green 700
+  { label: "Completed", value: "completed", color: COLORS.color5 }, // MUI Green 800
+  { label: "Cancelled", value: "cancelled", color: COLORS.color6 }, // MUI Red 700
+  { label: "Expired", value: "expired", color: COLORS.color7 }, // MUI Grey 700
 ];
 
 export const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
@@ -71,12 +71,18 @@ const initialState = {
   miniMapReady: false,
   fullMapReady: false,
   isFullMapVisible: false,
-  requests: [],
-  currentTaskId: 0,
+  taskRequests: [],
+  currentTask: null,
   isLoggedIn: false,
   profile: initialProfile,
+  navigationState: undefined,
 };
 
+interface Notification {
+  type: string;
+  timestamp: string;
+  payload: any;
+}
 interface ProfileType {
   user: User; // must always be present
   name: string;
@@ -131,8 +137,14 @@ export type TaskFormInput = {
   subcategory: string;
 };
 
-type Status = "open" | "in-progress" | "completed" | "cancelled" | "expired";
-
+type Status =
+  | "open"
+  | "accepted"
+  | "confirmed"
+  | "in-progress"
+  | "completed"
+  | "cancelled"
+  | "expired";
 export type Category = "repair" | "delivery" | "personal_help" | "other";
 export type Specialization = Category | `other: ${string}`;
 export type Urgency = "now" | "soon" | "flexible";
@@ -146,9 +158,8 @@ export interface Task {
   latitude: number;
   longitude: number;
   status: Status;
-  client_username: string;
-  tasker_username: string | null;
-  tasker_id: number | null;
+  client: number | null;
+  tasker: number | null;
   expires_from_feed: string | null;
   must_start_by: string | null;
   created_at: string;
@@ -159,7 +170,7 @@ export interface Task {
   subtasks?: [];
 }
 /* Tasker request, when he clicks accept on any task  */
-export interface Request {
+export interface TaskRequest {
   id: number;
   task_id: number;
   tasker_id: number;
@@ -196,13 +207,24 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
-  currentTaskId: number;
-  requests: Request[];
-  addRequest: (request: Request) => void;
+  currentTask: Task | null;
+  taskRequests: TaskRequest[];
+  isSearching: boolean;
+  notifications: Notification[];
+  appKey: number;
+  navigationState: InitialState | undefined;
+  refresh: number;
+  setRefresh: () => void;
+  setNavigationState: (state: InitialState) => void;
+  setAppKey: () => void;
+  forceReload: () => void;
+  addNotification: (notification: Notification) => void;
+  clearNotifications: () => void;
+  addRequest: (request: TaskRequest) => void;
   clearRequest: (requestId: number) => void;
   clearRequests: () => void;
-  setRequests: (requests: Request[]) => void;
-  setCurrentTaskId: (id: number) => void;
+  setRequests: (taskRequests: TaskRequest[]) => void;
+  setCurrentTask: (task: Task | null) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -222,6 +244,7 @@ interface State {
   resetStore: () => void;
   setProfile: (profile: ProfileType) => void;
   resetProfile: () => void;
+  setIsSearching: (param: boolean) => void;
 }
 
 const useStore = create<State>()(
@@ -247,20 +270,50 @@ const useStore = create<State>()(
       isFullMapVisible: false,
       isLoggedIn: false,
       profile: initialProfile,
-      currentTaskId: 0,
-      requests: [],
-      setCurrentTaskId: (id) => set({ currentTaskId: id }),
+      currentTask: null,
+      taskRequests: [],
+      isSearching: false,
+      notifications: [],
+      appKey: 0,
+      setAppKey: () =>
+        set((state) => {
+          console.log(
+            "Force app reload triggered. Current appKey:",
+            state.appKey,
+          );
+          return { appKey: state.appKey + 1 };
+        }),
+      forceReload: () =>
+        set((state) => ({
+          appKey: state.appKey + 1,
+        })),
+      refresh: 0,
+      setRefresh: () =>
+        set((s) => {
+          console.log("Force app reload triggered. Current appKey:", s.refresh);
+          return { refresh: s.refresh + 1 };
+        }),
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [notification, ...state.notifications],
+        })),
+      clearNotifications: () => set({ notifications: [] }),
+      setIsSearching: (param) => set({ isSearching: param }),
+      setCurrentTask: (task: Task | null) => set({ currentTask: task }),
       addRequest: (request) =>
         set((state) => ({
-          requests: sortRequestsByDateDesc([...state.requests, request]),
+          taskRequests: sortRequestsByDateDesc([
+            ...state.taskRequests,
+            request,
+          ]),
         })),
       clearRequest: (request_id: number) =>
         set((state) => ({
-          requests: sortRequestsByDateDesc(
-            state.requests.filter((r) => r.id !== request_id),
+          taskRequests: sortRequestsByDateDesc(
+            state.taskRequests.filter((r) => r.id !== request_id),
           ),
         })),
-      clearRequests: () => set({ requests: [] }),
+      clearRequests: () => set({ taskRequests: [] }),
       setProfile: (profile: ProfileType) => set({ profile }),
       resetProfile: () => set({ profile: initialProfile }),
       setIsLoggedIn: (param) => set({ isLoggedIn: param }),
@@ -344,10 +397,13 @@ const useStore = create<State>()(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-      setRequests: (requests: Request[]) =>
+      setRequests: (taskRequests: TaskRequest[]) =>
         set({
-          requests: sortRequestsByDateDesc(
-            requests.map((request) => ({ ...request, id: Number(request.id) })),
+          taskRequests: sortRequestsByDateDesc(
+            taskRequests.map((request) => ({
+              ...request,
+              id: Number(request.id),
+            })),
           ),
         }),
       resetStore: () =>
@@ -355,6 +411,9 @@ const useStore = create<State>()(
           ...initialState,
           profile: initialProfile,
         }),
+      navigationState: undefined,
+      setNavigationState: (state: InitialState) =>
+        set({ navigationState: state }),
     }),
     {
       name: "my-app-storage",

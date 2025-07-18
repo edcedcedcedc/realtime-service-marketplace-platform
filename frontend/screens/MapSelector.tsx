@@ -88,6 +88,7 @@ export default function MapSelectorScreen({
     }
     lastTap.current = now;
   };
+
   useEffect(() => {
     let frameId: number | null = null;
 

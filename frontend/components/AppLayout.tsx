@@ -17,6 +17,7 @@ import { COLORS } from "../constants/colors";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const loading = useStore((state) => state.loading);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>

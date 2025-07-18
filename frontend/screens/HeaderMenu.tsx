@@ -15,6 +15,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
+  const setRefresh = useStore().setRefresh;
 
   if (!isLoggedIn) {
     return;
@@ -41,9 +42,17 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
         onPress={() => {
           closeMenu();
           console.log("Settings pressed");
+
           // navigation.navigate("SettingsScreen");
         }}
         title="Settings"
+      />
+      <Menu.Item
+        onPress={() => {
+          closeMenu();
+          setRefresh();
+        }}
+        title="Refresh"
       />
       <Menu.Item
         onPress={() => {

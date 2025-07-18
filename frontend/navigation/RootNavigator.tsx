@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import Auth from "../screens/Auth";
 import TaskFeed from "../screens/TaskFeed";
-import TaskDetails from "../screens/TaskDetails";
 import TaskPost from "../screens/TaskPost";
 import HeaderMenu from "../screens/HeaderMenu";
 import Login from "../screens/Login";
@@ -35,7 +34,6 @@ export default function RootNavigator() {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="Task feed" component={TaskFeed} />
-      <Stack.Screen name="Task details" component={TaskDetails} />
       <Stack.Screen name="Search a tasker" component={TaskPost} />
       <Stack.Screen name="Profile" component={Profile} />
     </Stack.Navigator>

@@ -127,7 +127,9 @@ class Task(models.Model):
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="tasks_posted",  # related name within client object
+        related_name="tasks_posted",
+        blank=True,
+        null=True,  # related name within client object
     )
     tasker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -249,27 +251,25 @@ class TaskLog(models.Model):
         blank=True,
         related_name="tasklogs_terms_client",
     )
-    task_client = models.ForeignKey(
+    client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="tasklogs_as_client",
     )
-    task_tasker = models.ForeignKey(
+    tasker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="tasklogs_as_tasker",
     )
-    task_title = models.CharField(max_length=255, null=True, blank=True)
-    task_description = models.TextField(null=True, blank=True)
-    task_budget = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True
-    )
-    task_created_at = models.DateTimeField(null=True, blank=True)
-    task_completed_at = models.DateTimeField(null=True, blank=True)
+    title = models.CharField(max_length=255, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -278,17 +278,40 @@ class TaskLog(models.Model):
 
     def save(self, *args, **kwargs):
         if self.related_task:
-            self.task_client = self.related_task.client
-            self.task_tasker = self.related_task.tasker
-            self.task_title = self.related_task.title
-            self.task_description = self.related_task.description
-            self.task_budget = self.related_task.budget
-            self.task_created_at = self.related_task.created_at
-            self.task_completed_at = self.related_task.completed_at
+            self.client = self.related_task.client
+            self.tasker = self.related_task.tasker
+            self.title = self.related_task.title
+            self.description = self.related_task.description
+            self.budget = self.related_task.budget
+            self.created_at = self.related_task.created_at
+            self.completed_at = self.related_task.completed_at
         super().save(*args, **kwargs)
 
 
 class TaskRequest(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
-    tasker = models.ForeignKey(User, on_delete=models.CASCADE)
+    tasker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="task_requests_taken",
+        null=True,
+        blank=True,
+    )
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="task_requests_posted",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TaskChatMessage(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sent_at"]

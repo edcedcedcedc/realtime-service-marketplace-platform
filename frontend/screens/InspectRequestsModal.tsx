@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   View,
@@ -7,26 +7,14 @@ import {
   StyleSheet,
   Dimensions,
   Button,
+  Alert,
 } from "react-native";
 import { COLORS } from "../constants/colors";
 import useStore from "../store/useStore";
 import api from "../services/api";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
-
-interface Request {
-  id: number;
-  task_id: number;
-  tasker_id: number;
-  tasker_username: string;
-  tasker_name: string;
-  tasker_family_name: string;
-  rating: number;
-  tasks_done: number;
-  category: string;
-  eta: number;
-  created_at: string;
-}
 
 type InspectRequestsModalProps = {
   visible: boolean;
@@ -41,29 +29,45 @@ export default function InspectRequestsModal({
   onAccept,
   onDecline,
 }: InspectRequestsModalProps) {
-  const requests = useStore((state) => state.requests);
+  const requests = useStore((state) => state.taskRequests);
   const setRequests = useStore().setRequests;
-  const currentTaskId = useStore((state) => state.currentTaskId);
+  const currentTask = useStore((state) => state.currentTask);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     const fetchTaskRequests = async () => {
+      if (!currentTask!.id) return;
       try {
-        const response = await api.get(`/task-requests/${currentTaskId}/`);
+        const response = await api.get(`/task-requests/${currentTask}/`);
         const data = response.data;
+        Toast.show({
+          type: "info",
+          text1: `Polling from /task-requests/${currentTask}/`,
+          text2: "Inspect request modal",
+        });
         setRequests(data);
       } catch (error) {
-        console.error("Failed to fetch task requests", error);
+        console.log(error);
       }
     };
 
     fetchTaskRequests();
     interval = setInterval(fetchTaskRequests, 30000);
-
     return () => clearInterval(interval);
-  }, [currentTaskId]);
+  }, []);
 
+  const handleDecline = async (taskerId: number, taskId: number) => {
+    try {
+      const res = await api.post("cancel-task-request-as-client/", {
+        task_id: taskId,
+        tasker_id: taskerId,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert(`Failed to cancel request. ${currentTask} ${error}`);
+    }
+  };
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
@@ -74,27 +78,50 @@ export default function InspectRequestsModal({
             keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text style={styles.title}>{item.tasker_username}</Text>
-                <Text style={styles.infoText}>Name: {item.tasker_name}</Text>
-                <Text style={styles.infoText}>
-                  Family: {item.tasker_family_name}
-                </Text>
-                <Text style={styles.infoText}>
-                  Specialization: {item.category}
-                </Text>
-                <Text style={styles.infoText}>
-                  Task Done: {item.tasks_done}
-                </Text>
-                <Text style={styles.infoText}>Rating: {item.rating} ★</Text>
-                <Text style={styles.infoText}>ETA: {item.eta} min</Text>
-                <View style={styles.buttonRow}>
-                  <Button title="Accept" />
-                  <Button title="Decline" />
-                </View>
+            ListEmptyComponent={
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginTop: 50,
+                }}
+              >
+                {requests.length === 0 && (
+                  <Text style={{ fontSize: 16, color: COLORS.color25 }}>
+                    No tasker accept this task yet...
+                  </Text>
+                )}
               </View>
-            )}
+            }
+            renderItem={({ item }) => {
+              return (
+                <View style={styles.card}>
+                  <Text style={styles.title}>{item.tasker_username}</Text>
+                  <Text style={styles.infoText}>Name: {item.tasker_name}</Text>
+                  <Text style={styles.infoText}>
+                    Family: {item.tasker_family_name}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Specialization: {item.category}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Task Done: {item.tasks_done}
+                  </Text>
+                  <Text style={styles.infoText}>Rating: {item.rating} ★</Text>
+                  <Text style={styles.infoText}>ETA: {item.eta} min</Text>
+                  <View style={styles.buttonRow}>
+                    <Button title="Accept" />
+                    <Button
+                      title="Decline"
+                      onPress={() =>
+                        handleDecline(item.tasker_id, item.task_id)
+                      }
+                    />
+                  </View>
+                </View>
+              );
+            }}
           />
           <Button title="Close" onPress={onClose} />
         </View>

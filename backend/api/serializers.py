@@ -12,9 +12,10 @@ class SubtaskSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    client_username = serializers.CharField(source="client.username", read_only=True)
-    tasker_username = serializers.SerializerMethodField()
-    tasker_id = serializers.SerializerMethodField()
+    # client_username = serializers.CharField(source="client.username", read_only=True)
+    # client_id = serializers.IntegerField(source="client.id", read_only=True)
+    # tasker_username = serializers.SerializerMethodField()
+    # tasker_id = serializers.SerializerMethodField()
     subtasks = SubtaskSerializer(many=True, read_only=True)
 
     terms_accepted_client_at = serializers.SerializerMethodField()
@@ -30,9 +31,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "urgency",
             "location",
             "status",
-            "client_username",
-            "tasker_username",
-            "tasker_id",
+            "client",
+            "tasker",
             "expires_from_feed",
             "must_start_by",
             "created_at",
