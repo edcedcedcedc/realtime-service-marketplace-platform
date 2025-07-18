@@ -11,14 +11,12 @@ import {
 import useStore from "../store/useStore";
 import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
-import { logout } from "../utils/logout";
 import api from "../services/api";
 import TinySpinner from "../components/TinySpinner";
 
 interface Props {
   modalVisible: boolean;
   setModalVisible: (param: boolean) => void;
-
   handleLogin: (data: any) => void;
   navigation: any;
 }
@@ -30,7 +28,6 @@ export default function TermsAndConditions({
 }: Props) {
   const auth = useStore((state) => state.auth);
   const setLoading = useStore.getState().setLoading;
-  const loading = useStore((state) => state.loading);
   const [termsText, setTermsText] = useState("");
   const [tinyLoading, setTinyLoading] = useState(false);
 
@@ -90,36 +87,27 @@ export default function TermsAndConditions({
   };
 
   return (
-    <>
-      {/* <TouchableOpacity
-        //onPress={() => setModalVisible(true)}
-        style={{ alignSelf: "center", marginTop: 10 }}
-      >
-        <Text style={styles.terms}>Termeni și Condiții</Text>
-      </TouchableOpacity> */}
-
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-              <Text style={styles.termsText}>
-                {tinyLoading ? <TinySpinner /> : termsText}
-              </Text>
-            </ScrollView>
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-              }}
-            >
-              <Button title="Accept" onPress={handleAccept} />
-              <Button title="Reject" onPress={handleReject} />
-            </View>
+    <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <Text style={styles.termsText}>
+              {tinyLoading ? <TinySpinner /> : termsText}
+            </Text>
+          </ScrollView>
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <Button title="Accept" onPress={handleAccept} />
+            <Button title="Reject" onPress={handleReject} />
           </View>
         </View>
-      </Modal>
-    </>
+      </View>
+    </Modal>
   );
 }
 

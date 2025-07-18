@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Button,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
+import { Portal, Dialog, Paragraph } from "react-native-paper";
 
-import { URGENCY_OPTIONS, STATUS_OPTIONS } from "../store/useStore";
+import useStore, {
+  URGENCY_OPTIONS,
+  STATUS_OPTIONS,
+  Task,
+} from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
 import api from "../services/api";
+import TinySpinner from "../components/TinySpinner";
+import Toast from "react-native-toast-message";
+import { SocketManager } from "../utils/socketManager";
 
 const { width } = Dimensions.get("window");
 
@@ -32,57 +33,38 @@ const statusColorMap = STATUS_OPTIONS.reduce(
 );
 
 type TaskCardProps = {
-  item: {
-    id: number | string;
-    title: string;
-    description?: string;
-    budget: number;
-    urgency: string;
-    location: string;
-    status: string;
-    category: string;
-  };
+  task: Task;
   isMiniMapVisible: boolean;
 };
 
-export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
+export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
-  const [showTaskSubmitted, setShowTaskSubmitted] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const user = useStore((state) => state.auth.user);
 
   async function handleAccept() {
     try {
-      setShowTaskSubmitted(true);
-
-      await api.post("task-request/", {
-        task_id: Number(item.id),
+      const res = await api.post("task-request/", {
+        task_id: Number(task.id),
       });
-
-      Alert.alert(
-        "Request Sent",
-        "Waiting for client to respond",
-        [
-          {
-            text: "Cancel",
-            onPress: async () => {
-              try {
-                await api.post("cancel-task-request/", {
-                  task_id: Number(item.id),
-                });
-                setShowTaskSubmitted(false);
-              } catch (error) {
-                Alert.alert("Error", "Failed to cancel request.");
-                console.error(error);
-              }
-            },
-            style: "destructive",
-          },
-        ],
-        { cancelable: true },
-      );
+      console.log(res.data);
+      setDialogVisible(true);
     } catch (error) {
-      setShowTaskSubmitted(false);
-      Alert.alert("Error", "Failed to send accept request.");
+      setDialogVisible(false);
+      alert("Error: Failed to send accept request.");
       console.error(error);
+    }
+  }
+
+  async function handleCancelRequest() {
+    try {
+      await api.post("cancel-task-request/", {
+        task_id: Number(task.id),
+      });
+      setDialogVisible(false);
+      //setActiveOutgoingRequestTaskId(null);
+    } catch (error) {
+      alert("Failed to cancel request.");
     }
   }
 
@@ -94,10 +76,10 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.title}>{task.title}</Text>
 
       <Text style={styles.description} numberOfLines={3}>
-        {item.description}
+        {task.description}
       </Text>
 
       <View
@@ -110,17 +92,17 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
       >
         <View>
           <Text style={styles.infoText}>
-            Budget: ${Number(item.budget).toFixed(2)}
+            Budget: ${Number(task.budget).toFixed(2)}
           </Text>
           <Text style={styles.infoText}>
             Status:{" "}
             <Text
               style={{
-                color: statusColorMap[item.status] || COLORS.color12,
+                color: statusColorMap[task.status] || COLORS.color12,
                 fontWeight: "600",
               }}
             >
-              {item.status}
+              {task.status}
             </Text>
           </Text>
         </View>
@@ -128,22 +110,22 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
         <View>
           <Text style={styles.infoText}>
             Category:{" "}
-            {item.category === "repair"
+            {task.category === "repair"
               ? "Fix & Repair"
-              : item.category === "personal_help"
+              : task.category === "personal_help"
                 ? "Personal Help"
-                : item.category === "delivery"
+                : task.category === "delivery"
                   ? "Move & Deliver"
-                  : item.category === "other"
+                  : task.category === "other"
                     ? "Other"
-                    : item.category}
+                    : task.category}
           </Text>
           <Text style={styles.infoText}>
             Urgency:
             <Text
-              style={{ color: urgencyColorMap[item.urgency] || COLORS.color12 }}
+              style={{ color: urgencyColorMap[task.urgency] || COLORS.color12 }}
             >
-              {" " + item.urgency}
+              {" " + task.urgency}
             </Text>
           </Text>
         </View>
@@ -151,7 +133,7 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
 
       <View style={styles.centeredRow}>
         <Text style={[styles.infoText, styles.centeredText]}>
-          Location: {item.location}
+          Location: {task.location}
         </Text>
       </View>
 
@@ -160,22 +142,46 @@ export default function TaskCard({ item, isMiniMapVisible }: TaskCardProps) {
           title={showMiniMap ? "Hide Location" : "View Location"}
           onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button
-          title="Accept"
-          onPress={handleAccept}
-          disabled={showTaskSubmitted} // disable while sending
-        />
+        <Button title="Accept" onPress={handleAccept} />
       </View>
 
       {showMiniMap && (
         <MapSelector
-          address={item.location}
+          address={task.location}
           isSearching={false}
           onExit={() => setShowMiniMap(false)}
           onChange={() => {}}
           handleGetLocation={() => {}}
         />
       )}
+
+      {/* Paper Dialog */}
+      <Portal>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={handleCancelRequest}
+          dismissable={false}
+        >
+          <Dialog.Title>Request Sent</Dialog.Title>
+          <Dialog.Content>
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "flex-start",
+              }}
+            >
+              <Text style={{ paddingRight: 10 }}>
+                Waiting for client to respond
+              </Text>
+              <TinySpinner message="" />
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={handleCancelRequest} color="red" title="Cancel" />
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

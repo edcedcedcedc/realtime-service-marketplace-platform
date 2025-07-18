@@ -16,105 +16,35 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import Toast from "react-native-toast-message";
 import * as Location from "expo-location";
 import { yupResolver } from "@hookform/resolvers/yup";
-
-import useStore, { Region, Request, TaskFormInput } from "../store/useStore";
-import { WS_TASKREQUEST_BASE_URL } from "../constants/network";
-
+import useStore, { Region, TaskFormInput } from "../store/useStore";
 import { taskPostSchema } from "../validation/validationSchema";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
 import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
-import { SocketManager } from "../utils/socketManager";
 import api from "../services/api";
+import { useTaskFeed } from "../hooks/useTaskFeed";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
   const tempTaskData = useStore((state) => state.tempTaskData);
   const tasks = useStore().tasks;
-  const [isSearching, setIsSearching] = useState(false);
+
+  const isSearching = useStore((state) => state.isSearching);
+  const setIsSearching = useStore().setIsSearching;
+
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
-  const taskToBeCancelledIdRef = useRef<number | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
-  const [requestsVisible, setRequestsVisible] = useState(false);
 
-  const addRequest = useStore().addRequest;
-  const clearRequest = useStore().clearRequest;
-  const setCurrentTaskId = useStore().setCurrentTaskId;
-  const currentTaskId = useStore((state) => state.currentTaskId);
-  const clearRequests = useStore().clearRequests;
+  const [taskerRequestsVisible, setTaskerRequestsVisible] = useState(false);
+  const taskRequests = useStore((state) => state.taskRequests);
 
-  const inspectRequestsSocket = new SocketManager();
+  const setCurrentTask = useStore().setCurrentTask;
+  const currentTask = useStore((state) => state.currentTask);
 
-  function connectWithRetries(
-    wsUrl: string,
-    id: number,
-    maxAttempts = 3,
-    delayMs = 3000,
-    onAddRequest: (payload: Request) => void,
-    onRemoveRequest: (payload: number) => void,
-    onOpen?: () => void,
-  ): Promise<void> {
-    let attempts = 0;
-    let connected = false;
-    let task_request_id = 0;
-
-    return new Promise((resolve, reject) => {
-      function tryConnect() {
-        if (attempts >= maxAttempts || connected) {
-          if (connected) {
-            resolve();
-          } else {
-            reject(new Error("Max connection attempts reached"));
-          }
-          return;
-        }
-        attempts++;
-
-        inspectRequestsSocket.connect(wsUrl, `task ${id}`);
-
-        function handleAddRequest(payload: any) {
-          connected = true;
-          onAddRequest(payload);
-        }
-
-        function handleDeleteRequest(payload: any) {
-          connected = true;
-          task_request_id = payload["task_request_id"]; //you need request id
-          onRemoveRequest(task_request_id);
-        }
-
-        function handleOpen() {
-          connected = true;
-          if (onOpen) onOpen();
-          resolve();
-        }
-
-        inspectRequestsSocket.on("task:requests-new", handleAddRequest);
-        inspectRequestsSocket.on("task:requests-delete", handleDeleteRequest);
-        inspectRequestsSocket.on("socket:onopen", handleOpen);
-
-        setTimeout(() => {
-          if (!connected && attempts < maxAttempts) {
-            inspectRequestsSocket.off("task:requests-new", handleAddRequest);
-            inspectRequestsSocket.off(
-              "task:requests-delete",
-              handleDeleteRequest,
-            );
-            inspectRequestsSocket.off("socket:onopen", handleOpen);
-            inspectRequestsSocket.disconnect();
-            tryConnect();
-          } else if (!connected) {
-            reject(new Error("Failed to connect after max attempts"));
-          }
-        }, delayMs);
-      }
-
-      tryConnect();
-    });
-  }
+  useTaskFeed();
 
   const {
     control,
@@ -144,33 +74,24 @@ export default function TaskPost({ navigation }: any) {
       );
       return;
     }
-
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
-
     const latlng = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
     setValue("location", latlng);
   };
 
   useEffect(() => {
-    setTempTaskData(null);
-    setCurrentTaskId(0);
     return () => {
       reset();
-      setCurrentTaskId(0);
+      setTempTaskData(null);
     };
   }, []);
 
   useEffect(() => {
     if (!tempTaskData) return;
-
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
-
-    let wsUrl = "";
-    let isMounted = true;
-
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
@@ -180,34 +101,9 @@ export default function TaskPost({ navigation }: any) {
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
-
         const res = await api.post("/tasks/create/", payload);
-
-        if (!isMounted) return;
-
-        setCurrentTaskId(res.data.id);
-
-        wsUrl = `${WS_TASKREQUEST_BASE_URL}${res.data.id}/`;
-
-        await connectWithRetries(
-          wsUrl,
-          res.data.id,
-          3,
-          3000,
-          (payload) => {
-            addRequest(payload);
-          },
-          (payload) => {
-            clearRequest(payload); //id
-          },
-          () => {
-            Toast.show({
-              type: "success",
-              text1: `Connected to requests for task ${res.data.id}`,
-              text2: "Inspect requests",
-            });
-          },
-        );
+        console.log(res.data, "res.data");
+        setCurrentTask(res.data);
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -222,14 +118,11 @@ export default function TaskPost({ navigation }: any) {
     }, 5000);
 
     return () => {
-      isMounted = false;
       if (taskCreationTimeout.current) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
-      clearRequests();
-      inspectRequestsSocket.disconnect();
-      setCurrentTaskId(0);
+      //setCurrentTask(null);
     };
   }, [tempTaskData]);
 
@@ -282,25 +175,24 @@ export default function TaskPost({ navigation }: any) {
   };
 
   const cancelSearch = () => {
-    console.log(
-      "Cancel search called, taskToBeCancelledId:",
-      taskToBeCancelledIdRef.current,
-    );
     setIsSearching(false);
     setTempTaskData(null);
-
-    if (currentTaskId) {
-      deleteTaskById();
-    }
+    console.log(currentTask?.id, "currentTask.id");
+    deleteTaskById();
+    cancelAllRequests();
   };
 
   const deleteTaskById = async () => {
-    const id = tasks.find((task) => currentTaskId == task.id)?.id;
+    const id = tasks.find((task) => currentTask!.id == task.id)?.id;
     if (!id) return;
     try {
       const res = await api.delete(`/tasks/delete/${id}/`);
+      console.log(
+        res.data,
+        "const res = await api.delete(`/tasks/delete/${id}/`);",
+      );
       setTempTaskData(null);
-      setCurrentTaskId(0);
+      setCurrentTask(null);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -308,6 +200,24 @@ export default function TaskPost({ navigation }: any) {
         text2:
           err.response?.data?.error ||
           "Failed to cancel the task. Please try again later.",
+      });
+    }
+  };
+
+  const cancelAllRequests = async () => {
+    try {
+      await api.post("/tasks/cancel-all-task-requests/", {
+        task_id: currentTask!,
+      });
+      Toast.show({
+        type: "success",
+        text1: "Cancelled all tasker requests",
+      });
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel all requests",
+        text2: err.response?.data?.error || "Try again later",
       });
     }
   };
@@ -640,13 +550,13 @@ export default function TaskPost({ navigation }: any) {
                   }}
                 >
                   <Text style={styles.infoLabel}>Incoming requests:</Text>
-                  <Text style={styles.infoValue}>5</Text>
+                  <Text style={styles.infoValue}>{taskRequests.length}</Text>
                 </View>
                 <View style={{ marginRight: -2 }}>
                   <Button
                     title="Inspect Requests"
                     onPress={() => {
-                      setRequestsVisible(true);
+                      setTaskerRequestsVisible(true);
                     }}
                   />
                 </View>
@@ -671,12 +581,12 @@ export default function TaskPost({ navigation }: any) {
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
           )}
-          {requestsVisible && (
+          {taskerRequestsVisible && (
             <IncomingRequestsModal
               visible={true}
-              onClose={() => setRequestsVisible(false)}
+              onClose={() => setTaskerRequestsVisible(false)}
               onAccept={(id) => console.log("Accepted:", id)}
-              onDecline={(id) => console.log("Declined:", id)}
+              onDecline={(id) => {}}
             />
           )}
         </View>
