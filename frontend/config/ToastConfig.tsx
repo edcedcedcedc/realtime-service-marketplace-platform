@@ -1,6 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
+import { COLORS } from "../constants/colors";
+
 const ToastConfig = {
   success: ({ text1, text2 }: any) => (
     <View style={[styles.container, styles.success]}>
@@ -23,41 +25,41 @@ const ToastConfig = {
 };
 
 const styles = StyleSheet.create({
+  Layout: {
+    elevation: 1000,
+    zIndex: 1,
+  },
   container: {
-    marginHorizontal: 16,
-    marginTop: 40,
     borderRadius: 4,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
     elevation: 6, // material shadow
-    shadowColor: "#000",
-    shadowOpacity: 0.24,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
     flexDirection: "column",
     justifyContent: "center",
-  },
-  Layout: {
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  success: {
-    backgroundColor: "#388E3C", // Material Green 700
+    marginHorizontal: 16,
+    marginTop: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.24,
+    shadowRadius: 4,
   },
   error: {
-    backgroundColor: "#D32F2F", // Material Red 700
+    backgroundColor: COLORS.color5, // Material Red 700
   },
   info: {
-    backgroundColor: "#1976D2", // Material Blue 700
+    backgroundColor: COLORS.color1, // Material Blue 700
+  },
+  success: {
+    backgroundColor: COLORS.color3, // Material Green 700
   },
   text1: {
+    color: COLORS.color19,
     fontSize: 16,
     fontWeight: "500",
-    color: "#fff",
   },
   text2: {
+    color: COLORS.color38, // slightly transparent white per Material spec
     fontSize: 14,
-    color: "rgba(255,255,255,0.87)", // slightly transparent white per Material spec
     marginTop: 4,
   },
 });

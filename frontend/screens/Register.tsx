@@ -3,22 +3,21 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
-import Toast from "react-native-toast-message";
-import api from "../services/api";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import useStore from "../store/useStore";
 import { useForm, Controller } from "react-hook-form";
+import Toast from "react-native-toast-message";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { registerSchema } from "../validation/validationSchema";
 import * as Yup from "yup";
+
+import useStore from "../store/useStore";
+import { registerSchema } from "../validation/validationSchema";
+import api from "../services/api";
 import { withTimeout } from "../utils/withTimeout";
-import { SPACING } from "../utils/spacings";
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
 
 export default function RegisterScreen({ navigation }: any) {
   const { setAuth, setLoading } = useStore.getState();
@@ -35,7 +34,7 @@ export default function RegisterScreen({ navigation }: any) {
       username: "",
       password: "",
       confirmPassword: "",
-      role: "client",
+      role: "",
     },
   });
 
@@ -64,9 +63,7 @@ export default function RegisterScreen({ navigation }: any) {
         type: "success",
         text1: "Registration Successful",
       });
-      navigation.replace(
-        res.data.user === "client" ? "Search a tasker" : "Task feed",
-      );
+      navigation.replace("Start");
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -86,8 +83,8 @@ export default function RegisterScreen({ navigation }: any) {
         contentContainerStyle={styles.scrollContent}
         enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
-        extraHeight={250}
-        keyboardOpeningTime={10000}
+        extraHeight={300}
+        keyboardOpeningTime={250}
         scrollEventThrottle={250}
         showsVerticalScrollIndicator={false}
       >
@@ -103,14 +100,14 @@ export default function RegisterScreen({ navigation }: any) {
                 <TextInput
                   style={[styles.input, errors.email && styles.inputError]}
                   placeholder="Email"
-                  value={value}
+                  value={value ? value : ""}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  placeholderTextColor="#999"
-                  selectionColor="#388E3C"
+                  placeholderTextColor={COLORS.color25}
+                  selectionColor={COLORS.color3}
                 />
                 {errors.email && (
                   <Text style={styles.errorText}>{errors.email.message}</Text>
@@ -128,13 +125,17 @@ export default function RegisterScreen({ navigation }: any) {
                 <TextInput
                   style={[styles.input, errors.username && styles.inputError]}
                   placeholder="Username"
-                  value={value}
+                  value={value ? value : ""}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  placeholderTextColor="#999"
-                  selectionColor="#388E3C"
+                  placeholderTextColor={COLORS.color25}
+                  selectionColor={COLORS.color3}
+                  autoComplete="off"
+                  textContentType="name"
+                  importantForAutofill="no"
+                  enablesReturnKeyAutomatically
                 />
                 {errors.username && (
                   <Text style={styles.errorText}>
@@ -158,8 +159,8 @@ export default function RegisterScreen({ navigation }: any) {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   secureTextEntry
-                  placeholderTextColor="#999"
-                  selectionColor="#388E3C"
+                  placeholderTextColor={COLORS.color25}
+                  selectionColor={COLORS.color3}
                 />
                 {errors.password && (
                   <Text style={styles.errorText}>
@@ -186,8 +187,8 @@ export default function RegisterScreen({ navigation }: any) {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   secureTextEntry
-                  placeholderTextColor="#999"
-                  selectionColor="#388E3C"
+                  placeholderTextColor={COLORS.color25}
+                  selectionColor={COLORS.color3}
                 />
                 {errors.confirmPassword && (
                   <Text style={styles.errorText}>
@@ -198,35 +199,26 @@ export default function RegisterScreen({ navigation }: any) {
             )}
           />
 
-          {/* Role Selector */}
           <Controller
             control={control}
             name="role"
             render={({ field: { onChange, value } }) => (
-              <>
-                <Text style={styles.roleLabel}>Register as</Text>
-                <View style={styles.roleToggleContainer}>
-                  {["client", "worker"].map((role, idx) => {
+              <View>
+                <Text style={styles.roleLabel}>Pick one of</Text>
+                <View style={styles.roleInlineContainer}>
+                  {["client", "tasker"].map((role) => {
                     const selected = value === role;
                     return (
                       <TouchableOpacity
                         key={role}
                         onPress={() => onChange(role)}
-                        style={[
-                          styles.roleToggleButton,
-                          selected
-                            ? role === "client"
-                              ? styles.roleToggleButtonSelectedClient
-                              : styles.roleToggleButtonSelectedWorker
-                            : styles.roleToggleButtonUnselected,
-                          idx === 0 ? { marginRight: 5 } : { marginLeft: 5 },
-                        ]}
                         activeOpacity={0.7}
+                        style={styles.roleTextWrapper}
                       >
                         <Text
                           style={[
-                            styles.roleToggleText,
-                            selected && styles.roleToggleTextSelected,
+                            styles.roleText,
+                            selected && styles.roleTextSelected,
                           ]}
                         >
                           {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -238,7 +230,7 @@ export default function RegisterScreen({ navigation }: any) {
                 {errors.role && (
                   <Text style={styles.errorText}>{errors.role.message}</Text>
                 )}
-              </>
+              </View>
             )}
           />
 
@@ -258,81 +250,108 @@ export default function RegisterScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-    backgroundColor: "#fff",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "stretch",
-    paddingVertical: SPACING.md,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#212121",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
+  button: {
+    alignItems: "center",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BDBDBD",
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    elevation: 3,
+    flex: 1,
+    height: 50,
+    justifyContent: "center",
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  buttonText: {
+    color: COLORS.color19,
     fontSize: 16,
-    color: "#212121",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  inputError: {
-    borderColor: "#D32F2F",
-  },
-  errorText: {
-    color: "#D32F2F",
-    marginTop: -12,
-    marginBottom: 12,
-    fontSize: 13,
+    fontWeight: "700",
   },
   buttonsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    width: "100%",
     marginBottom: 24,
+    width: "100%",
   },
-  button: {
+  container: {
+    backgroundColor: COLORS.color19,
     flex: 1,
-    height: 50,
+    paddingHorizontal: SPACING.md,
+  },
+  errorText: {
+    color: COLORS.color5,
+    fontSize: 13,
+    marginBottom: 12,
+    marginTop: -12,
+  },
+  input: {
+    backgroundColor: COLORS.color19,
+    borderColor: COLORS.color26,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20.84,
+    borderWidth: 1,
+    color: COLORS.color27,
+    elevation: 2,
+    fontSize: 16,
+    height: 50,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    width: "100%",
+  },
+  inputError: {
+    borderColor: COLORS.color5,
   },
   registerButton: {
-    backgroundColor: "#388E3C",
+    backgroundColor: COLORS.color24,
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
+  roleInlineContainer: {
+    flexDirection: "row",
+    gap: 24,
+    justifyContent: "center", // spacing between text items, if "gap" not supported use marginHorizontal
   },
   roleLabel: {
+    color: COLORS.color15,
     fontSize: 14,
     fontWeight: "400",
     marginBottom: 10,
-    color: "#666",
+  },
+  roleText: {
+    borderBottomColor: "transparent",
+    borderBottomWidth: 2,
+    color: COLORS.color15,
+    fontSize: 16,
+
+    paddingBottom: 10,
+  },
+  roleTextSelected: {
+    color: COLORS.color29, // your primary highlight color
+  },
+  roleTextWrapper: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  roleToggleButton: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1.5,
+    flex: 1,
+    height: 50,
+    justifyContent: "center",
+  },
+  roleToggleButtonSelectedClient: {
+    backgroundColor: COLORS.color24, // Orange 800
+    borderColor: COLORS.color24,
+  },
+  roleToggleButtonSelectedWorker: {
+    backgroundColor: COLORS.color24, // Deep Purple 700 "#512DA8"
+    borderColor: COLORS.color24,
+  },
+  roleToggleButtonUnselected: {
+    backgroundColor: COLORS.color19,
+    borderColor: COLORS.color26,
   },
   roleToggleContainer: {
     flexDirection: "row",
@@ -340,32 +359,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     width: "100%",
   },
-  roleToggleButton: {
-    flex: 1,
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  roleToggleButtonSelectedClient: {
-    backgroundColor: "#FF6F00", // Orange 800
-    borderColor: "#FF6F00",
-  },
-  roleToggleButtonSelectedWorker: {
-    backgroundColor: "#FF6F00", // Deep Purple 700 "#512DA8"
-    borderColor: "#FF6F00",
-  },
-  roleToggleButtonUnselected: {
-    backgroundColor: "#fff",
-    borderColor: "#BDBDBD",
-  },
   roleToggleText: {
+    color: COLORS.color27,
     fontSize: 16,
     fontWeight: "600",
-    color: "#212121",
   },
   roleToggleTextSelected: {
-    color: "#fff",
+    color: COLORS.color19,
+  },
+  scrollContent: {
+    alignItems: "stretch",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: SPACING.md,
+  },
+  title: {
+    color: COLORS.color27,
+    fontSize: 30,
+    fontWeight: "700",
+    marginBottom: 32,
+    textAlign: "center",
   },
 });

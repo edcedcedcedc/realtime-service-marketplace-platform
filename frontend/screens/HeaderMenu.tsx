@@ -1,8 +1,10 @@
-// components/HeaderMenu.tsx
 import React, { useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Menu, Text } from "react-native-paper";
+
 import { logout } from "../utils/logout";
+import useStore from "../store/useStore";
+import { COLORS } from "../constants/colors";
 
 interface HeaderMenuProps {
   navigation: any;
@@ -10,14 +12,19 @@ interface HeaderMenuProps {
 
 export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const [visible, setVisible] = useState(false);
-
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
+  const setRefresh = useStore().setRefresh;
 
+  if (!isLoggedIn) {
+    return;
+  }
   return (
     <Menu
       visible={visible}
       onDismiss={closeMenu}
+      contentStyle={{ backgroundColor: COLORS.color38 }}
       anchor={
         <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
           <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
@@ -27,8 +34,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
       <Menu.Item
         onPress={() => {
           closeMenu();
-          console.log("Profile pressed");
-          // navigation.navigate("ProfileScreen");
+          navigation.navigate("Profile");
         }}
         title="Profile"
       />
@@ -36,6 +42,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
         onPress={() => {
           closeMenu();
           console.log("Settings pressed");
+
           // navigation.navigate("SettingsScreen");
         }}
         title="Settings"
@@ -43,7 +50,14 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
       <Menu.Item
         onPress={() => {
           closeMenu();
-          logout(navigation);
+          setRefresh();
+        }}
+        title="Refresh"
+      />
+      <Menu.Item
+        onPress={() => {
+          closeMenu();
+          logout();
         }}
         title="Logout"
       />

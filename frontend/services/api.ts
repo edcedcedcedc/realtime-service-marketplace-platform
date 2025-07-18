@@ -1,14 +1,12 @@
-import axios from "axios";
-import useStore from "../store/useStore";
 import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
-
-const API_BASE_URL = "http://192.168.1.4:8000/api/";
-export const WS_URL = "ws://192.168.1.4:8000/ws/jobs/";
+import useStore from "../store/useStore";
+import { HTTP_BASE_URL } from "../hooks/useNetwork";
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: HTTP_BASE_URL,
 });
 
 api.interceptors.request.use(async (config) => {
@@ -25,7 +23,7 @@ api.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${accessToken}`;
     console.log(config.headers.Authorization, "auth");
   } else {
-    console.error("No JWT token found");
+    console.warn("No JWT token found");
   }
   return config;
 });
@@ -42,7 +40,7 @@ api.interceptors.response.use(
 
       if (refresh) {
         try {
-          const res = await axios.post(`${API_BASE_URL}token/refresh/`, {
+          const res = await axios.post(`${HTTP_BASE_URL}token/refresh/`, {
             refresh,
           });
           store.setAuth(
@@ -56,30 +54,12 @@ api.interceptors.response.use(
           return new Promise((resolve, reject) => {
             Alert.prompt(
               "Session Expired",
-              "Please enter your password to continue",
+              "Please return to start screen",
               [
                 {
                   text: "OK",
-                  onPress: async (password: any) => {
+                  onPress: async () => {
                     try {
-                      const store = useStore.getState();
-                      const loginResponse = await axios.post(
-                        `${API_BASE_URL}login/`,
-                        {
-                          username: store.auth.user?.username,
-                          password: password,
-                        },
-                      );
-                      const { access, refresh } = loginResponse.data;
-                      store.setAuth(
-                        { access, refresh },
-                        loginResponse.data.user,
-                      );
-                      originalRequest.headers.Authorization = `Bearer ${access}`;
-
-                      const response = await api(originalRequest);
-                      resolve(response);
-                    } catch (loginError) {
                       const store = useStore.getState();
                       store.clearAuth();
                       navigationRef.current?.dispatch(
@@ -88,6 +68,7 @@ api.interceptors.response.use(
                           routes: [{ name: "Start" }],
                         }),
                       );
+                    } catch (loginError) {
                       reject(loginError);
                     }
                   },

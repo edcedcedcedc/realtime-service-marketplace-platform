@@ -7,19 +7,20 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
-  Animated,
-  Easing,
+  Keyboard,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+
+import AnimatedCircle from "../components/AnimatedCircle";
+import TinySpinner from "../components/TinySpinner";
 import useStore, { Region } from "../store/useStore";
-import AnimatedCircle from "../utils/AnimatedCircle";
 import { DEFAULT_DELTA } from "../store/useStore";
-import TinySpinner from "../utils/TinySpinner";
+import { COLORS } from "../constants/colors";
+
 type Props = {
   address: string;
   isSearching: boolean;
-  onDoubleTap?: () => void;
   onExit: (region: Region) => void;
   onChange: () => void;
   handleGetLocation: (region: Region) => void;
@@ -35,11 +36,11 @@ export default function MapSelectorScreen({
   const miniMapReady = useStore((s) => s.miniMapReady);
   const fullMapReady = useStore((s) => s.fullMapReady);
   const isFullMapVisible = useStore((s) => s.isFullMapVisible);
-  const setMiniMapReady = useStore((s) => s.setMiniMapReady);
-  const setFullMapReady = useStore((s) => s.setFullMapReady);
-  const setIsFullMapVisible = useStore((s) => s.setIsFullMapVisible);
+  const setMiniMapReady = useStore().setMiniMapReady;
+  const setFullMapReady = useStore().setFullMapReady;
+  const setIsFullMapVisible = useStore().setIsFullMapVisible;
   const selectedRegion = useStore((s) => s.selectedRegion);
-  const setSelectedRegion = useStore((s) => s.setSelectedRegion);
+  const setSelectedRegion = useStore().setSelectedRegion;
   const miniMapRef = useRef<MapView | null>(null);
   const fullMapRef = useRef<MapView | null>(null);
 
@@ -47,6 +48,7 @@ export default function MapSelectorScreen({
     x: number;
     y: number;
   } | null>(null);
+
   const [markerPointFull, setMarkerPointFull] = useState<{
     x: number;
     y: number;
@@ -55,7 +57,7 @@ export default function MapSelectorScreen({
   const lastTap = useRef<number>(0);
   const [loading, setLoading] = useState(false);
 
-  const handleMapPress = (event: any) => {
+  const handleFullMapPress = (event: any) => {
     if (isSearching) {
       return;
     }
@@ -66,91 +68,87 @@ export default function MapSelectorScreen({
     });
   };
 
+  /**
+   * Handles user taps on the mini map.
+   *
+   * - On **single tap**, it dismisses the keyboard.
+   * - On **double tap** (within 300ms), it opens the full map view modal.
+   *
+   * This allows users to interact naturally with the map:
+   * - A single tap hides the keyboard if it's open.
+   * - A fast double tap expands the map for more precise selection.
+   */
   const handleDoubleTap = () => {
+    console.log("tap");
+    Keyboard.dismiss();
+    //TODO add delay 5 sec to be in sync with pre-post
     const now = Date.now();
     if (lastTap.current && now - lastTap.current < 300) {
       setIsFullMapVisible(true);
-      console.log("Current state:", {
-        fullMapReady,
-        selectedRegion,
-        isFullMapVisible,
-      });
     }
     lastTap.current = now;
   };
 
-  /*   const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout | null = null;
-    return (...args: any[]) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }; */
-
-  /* const updatePosition = useRef(
-    debounce(async () => {
-      if (!fullMapRef.current || !selectedRegion) return;
-      try {
-        const point =
-          await fullMapRef.current.pointForCoordinate(selectedRegion);
-        setMarkerPointFull(point);
-      } catch {
-        setMarkerPointFull(lastValidPositionRef.current);
-      }
-    }, 16)
-  ).current; */
-
   useEffect(() => {
-    if (
-      isFullMapVisible &&
-      fullMapRef.current &&
-      selectedRegion &&
-      fullMapReady
-    ) {
-      const calculatePoint = async () => {
+    let frameId: number | null = null;
+
+    const updateMarkerPoint = async () => {
+      if (
+        fullMapRef.current &&
+        selectedRegion &&
+        isFullMapVisible &&
+        fullMapReady
+      ) {
         try {
           const point =
-            await fullMapRef.current?.pointForCoordinate(selectedRegion);
+            await fullMapRef.current.pointForCoordinate(selectedRegion);
           if (point) {
             setMarkerPointFull(point);
           }
         } catch (err) {
-          console.warn("Point calculation failed, retrying...", err);
-          setTimeout(() => {
-            if (fullMapRef.current) {
-              fullMapRef.current
-                .pointForCoordinate(selectedRegion)
-                .then(setMarkerPointFull)
-                .catch(console.warn);
-            }
-          }, 300);
+          console.warn("Failed to update marker point:", err);
         }
-      };
-      calculatePoint();
+      }
+    };
+
+    const animate = async () => {
+      await updateMarkerPoint();
+      frameId = requestAnimationFrame(animate);
+    };
+
+    if (isFullMapVisible) {
+      animate();
     }
-  }, [isFullMapVisible, handleDoubleTap, selectedRegion]);
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+    };
+  }, [isFullMapVisible, fullMapReady, selectedRegion]);
 
   useEffect(() => {
-    console.log("render");
+    console.log("render1");
     if (!isFullMapVisible && miniMapRef.current && selectedRegion) {
-      const calculatePoint = async () => {
-        try {
-          const point =
-            await miniMapRef.current?.pointForCoordinate(selectedRegion);
-          if (point) setMarkerPointMini(point);
-        } catch (err) {
-          console.warn("Point calculation failed, retrying...", err);
-          setTimeout(() => {
-            if (miniMapRef.current) {
+      const timeout = setTimeout(() => {
+        const calculatePoint = async () => {
+          try {
+            const point =
+              await miniMapRef.current?.pointForCoordinate(selectedRegion);
+            if (point) setMarkerPointMini(point);
+          } catch (err) {
+            console.warn("MiniMap point calculation failed, retrying...", err);
+            // Optional retry fallback
+            setTimeout(() => {
               miniMapRef.current
-                .pointForCoordinate(selectedRegion)
+                ?.pointForCoordinate(selectedRegion)
                 .then(setMarkerPointMini)
                 .catch(console.warn);
-            }
-          }, 300);
-        }
-      };
-      calculatePoint();
+            }, 500);
+          }
+        };
+        calculatePoint();
+      }, 600); // Delay to let mini map render
+
+      return () => clearTimeout(timeout);
     }
   }, [isFullMapVisible, onChange, selectedRegion]);
 
@@ -203,9 +201,11 @@ export default function MapSelectorScreen({
   }
 
   const handleExit = () => {
+    Keyboard.dismiss();
     setIsFullMapVisible(false);
+    //setShow!(false);
     if (isSearching) return;
-    onExit(selectedRegion);
+    if (miniMapReady) onExit!(selectedRegion);
   };
 
   return (
@@ -229,27 +229,30 @@ export default function MapSelectorScreen({
         {isSearching && markerPointMini && miniMapReady && (
           <AnimatedCircle x={markerPointMini.x} y={markerPointMini.y} />
         )}
-
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={handleDoubleTap}
-          android_ripple={{ color: "transparent" }}
-        >
-          <View />
-        </Pressable>
+        {!isFullMapVisible && (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={handleDoubleTap}
+            android_ripple={{ color: "transparent" }}
+          >
+            <View />
+          </Pressable>
+        )}
       </View>
 
-      {/* FullMap Modal */}
-      <Modal visible={isFullMapVisible} animationType="slide">
-        <View style={styles.fullContainer}>
+      {isFullMapVisible && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={handleExit}
+        >
           <MapView
             ref={fullMapRef}
             initialRegion={selectedRegion}
             style={styles.mapFull}
             onMapReady={() => setFullMapReady(true)}
-            /*  onRegionChange={updatePosition}
-            onRegionChangeComplete={updatePosition} */
-            onPress={handleMapPress}
+            onPress={handleFullMapPress}
             zoomEnabled={false}
             scrollEnabled={true}
           >
@@ -265,69 +268,69 @@ export default function MapSelectorScreen({
           <TouchableOpacity style={styles.exitButton} onPress={handleExit}>
             <Text style={styles.buttonText}>Exit</Text>
           </TouchableOpacity>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  mapWrapper: {
-    position: "relative",
-    width: "100%",
-    height: 150,
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 16,
+  buttonText: {
+    color: COLORS.color19,
+    fontSize: 16,
+    fontWeight: "700",
   },
-  mapMini: {
-    width: "100%",
-    height: "100%",
+  dot: {
+    backgroundColor: COLORS.color22,
+    borderColor: COLORS.color19,
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 12,
+    position: "absolute",
+    width: 12,
+    zIndex: 10,
+  },
+  exitButton: {
+    backgroundColor: COLORS.color16,
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    position: "absolute",
+    right: 20,
+    top: 50,
+    //zIndex: 10,
   },
   fullContainer: {
     flex: 1,
   },
+  infoText: {
+    color: COLORS.color15,
+    marginBottom: 16,
+    textAlign: "center",
+  },
   mapFull: {
-    width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
+    width: Dimensions.get("window").width,
   },
-  exitButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: "#2962FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  mapMini: {
+    height: "100%",
+    width: "100%",
+  },
+  mapWrapper: {
     borderRadius: 8,
-    zIndex: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
+    height: 150,
+    marginBottom: 16,
+    overflow: "hidden",
+    position: "relative",
+    width: "100%",
   },
   pulseRing: {
+    backgroundColor: COLORS.color39,
+    borderRadius: 20,
+    height: 40,
+    pointerEvents: "none",
     position: "absolute",
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 59, 48, 0.4)",
     zIndex: 5,
-    pointerEvents: "none",
-  },
-  infoText: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: 16,
-  },
-  dot: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "red",
-    borderWidth: 2,
-    borderColor: "#fff",
-    zIndex: 10,
   },
 });

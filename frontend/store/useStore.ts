@@ -1,25 +1,103 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { sortJobsByDate } from "../utils/sortJobs";
+import { sortTasksByDateDesc, sortRequestsByDateDesc } from "../utils/sort";
+import type { InitialState } from "@react-navigation/native";
+
+import { COLORS } from "../constants/colors";
+
+export const URGENCY_OPTIONS = [
+  { label: "Now", value: "now", color: COLORS.color7 },
+  { label: "Soon", value: "soon", color: COLORS.color8 },
+  { label: "Flexible", value: "flexible", color: COLORS.color9 },
+];
+
+export const STATUS_OPTIONS = [
+  { label: "Open", value: "open", color: COLORS.color1 }, // MUI Blue 700
+  { label: "Accepted", value: "accepted", color: COLORS.color2 }, // MUI Blue 700
+  { label: "Confirmed", value: "confirmed", color: COLORS.color3 }, // MUI Blue 700
+  { label: "In Progress", value: "in-progress", color: COLORS.color4 }, // MUI Green 700
+  { label: "Completed", value: "completed", color: COLORS.color5 }, // MUI Green 800
+  { label: "Cancelled", value: "cancelled", color: COLORS.color6 }, // MUI Red 700
+  { label: "Expired", value: "expired", color: COLORS.color7 }, // MUI Grey 700
+];
+
+export const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
+  repair: ["electrical", "plumbing", "appliance", "furniture", "other"],
+  personal_help: [
+    "dog_walking",
+    "grocery_pickup",
+    "waiting_line",
+    "elderly_help",
+    "other",
+  ],
+  delivery: ["package_delivery", "furniture_moving", "heavy_lifting", "other"],
+  other: [],
+};
+
+export const DEFAULT_REGION: Region = {
+  latitude: 37.78825,
+  longitude: -122.4324,
+  latitudeDelta: 0.01,
+  longitudeDelta: 0.01,
+};
+
+const initialProfile: ProfileType = {
+  user: {
+    id: 0,
+    username: "",
+    email: "",
+    role: "client",
+  },
+  name: "",
+  family_name: "",
+  rating: 0,
+  bio: "",
+};
 
 const initialState = {
   auth: {
     jwt: { access: null, refresh: null },
     user: null,
   },
-  workers: [],
+  taskers: [],
   clients: [],
-  jobs: [],
+  tasks: [],
   loading: false,
-  tempJobData: null,
+  tempTaskData: null,
   selectedRegion: null,
   selectedLatLng: null,
   markerPoint: null,
   miniMapReady: false,
   fullMapReady: false,
   isFullMapVisible: false,
+  taskRequests: [],
+  currentTask: null,
+  isLoggedIn: false,
+  profile: initialProfile,
+  navigationState: undefined,
 };
+
+interface Notification {
+  type: string;
+  timestamp: string;
+  payload: any;
+}
+interface ProfileType {
+  user: User; // must always be present
+  name: string;
+  family_name: string;
+  rating: number;
+  bio: string;
+
+  // tasker-only fields (optional for client)
+  tasks_done?: number;
+  eta?: string;
+  category?: Category;
+
+  // client-only fields (optional for tasker)
+  tasks_posted?: number;
+}
 
 interface User {
   id: number;
@@ -49,78 +127,124 @@ export interface LatLng {
   longitude: number;
 }
 
-export type JobFormInput = {
+export type TaskFormInput = {
   title: string;
   description: string;
   location: string;
   budget: number;
   urgency: string;
+  category: string;
+  subcategory: string;
 };
 
 type Status =
   | "open"
+  | "accepted"
   | "confirmed"
   | "in-progress"
   | "completed"
   | "cancelled"
   | "expired";
-export interface Job {
+export type Category = "repair" | "delivery" | "personal_help" | "other";
+export type Specialization = Category | `other: ${string}`;
+export type Urgency = "now" | "soon" | "flexible";
+export interface Task {
   id: number;
   title: string;
   description?: string;
   budget: number;
-  urgency: "now" | "soon" | "flexible";
+  urgency: Urgency;
   location: string;
   latitude: number;
   longitude: number;
   status: Status;
-  client_username: string;
-  worker_username: string | null;
-  worker_id: number | null;
+  client: number | null;
+  tasker: number | null;
   expires_from_feed: string | null;
   must_start_by: string | null;
   created_at: string;
   updated_at: string | null;
+  completed_at: string | null;
+  category: Category;
+  subcategory: string;
+  subtasks?: [];
 }
+/* Tasker request, when he clicks accept on any task  */
+export interface TaskRequest {
+  id: number;
+  task_id: number;
+  tasker_id: number;
+  tasker_username: string;
+  tasker_name: string;
+  tasker_family_name: string;
+  rating: number;
+  tasks_done: number;
+  category: string;
+  eta: number;
+  created_at: string;
+}
+
 interface Jwt {
   access: string | null;
   refresh: string | null;
 }
-interface Loading {
-  loading: boolean;
-}
+
 interface State {
   auth: {
     jwt: Jwt | null;
     user: User | null;
   };
-  workers: User[];
+  profile: ProfileType;
+  taskers: User[];
   clients: User[];
-  jobs: Job[];
+  tasks: Task[];
   loading: boolean;
-  tempJobData: JobFormInput | null;
+  tempTaskData: TaskFormInput | null;
   selectedRegion: Region | null;
   selectedLatLng: LatLng | null;
   markerPoint: Point | null;
   miniMapReady: boolean;
   fullMapReady: boolean;
   isFullMapVisible: boolean;
+  isLoggedIn: boolean;
+  currentTask: Task | null;
+  taskRequests: TaskRequest[];
+  isSearching: boolean;
+  notifications: Notification[];
+  appKey: number;
+  navigationState: InitialState | undefined;
+  refresh: number;
+  setRefresh: () => void;
+  setNavigationState: (state: InitialState) => void;
+  setAppKey: () => void;
+  forceReload: () => void;
+  addNotification: (notification: Notification) => void;
+  clearNotifications: () => void;
+  addRequest: (request: TaskRequest) => void;
+  clearRequest: (requestId: number) => void;
+  clearRequests: () => void;
+  setRequests: (taskRequests: TaskRequest[]) => void;
+  setCurrentTask: (task: Task | null) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
   setMarkerPoint: (point: Point | null) => void;
   setAuth: (jwt: Jwt, user: User | null) => void;
   clearAuth: () => void;
-  addWorker: (worker: User) => void;
+  addTasker: (tasker: User) => void;
   addClient: (client: User) => void;
-  addJob: (job: Job) => void;
-  removeJob: (id: number) => void;
-  setJobs: (jobs: Job[]) => void;
+  addTask: (task: Task) => void;
+  removeTask: (id: number) => void;
+  setTasks: (task: Task[]) => void;
   setLoading: (value: boolean) => void;
-  setTempJobData: (data: JobFormInput | null) => void;
+  setTempTaskData: (data: TaskFormInput | null) => void;
   setSelectedRegion: (region: Region | null) => void;
   setSelectedLatLng: (latLng: LatLng | null) => void;
+  setIsLoggedIn: (param: boolean) => void;
   resetStore: () => void;
+  setProfile: (profile: ProfileType) => void;
+  resetProfile: () => void;
+  setIsSearching: (param: boolean) => void;
 }
 
 const useStore = create<State>()(
@@ -133,17 +257,66 @@ const useStore = create<State>()(
         },
         user: null,
       },
-      workers: [],
+      taskers: [],
       clients: [],
-      jobs: [],
+      tasks: [],
       loading: false,
-      tempJobData: null,
+      tempTaskData: null,
       selectedRegion: null,
       selectedLatLng: null,
       markerPoint: null,
       miniMapReady: false,
       fullMapReady: false,
       isFullMapVisible: false,
+      isLoggedIn: false,
+      profile: initialProfile,
+      currentTask: null,
+      taskRequests: [],
+      isSearching: false,
+      notifications: [],
+      appKey: 0,
+      setAppKey: () =>
+        set((state) => {
+          console.log(
+            "Force app reload triggered. Current appKey:",
+            state.appKey,
+          );
+          return { appKey: state.appKey + 1 };
+        }),
+      forceReload: () =>
+        set((state) => ({
+          appKey: state.appKey + 1,
+        })),
+      refresh: 0,
+      setRefresh: () =>
+        set((s) => {
+          console.log("Force app reload triggered. Current appKey:", s.refresh);
+          return { refresh: s.refresh + 1 };
+        }),
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [notification, ...state.notifications],
+        })),
+      clearNotifications: () => set({ notifications: [] }),
+      setIsSearching: (param) => set({ isSearching: param }),
+      setCurrentTask: (task: Task | null) => set({ currentTask: task }),
+      addRequest: (request) =>
+        set((state) => ({
+          taskRequests: sortRequestsByDateDesc([
+            ...state.taskRequests,
+            request,
+          ]),
+        })),
+      clearRequest: (request_id: number) =>
+        set((state) => ({
+          taskRequests: sortRequestsByDateDesc(
+            state.taskRequests.filter((r) => r.id !== request_id),
+          ),
+        })),
+      clearRequests: () => set({ taskRequests: [] }),
+      setProfile: (profile: ProfileType) => set({ profile }),
+      resetProfile: () => set({ profile: initialProfile }),
+      setIsLoggedIn: (param) => set({ isLoggedIn: param }),
       setMiniMapReady: (ready) => set({ miniMapReady: ready }),
       setFullMapReady: (ready) => set({ fullMapReady: ready }),
       setIsFullMapVisible: (visible) => set({ isFullMapVisible: visible }),
@@ -153,10 +326,12 @@ const useStore = create<State>()(
           set({ selectedRegion: null });
           return;
         }
-        let latitude = Number(region.latitude.toFixed(6));
-        let longitude = Number(region.longitude.toFixed(6));
-        let latitudeDelta = region.latitudeDelta;
-        let longitudeDelta = region.longitudeDelta;
+
+        const latitude = Number(region.latitude.toFixed(6));
+        const longitude = Number(region.longitude.toFixed(6));
+        const latitudeDelta = region.latitudeDelta;
+        const longitudeDelta = region.longitudeDelta;
+
         set({
           selectedRegion: {
             latitude,
@@ -165,6 +340,7 @@ const useStore = create<State>()(
             longitudeDelta,
           },
         });
+
         set({
           selectedLatLng: {
             latitude,
@@ -172,22 +348,25 @@ const useStore = create<State>()(
           },
         });
       },
+
       setSelectedLatLng: (latLng) => set({ selectedLatLng: latLng }),
-      setTempJobData: (data) => set({ tempJobData: data }),
+      setTempTaskData: (data) => set({ tempTaskData: data }),
       setLoading: (value: boolean) => set({ loading: value }),
       setAuth: (jwt: Jwt, user: User | null) => set({ auth: { jwt, user } }),
+
       clearAuth: () =>
         set((state) => ({
           auth: {
             jwt: { access: null, refresh: null },
-            user: state.auth.user, // keep user info if you want
+            user: null,
           },
         })),
-      addWorker: (worker: User) =>
+
+      addTasker: (tasker: User) =>
         set((state) => {
-          const exists = state.workers.some((w) => w.id === worker.id);
+          const exists = state.taskers.some((t) => t.id === tasker.id);
           if (exists) return {};
-          return { workers: [...state.workers, worker] };
+          return { taskers: [...state.taskers, tasker] };
         }),
 
       addClient: (client: User) =>
@@ -196,24 +375,45 @@ const useStore = create<State>()(
           if (exists) return {};
           return { clients: [...state.clients, client] };
         }),
-      addJob: (job: Job) =>
+
+      addTask: (task: Task) =>
         set((state) => {
-          const normalizedJob = { ...job, id: Number(job.id) };
-          const exists = state.jobs.some((j) => j.id === normalizedJob.id);
+          const normalizedTask = { ...task, id: Number(task.id) };
+          const exists = state.tasks.some((t) => t.id === normalizedTask.id);
           if (exists) return {};
-          return { jobs: sortJobsByDate([...state.jobs, normalizedJob]) };
+          return {
+            tasks: sortTasksByDateDesc([...state.tasks, normalizedTask]),
+          };
         }),
-      removeJob: (id: number) =>
+
+      removeTask: (id: number) =>
         set((state) => ({
-          jobs: state.jobs.filter((job) => job.id !== Number(id)),
+          tasks: state.tasks.filter((task) => task.id !== Number(id)),
         })),
-      setJobs: (jobs: Job[]) =>
+
+      setTasks: (tasks: Task[]) =>
         set({
-          jobs: sortJobsByDate(
-            jobs.map((job) => ({ ...job, id: Number(job.id) })),
+          tasks: sortTasksByDateDesc(
+            tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-      resetStore: () => set({ ...initialState }),
+      setRequests: (taskRequests: TaskRequest[]) =>
+        set({
+          taskRequests: sortRequestsByDateDesc(
+            taskRequests.map((request) => ({
+              ...request,
+              id: Number(request.id),
+            })),
+          ),
+        }),
+      resetStore: () =>
+        set({
+          ...initialState,
+          profile: initialProfile,
+        }),
+      navigationState: undefined,
+      setNavigationState: (state: InitialState) =>
+        set({ navigationState: state }),
     }),
     {
       name: "my-app-storage",
@@ -229,6 +429,13 @@ const useStore = create<State>()(
           await AsyncStorage.removeItem(key);
         },
       },
+      /*  merge: (persistedState, currentState) => {
+    return {
+      ...currentState,
+      ...(persistedState as any),
+      profile: (persistedState as any)?.profile ?? initialProfile,
+    };
+  }, */
     },
   ),
 );

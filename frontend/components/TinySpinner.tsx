@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, Easing, StyleSheet } from "react-native";
 
+import { COLORS } from "../constants/colors";
+
 const TinySpinner = ({ message = "Loading…" }: { message?: string }) => {
   const spinAnim = useRef(new Animated.Value(0)).current;
 
@@ -30,23 +32,21 @@ const TinySpinner = ({ message = "Loading…" }: { message?: string }) => {
 
 const styles = StyleSheet.create({
   loadingContainer: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
+    flexDirection: "row",
   },
   loadingText: {
-    marginLeft: 8,
+    color: COLORS.color15,
     fontSize: 13,
-    color: "#666",
+    marginLeft: 8,
   },
   spinner: {
-    width: 12,
-    height: 12,
-    borderWidth: 2,
-    borderColor: "#2962FF",
-    borderTopColor: "transparent",
+    borderColor: COLORS.color16,
     borderRadius: 6,
+    borderTopColor: "transparent",
+    borderWidth: 2,
+    height: 12,
+    width: 12,
   },
 });
 

@@ -7,22 +7,22 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import useStore from "./store/useStore";
 import Toast from "react-native-toast-message";
-import GlobalLoading from "./utils/GlobalLoading";
-import ToastConfig from "./config/ToastConfig";
-import { SPACING } from "./utils/spacings";
-import { useWindowDimensions } from "react-native";
+
+import GlobalLoading from "./GlobalLoading";
+import ToastConfig from "../config/ToastConfig";
+import useStore from "../store/useStore";
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
   const loading = useStore((state) => state.loading);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {children}
-        <Toast config={ToastConfig} visibilityTime={4000} />
+        <Toast config={ToastConfig} visibilityTime={3000} />
         <GlobalLoading visible={loading} />
       </View>
     </SafeAreaView>
@@ -30,15 +30,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-    paddingHorizontal: SPACING.md,
-  },
   container: {
+    backgroundColor: COLORS.color19,
     flex: 1,
-    backgroundColor: "#fff",
     paddingVertical: SPACING.sm,
+  },
+  safeArea: {
+    backgroundColor: COLORS.color19,
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
 });

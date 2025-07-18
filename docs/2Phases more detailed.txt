@@ -219,3 +219,201 @@ STRIPE is used for:
 - Escrow payment hold (when client accepts bid)
 - Notification/payment after job completion
 - Payout to worker
+
+
+MORE ON STRIPE PAYMENT SYSTEM WITH CATEGORIES 
+
+Perfect — let’s **pack everything into a clean task flow structure** for your **job feed categories**, aligned with **Stripe’s 1-payment model**.
+
+---
+
+## 📲 Your Real-Time Job App: Task Categories & Stripe Flows
+
+Let’s break this into **3 categories** you can add to your **Job Feed UI**, and show exactly how each handles **payments** using **1 Stripe integration**:
+
+---
+
+### 🛠️ 1. **Fix & Repair**
+
+**Example jobs:** electrician, appliance repair, plumbing
+
+**🧾 Category Label:** `Fix & Repair`
+**💳 Stripe Flow:**
+
+* Client sets **base price** (e.g. \$30/hour or \$40 flat)
+* Tasker arrives, inspects
+* If materials are needed (extra wire, parts, etc):
+
+  * Tasker taps **"Add cost"**, inputs amount
+  * Client gets **in-app confirmation** (e.g., +\$15)
+  * Total is **charged once** via Stripe after completion
+
+**✅ Requires optional “add cost” modal**
+
+---
+
+### 🧤 2. **Personal Help**
+
+**Example jobs:** dog walking, grocery pickup, wait in line, elderly help
+
+**🧾 Category Label:** `Personal Help`
+**💳 Stripe Flow:**
+
+* Client sets **final budget** when posting (e.g. \$8 for dog walk, \$12 grocery pickup)
+* Tasker accepts
+* Stripe **pre-authorizes** amount
+* Charge is finalized after job
+
+**✅ Fully covered by 1 payment**
+
+Optional: Grocery pickup could include a **“list” or “store name”** field.
+
+---
+
+### 📦 3. **Move & Deliver**
+
+**Example jobs:** package delivery, light moving, object pickup/dropoff
+
+**🧾 Category Label:** `Move & Deliver`
+**💳 Stripe Flow:**
+
+* Client sets fixed fee (e.g. \$10 small box, \$25 furniture)
+* Tasker accepts
+* Stripe payment processed as **flat fee**
+
+Optional: Let user select “I will help lift” vs “Tasker brings help” to change price tier.
+
+
+## 🗂 Example Feed Categories in UI:
+
+| Icon | Label          | Internal Tag |
+| ---- | -------------- | ------------ |
+| 🔧   | Fix & Repair   | `repair`     |
+| 🐾   | Personal Help  | `personal`   |
+| 📦   | Move & Deliver | `delivery`   |
+
+---
+Sure! Here's a clear categorization of your **task categories and subtasks** paired with the **payment types** and how you can handle payments with exactly **1 Stripe payment per task**:
+
+---
+
+## 🗂 Task Categories, Subtasks & Payment Types
+
+| **Category**       | **Subtasks (Examples)**                                          | **Payment Type**              | **Stripe Flow Details**                                                                                                                                                                           |
+| ------------------ | ---------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fix & Repair**   | Electrical, Plumbing, Appliance Repair, Furniture Assembly       | Base price + Optional Add-ons | - Client pays a base amount upfront (e.g., labor)  <br> - Tasker can add extra costs (e.g., parts) <br> - Client approves extra charges <br> - Single Stripe PaymentIntent updated before capture |
+| **Personal Help**  | Dog Walking, Grocery Pickup, Waiting in Line, Elderly Assistance | Fixed Price                   | - Client sets total budget upfront <br> - Tasker accepts and completes job <br> - Stripe captures payment once after completion                                                                   |
+| **Move & Delivery** | Package Delivery, Furniture Moving, Heavy Lifting                | Fixed or Tiered Price         | - Client pays a flat or tiered fee based on service <br> - Tasker accepts job <br> - Stripe processes single fixed payment                                                                        |
+
+
+
+PHASE 5
+⸻
+
+✅ Final Task Flow (Simplified)
+
+🟡 1. OPEN
+ • Task is visible to nearby taskers.
+ • Timer (e.g. 5 minutes) counts down.
+ • First tasker to accept → goes to client for approval.
+ • When client presses “Accept”, move to:
+
+⸻
+
+🔵 2. IN_PROGRESS
+ • Task is now live.
+ • Tasker sees:
+ • 📍 Client’s address & map
+ • 🕒 Arrival timer (e.g. 15 min, 30 min, etc.)
+ • 🚫 No client’s phone number
+ • ✅ Call button (uses masked number)
+ • 💬 Optional chat (filtered, can’t send phones, names, or URLs)
+ • Task must begin within arrival window.
+ • If tasker doesn’t arrive in time (GPS & timer check):
+ • ❌ Task is auto-cancelled
+ • 🔻 Tasker is penalized (karma/rating)
+ • 💰 Client is auto-refunded
+
+⸻
+
+🔵 While IN_PROGRESS:
+
+Once tasker enters GPS radius (e.g. within 100–300 meters):
+ • Either:
+ • ✅ System auto-starts work timer
+ • or tasker taps “Start” (if you allow a button)
+
+Chat & masked call can now unlock fully.
+
+⸻
+
+🔵 Task Completion
+ • Tasker presses “Finish” (if using buttons), or task ends automatically after estimated time.
+ • Client has a short time (e.g. 30 mins) to:
+ • ✅ Confirm task done
+ • ❌ Dispute (upload optional proof)
+ • If no action → system auto-completes & pays tasker.
+
+⸻
+
+🚫 Security Features
+
+🔐 Communication Rules
+ • ✅ Call via masked number (Twilio or similar).
+ • ✅ Filter chat messages:
+ • Block phone numbers (regex detect: 07X XXX XXX / +373…)
+ • Block URLs
+ • Block names (optional — detect capitalized words)
+ • Optional: no copy/paste
+
+🚫 No Chat Before Start
+ • Chat is locked until:
+ • Tasker enters GPS radius
+ • OR taps “Start Job” (if you want a button)
+
+⸻
+
+💰 Payment Handling (Stripe)
+ • 💳 When client accepts tasker:
+ • Use Stripe SetupIntent to pre-authorize payment.
+ • 💸 When job ends:
+ • Use PaymentIntent.capture() to charge.
+ • Pay tasker (70%), keep 30% commission.
+
+⸻
+
+🛡️ Task Failures
+
+Case System Action
+Tasker no-show Auto-cancel, refund client, penalty for tasker
+Tasker late Optional: Allow 1-time preset chat (“I’m 5 min late”) — client can cancel
+Tasker & client finish Payment released, rating exchange
+Client disputes Goes to DISPUTED (optional review team or auto decision logic)
+
+
+⸻
+
+✅ Summary: Your System in 3 States
+
+Status Who Sees What Transition Triggers
+OPEN Taskers see task Client accepts tasker
+IN_PROGRESS Tasker gets map, timer, chat/call (limited) Timer & GPS tracking
+CANCELLED or COMPLETED Task ends No-show, manual finish, or timeout
+
+
+⸻
+
+➕ Optional Future Upgrades
+ • ✅ Karma system → rank taskers secretly.
+ • ✅ Auto-payout after COMPLETED.
+ • ✅ Verified GPS screenshot at start & end.
+ • ✅ Weekly/monthly summary reports for taskers.
+ • ✅ Dynamic tasker pricing (later phase).
+
+⸻
+
+Would you like a visual flowchart diagram of this, or a basic Django model + logic structure to match it?
+
+Or maybe help writing the chat filter logic to block numbers and names?
+
+Let me know what’s next!

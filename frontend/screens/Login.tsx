@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,33 +7,36 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  InteractionManager,
   Keyboard,
 } from "react-native";
+import { useForm, Controller } from "react-hook-form";
+import Toast from "react-native-toast-message";
+import { yupResolver } from "@hookform/resolvers/yup";
+
 import api from "../services/api";
 import useStore from "../store/useStore";
 import { loginSchema } from "../validation/validationSchema";
-import { useForm, Controller } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import Toast from "react-native-toast-message";
 import { withTimeout } from "../utils/withTimeout";
-import { SPACING } from "../utils/spacings";
+import { SPACING } from "../constants/dimensions";
+import { COLORS } from "../constants/colors";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useFocusEffect } from "@react-navigation/native";
+import TermsAndConditions from "./TermsAndConditions";
 
 export default function LoginScreen({ navigation }: any) {
-  const auth = useStore((state) => state.auth);
-  const { setAuth, setLoading } = useStore.getState();
+  const { setAuth, setLoading, setIsLoggedIn } = useStore.getState();
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
 
   useEffect(() => {
+    setIsLoggedIn(false);
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
       scrollRef.current?.scrollToPosition(0, 0, false);
+      reset();
     };
   }, []);
 
@@ -59,17 +62,16 @@ export default function LoginScreen({ navigation }: any) {
           username: data.username,
           password: data.password,
         }),
-        3000,
+        5000,
         "Request timed out. Please try again",
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };
       const user = res.data.user;
       setAuth(jwt, user);
-
-      navigation.replace(
-        user.role === "client" ? "Search a tasker" : "Task feed",
-      );
+      setLoading(false);
+      setIsLoggedIn(true);
+      setModalVisible(true);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -95,7 +97,7 @@ export default function LoginScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <Image source={require("../assets/icon.png")} style={styles.logo} />
-        <Text style={styles.title}>Your App Name</Text>
+        <Text style={styles.title}>Taskoon</Text>
 
         {/* Username */}
         <Controller
@@ -112,8 +114,8 @@ export default function LoginScreen({ navigation }: any) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholderTextColor="#999"
-                selectionColor="#2962FF"
+                placeholderTextColor={COLORS.color25}
+                selectionColor={COLORS.color16}
               />
               {errors.username && (
                 <Text style={styles.errorText}>{errors.username.message}</Text>
@@ -135,8 +137,8 @@ export default function LoginScreen({ navigation }: any) {
                 value={value}
                 onChangeText={onChange}
                 secureTextEntry
-                placeholderTextColor="#999"
-                selectionColor="#2962FF"
+                placeholderTextColor={COLORS.color25}
+                selectionColor={COLORS.color16}
               />
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password.message}</Text>
@@ -155,105 +157,102 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Terms */}
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Terms and Conditions", "Display your terms here")
-          }
-          style={{ alignSelf: "center", marginTop: 10 }}
-        >
-          <Text style={styles.terms}>Terms and Conditions</Text>
-        </TouchableOpacity>
+        {isLoggedIn && (
+          <TermsAndConditions
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            handleLogin={handleLogin}
+            navigation={navigation}
+          />
+        )}
       </KeyboardAwareScrollView>
-      {/*  </ScrollView> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: SPACING.md,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "stretch",
-    paddingVertical: SPACING.md,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
-    alignSelf: "center",
-    resizeMode: "contain",
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#212121",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BDBDBD",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: "#212121",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  inputError: {
-    borderColor: "#D32F2F",
-  },
-  errorText: {
-    color: "#D32F2F",
-    marginTop: -12,
-    marginBottom: 12,
-    fontSize: 13,
-  },
-  buttonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 8,
-    marginBottom: 24,
-    gap: 12,
-  },
   button: {
+    alignItems: "center",
+    borderRadius: 8,
+    elevation: 3,
     flex: 1,
     height: 50,
-    borderRadius: 8,
     justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
+    shadowColor: COLORS.color21,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  loginButton: {
-    backgroundColor: "#2962FF",
-  },
   buttonText: {
-    color: "white",
-    fontWeight: "700",
+    color: COLORS.color19,
     fontSize: 16,
+    fontWeight: "700",
+  },
+  buttonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+    marginBottom: 24,
+    marginTop: 8,
+    width: "100%",
+  },
+  container: {
+    backgroundColor: COLORS.color19,
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+  },
+  errorText: {
+    color: COLORS.color5,
+    fontSize: 13,
+    marginBottom: 12,
+    marginTop: -12,
+  },
+  input: {
+    backgroundColor: COLORS.color19,
+    borderColor: COLORS.color26,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: COLORS.color27,
+    elevation: 2,
+    fontSize: 16,
+    height: 50,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    shadowColor: COLORS.color21,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    width: "100%",
+  },
+  inputError: {
+    borderColor: COLORS.color5,
+  },
+  loginButton: {
+    backgroundColor: COLORS.color16,
+  },
+  logo: {
+    alignSelf: "center",
+    height: 100,
+    marginBottom: 20,
+    resizeMode: "contain",
+    width: 100,
+  },
+  scrollContent: {
+    alignItems: "stretch",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: SPACING.md,
   },
   terms: {
+    color: COLORS.color28,
     fontSize: 12,
-    color: "#757575",
     textDecorationLine: "underline",
+  },
+  title: {
+    color: COLORS.color27,
+    fontSize: 30,
+    fontWeight: "700",
+    marginBottom: 32,
+    textAlign: "center",
   },
 });
