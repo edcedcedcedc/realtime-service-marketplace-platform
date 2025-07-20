@@ -1,6 +1,6 @@
 from .views import (
     accept_task_request_as_client,
-    accept_task_request_as_tasker,
+    initiate_task_request_as_tasker,
     accept_terms,
     all_tasks,
     cancel_all_task_requests,
@@ -58,9 +58,9 @@ urlpatterns = [
     # TASK REQUESTS
     ########################################
     path(
-        "api/accept-task-request-as-tasker/",
-        accept_task_request_as_tasker,
-        name="accept-task-request-as-tasker",
+        "api/initiate-task-request-as-tasker/",
+        initiate_task_request_as_tasker,
+        name="initiate-task-request-as-tasker",
     ),
     path(
         "api/accept-task-request-as-client/",

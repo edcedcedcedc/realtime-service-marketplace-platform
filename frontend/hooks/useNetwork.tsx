@@ -4,7 +4,7 @@ import useStore from "../store/useStore";
 const IPV4 = Constants.expoConfig!.extra!.IPV4;
 export const HTTP_BASE_URL = `http://${IPV4}:8000/api/`;
 const WS_TASKFEED_URL = `ws://${IPV4}:8000/ws/taskfeed/`;
-const WS_TASKREQUEST_URL = `ws://${IPV4}:8000/ws/taskrequests/`;
+const WS_TASKREQUEST_URL = `ws://${IPV4}:8000/ws/taskrequest/`;
 const WS_NOTIFICATION_URL = `ws://${IPV4}:8000/ws/notifications/`;
 
 export function useNetwork() {

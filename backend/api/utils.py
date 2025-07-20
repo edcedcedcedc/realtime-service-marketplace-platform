@@ -62,45 +62,13 @@ def broadcast_task_requests(task):
     )
 
 
-def broadcast_task_request_new(task_request, client_id):
+def broadcast_task_request(subtype: str, action: any, task_request):
     payload = TaskRequestSerializer(task_request).data
-    payload["client_id"] = client_id
-    payload["action"] = {"tasker": "", "client": ""}
     group_name = f"taskrequest_{payload["task_id"]}"
+    payload["action"] = action
     message = {
-        "type": "taskrequest:new",
+        "type": f"taskrequest:{subtype}",
         "payload": payload,
-    }
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        group_name,
-        {
-            "type": "update",
-            "data": message,
-        },
-    )
-
-
-def broadcast_task_request_deleted(
-    subtype: str,
-    action: any,
-    task_id: any,
-    tasker_id: any,
-    client_id: any,
-    task_request_id: any,
-):
-    group_name = f"taskrequest_{task_id}"
-    message = {
-        "type": subtype,
-        "payload": {
-            "action": action,
-            "task_id": task_id,
-            "tasker_id": tasker_id,
-            "client_id": client_id,
-            "task_request_id": task_request_id,
-            # task_request_id is the id of the actual request emmited by the server and
-            # then client renders that in the UI using it as an id for the FlatList within InspectRequestModal
-        },
     }
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(

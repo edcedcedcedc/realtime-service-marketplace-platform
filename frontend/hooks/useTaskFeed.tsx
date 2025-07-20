@@ -71,14 +71,39 @@ export function useTaskFeed() {
       removeTask(id.id);
     };
 
+    const onSocketOpen = () => {
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Websocket connected!",
+          text2: `useTaskFeed`,
+        });
+      }, 2500);
+    };
+
+    const onSocketClose = () => {
+      setTimeout(() => {
+        Toast.show({
+          type: "info",
+          text1: "Websocket connection close !",
+          text2: `UseTaskFeed`,
+        });
+      }, 2500);
+    };
+
+    // === Register Events ===
+    taskFeedSocket.on("socket:onopen", onSocketOpen);
+    taskFeedSocket.on("socket:onclose", onSocketClose);
     taskFeedSocket.on("task:new", handleNewTask);
     taskFeedSocket.on("task:delete", handleDeleteTask);
 
     return () => {
+      taskFeedSocket.off("socket:onopen", onSocketOpen);
+      taskFeedSocket.off("socket:onclose", onSocketClose);
       taskFeedSocket.off("task:new", handleNewTask);
       taskFeedSocket.off("task:delete", handleDeleteTask);
       taskFeedSocket.setIsLoggedIn(false);
-      taskFeedSocket.disconnect("unmounted");
+      taskFeedSocket.disconnect("useTaskFeed unmounted");
     };
   }, [refresh, isLoggedIn]);
 }

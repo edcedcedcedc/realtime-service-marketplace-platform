@@ -67,21 +67,21 @@ type ServerMessage =
         action: { tasker: string | ""; client: string | "" };
       };
     }
-    | {
+  | {
       type: "taskrequest:confirmed-by-tasker";
       payload: {
         task_id: number;
         tasker_id: number;
         client_id: number;
         task_request_id: number;
-        action: { tasker: "await_client_initiate_payment"; 
-          client: "initiate_payment_and_delete_modal" };
+        action: {
+          tasker: "await_client_initiate_payment";
+          client: "initiate_payment_and_delete_modal";
+        };
       };
     };
 
-
 type MessageHandler = (payload: any) => void;
-
 
 export class SocketManager {
   private socket: WebSocket | null = null;
@@ -93,7 +93,7 @@ export class SocketManager {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 3;
   private additionalReconnectAttempts = 0;
-  private maxAdditionalReconnectAttempts = 3; 
+  private maxAdditionalReconnectAttempts = 3;
   private reconnectDelayMs = 1000;
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -106,7 +106,10 @@ export class SocketManager {
 
   connect(url: string, debugName = "default", pollingFn?: () => void) {
     if (this.socket) return;
-    if(!this.isLoggedIn) return;
+    if (!this.isLoggedIn) {
+      console.warn("Not logged in if(!this.isLoggedIn), returning!");
+      return;
+    }
     this.manuallyDisconnected = false;
     this.url = url;
     this.debugName = debugName;
@@ -115,20 +118,12 @@ export class SocketManager {
   }
 
   private _connect() {
-    if(!this.isLoggedIn || this.manuallyDisconnected) return;
+    if (!this.isLoggedIn || this.manuallyDisconnected) return;
 
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {
       console.log(`[${this.debugName}] WebSocket connected to`, this.url);
-      setTimeout(()=>{
-        Toast.show({
-        type: "success",
-        text1: "Websocket connected!",
-        text2: `${this.debugName}`,
-      });
-      },3000)
-
       this.reconnectAttempts = 0;
       this.pollingAttempts = 0; // reset polling attempts on successful connection
       this._clearReconnectTimeout();
@@ -151,13 +146,6 @@ export class SocketManager {
 
     this.socket.onclose = () => {
       console.log(`[${this.debugName}] WebSocket disconnected from`, this.url);
-      setTimeout(()=>{
-        Toast.show({
-        type: "error",
-        text1: "Websocket connection close!",
-        text2: `Task feed, server error, ${this.debugName}`,
-      });
-      },)
       this.emit("socket:onclose", null);
       this._tryReconnectOrPoll();
     };
@@ -173,24 +161,30 @@ export class SocketManager {
 
   private _tryReconnectOrPoll() {
     if (this.manuallyDisconnected) {
-    console.log(`[${this.debugName}] Skipping reconnect — manually disconnected`);
-    return;
-  }
+      console.log(
+        `[${this.debugName}] Skipping reconnect — manually disconnected`,
+      );
+      return;
+    }
 
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelayMs * this.reconnectAttempts;
-      console.log(`[${this.debugName}] Attempting reconnect #${this.reconnectAttempts} in ${delay}ms`);
+      console.log(
+        `[${this.debugName}] Attempting reconnect [${this.debugName}] #${this.reconnectAttempts} in ${delay}ms`,
+      );
       setTimeout(() => {
         Toast.show({
           type: "info",
           text1: `Attempting reconnect #${this.reconnectAttempts} in ${delay}ms`,
           text2: "Socket manager",
         });
-      }, 100);
+      }, 40);
       this.reconnectTimeoutId = setTimeout(() => this._connect(), delay);
     } else if (this.pollingFn && !this.pollingIntervalId) {
-      console.log(`[${this.debugName}] Max reconnect attempts reached. Starting polling fallback.`);
+      console.log(
+        `[${this.debugName}] Max reconnect attempts reached. Starting polling fallback.`,
+      );
       this._startPolling();
     }
   }
@@ -202,7 +196,9 @@ export class SocketManager {
     this.pollingAttempts = 0; // reset before starting polling
     this.pollingIntervalId = setInterval(() => {
       if (this.pollingAttempts >= this.maxPollingAttempts) {
-        console.log(`[${this.debugName}] Max polling attempts reached. Stopping polling.`);
+        console.log(
+          `[${this.debugName}] Max polling attempts reached. Stopping polling.`,
+        );
         this._stopPolling();
         return;
       }
@@ -226,14 +222,14 @@ export class SocketManager {
   }
 
   setIsLoggedIn(state: boolean) {
-  this.isLoggedIn = state;
+    this.isLoggedIn = state;
   }
 
-  disconnect(msg: string) {
+  disconnect(msg?: string) {
     this._clearReconnectTimeout();
     this._stopPolling();
     this.socket?.close();
-    this.setIsLoggedIn(false)
+    this.setIsLoggedIn(false);
     this.manuallyDisconnected = true;
     this.socket = null;
     this.listeners = {};
@@ -241,9 +237,9 @@ export class SocketManager {
       Toast.show({
         type: "info",
         text1: `Websocket manually disconnected,${msg} !`,
-        text2: `Task feed ${this.debugName}`,
+        text2: `${this.debugName}`,
       });
-    }, 100);
+    }, 10);
   }
 
   on(event: ServerMessage["type"], handler: MessageHandler) {
