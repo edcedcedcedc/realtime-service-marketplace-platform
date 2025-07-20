@@ -32,6 +32,7 @@ export default function LoginScreen({ navigation }: any) {
 
   useEffect(() => {
     setIsLoggedIn(false);
+    Toast.hide();
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
@@ -63,7 +64,7 @@ export default function LoginScreen({ navigation }: any) {
           password: data.password,
         }),
         5000,
-        "Request timed out. Please try again",
+        "Request timed out. Please try again"
       );
 
       const jwt = { access: res.data.access, refresh: res.data.refresh };

@@ -35,15 +35,16 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   const [visibleTaskIds, setVisibleTaskIds] = useState<Set<number | string>>(
     new Set()
   );
-  const isDialog = useStore((state) => state.isDialog);
-  const setIsDialog = useStore().setIsDialog;
+  const isInitDialog = useStore((state) => state.isInitDialog);
+  const isConfirmDialog = useStore((state) => state.isConfirmDialog);
+  const setIsInitDialog = useStore().setIsInitDialog;
 
   const setCurrentTaskId = useStore((state) => state.setCurrentTaskId);
   const currentTaskId = useStore((state) => state.currentTaskId);
 
   const [cancelDisabled, setCancelDisabled] = useState(false);
 
-  const ref: any = useRef(null);
+  const ref: any = useRef(null); //delay the cancel button in init modal for tasker
 
   useTaskFeed();
   useTaskRequest();
@@ -114,7 +115,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   }, [currentTempTaskId]); */
 
   const apiOnInit = async (task_id: number) => {
-    setIsDialog(true);
+    setIsInitDialog(true);
     setCurrentTaskId(task_id);
     setCancelDisabled(true);
 
@@ -139,7 +140,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
 
   const apiOnAutoCancel = async () => {
     if (!currentTaskId) {
-      setIsDialog(false);
+      setIsInitDialog(false);
       return;
     }
     try {
@@ -154,7 +155,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         });
       }, 3000);
       setCurrentTaskId(null);
-      setIsDialog(false);
+      setIsInitDialog(false);
     } catch (error) {
       Toast.show({
         type: "error",
@@ -267,7 +268,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         }}
       />
       <IOSModal
-        visible={isDialog}
+        visible={isInitDialog}
         isShowConfirm={false}
         cancelDisabled={cancelDisabled}
         onClose={apiOnAutoCancel}
@@ -277,7 +278,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         }}
         title="Initiate task"
         message="Waiting for client to respond..."
-        duration={10}
+        duration={30}
       />
     </View>
   );

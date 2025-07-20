@@ -476,10 +476,7 @@ def accept_task_request_as_client(request):
                     "tasker": "close_modal",
                     "client": "delete_tasker_from_taskrequests",
                 },
-                task_id=task.id,
-                tasker_id=other_request.tasker.id,
-                client_id=request.user.id,
-                task_request_id=other_request.id,
+                task_request=other_request,
             )
             other_request.delete()
         except Exception as e:
@@ -487,7 +484,7 @@ def accept_task_request_as_client(request):
                 f"[!] Failed to broadcast/delete request for tasker {other_request.tasker.id}: {str(e)}"
             )
 
-    notify_user(
+    """     notify_user(
         tasker.id,
         "notify:taskrequest-request-to-confirm",
         {
@@ -496,21 +493,18 @@ def accept_task_request_as_client(request):
             "client_id": request.user.id,
             "action": "tasker_needs_to_confirm",
         },
-    )
+    ) """
 
     broadcast_task_request(
         subtype="accepted-by-client",
         action={
-            "tasker": "needs_to_confirm",
-            "client": "await_tasker_confirmation",
+            "tasker": "payment_system",
+            "client": "payment_system",
         },
-        task_id=task.id,
-        tasker_id=tasker.id,
-        client_id=request.user.id,
-        task_request_id=task_request.id,
+        task_request=task_request,
     )
 
-    notify_user(
+    """    notify_user(
         request.user.id,
         "notify:taskrequest-request-to-confirm",
         {
@@ -519,7 +513,7 @@ def accept_task_request_as_client(request):
             "tasker_id": tasker.id,
             "action": "await_tasker_confirmation",
         },
-    )
+    ) """
 
     serializer = TaskSerializer(task, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)

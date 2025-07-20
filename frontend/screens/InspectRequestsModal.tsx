@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   Button,
-  Alert,
 } from "react-native";
 import { COLORS } from "../constants/colors";
 import useStore from "../store/useStore";
@@ -26,8 +25,6 @@ type InspectRequestsModalProps = {
 export default function InspectRequestsModal({
   visible,
   onClose,
-  onAccept,
-  onDecline,
 }: InspectRequestsModalProps) {
   const requests = useStore((state) => state.taskRequests);
   const deleteTaskRequest = useStore().deleteTaskRequest;
@@ -59,7 +56,7 @@ export default function InspectRequestsModal({
 
   const handleCancelTaskRequestClient = async (
     taskerId: number,
-    taskId: number,
+    taskId: number
   ) => {
     try {
       const res = await api.post("cancel-task-request-as-client/", {
@@ -122,7 +119,7 @@ export default function InspectRequestsModal({
                       onPress={() =>
                         handleCancelTaskRequestClient(
                           item.tasker_id,
-                          item.task_id,
+                          item.task_id
                         )
                       }
                     />

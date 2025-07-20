@@ -12,12 +12,13 @@ export function useTaskRequest() {
   const addTaskRequest = useStore((state) => state.addTaskRequest);
   const deleteTaskRequest = useStore((state) => state.deleteTaskRequest);
   const deleteTaskRequests = useStore((state) => state.deleteTaskRequests);
-  const setIsDialog = useStore().setIsDialog;
+  const setIsInitDialog = useStore().setIsInitDialog;
 
   const currentTaskId = useStore((state) => state.currentTaskId);
   const currentUserId = useStore.getState().auth.user?.id;
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const refresh = useStore((state) => state.refresh);
+  const setIsConfirmDialog = useStore().setIsConfirmDialog;
 
   useEffect(() => {
     if (!currentTaskId || !isLoggedIn) return;
@@ -59,7 +60,39 @@ export function useTaskRequest() {
         payload.tasker_id === currentUserId &&
         payload.action?.tasker === "close_modal"
       ) {
-        setIsDialog(false);
+        setIsInitDialog(false);
+        Toast.show({
+          type: "error",
+          text1: "Client cancelled the request",
+          text2: `Task Request id ${payload.id}`,
+        });
+      }
+      if (payload.client_id === currentUserId) {
+        deleteTaskRequest(payload.id);
+      }
+    };
+
+    const onAcceptedByClient = (payload: TaskRequest) => {
+      if (
+        payload.tasker_id === currentUserId &&
+        payload.action?.tasker === "close_modal"
+      ) {
+        setIsInitDialog(false);
+        //do something else
+        Toast.show({
+          type: "error",
+          text1: "Client cancelled the request",
+          text2: `Task Request id ${payload.id}`,
+        });
+      }
+    };
+
+    const onConfirmedByTasker = (payload: TaskRequest) => {
+      if (
+        payload.tasker_id === currentUserId &&
+        payload.action?.tasker === "close_modal"
+      ) {
+        setIsInitDialog(false);
         Toast.show({
           type: "error",
           text1: "Client cancelled the request",
@@ -100,10 +133,12 @@ export function useTaskRequest() {
       "taskrequest:cancelled-by-client",
       onCancelledByClient
     );
+    taskRequestsSocket.on("taskrequest:accepted-by-client", onAcceptedByClient);
 
-    // You can expand the following handlers as needed
-    taskRequestsSocket.on("taskrequest:accepted-by-client", () => {});
-    taskRequestsSocket.on("taskrequest:confirmed-by-tasker", () => {});
+    /* taskRequestsSocket.on(
+      "taskrequest:confirmed-by-tasker",
+      onConfirmedByTasker
+    ); */
 
     return () => {
       taskRequestsSocket.off("socket:onopen", onSocketOpen);
@@ -119,6 +154,10 @@ export function useTaskRequest() {
       taskRequestsSocket.off(
         "taskrequest:cancelled-by-client",
         onCancelledByClient
+      );
+      taskRequestsSocket.off(
+        "taskrequest:accepted-by-client",
+        onAcceptedByClient
       );
 
       taskRequestsSocket.disconnect("useTaskRequest unmount");

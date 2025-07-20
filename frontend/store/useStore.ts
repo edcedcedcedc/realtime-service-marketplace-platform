@@ -213,7 +213,8 @@ interface State {
   isLoggedIn: boolean;
   taskRequests: TaskRequest[];
   isSearching: boolean;
-  isDialog: boolean;
+  isInitDialog: boolean; //tasker
+  isConfirmDialog: boolean; //tasker
   notifications: Notification[];
   appKey: number;
   navigationState: InitialState | undefined;
@@ -221,10 +222,10 @@ interface State {
 
   currentTaskId: number | null;
   currentTempTaskId: number | null;
-
+  setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
   setCurrentTempTaskId: (param: number | null) => void;
   setRefresh: () => void;
-  setIsDialog: (param: boolean) => void;
+  setIsInitDialog: (param: boolean) => void;
   setNavigationState: (state: InitialState) => void;
   setAppKey: () => void;
   forceReload: () => void;
@@ -285,13 +286,13 @@ const useStore = create<State>()(
       isSearching: false,
       notifications: [],
       appKey: 0,
-      isDialog: false,
-  
+      isInitDialog: false,
+      isConfirmDialog: false,
       currentTempTaskId: null,
       setCurrentTempTaskId: (id: number | null) =>
         set({ currentTempTaskId: id }),
-     
-      setIsDialog: (param) => set({ isDialog: param }),
+      setIsConfirmDialog: (init, confirm) => set({ isConfirmDialog: init, isInitDialog: confirm }),
+      setIsInitDialog: (param) => set({ isInitDialog: param }),
       setAppKey: () =>
         set((state) => {
           console.log(
