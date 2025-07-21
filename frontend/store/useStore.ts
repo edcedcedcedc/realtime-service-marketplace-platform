@@ -72,10 +72,12 @@ const initialState = {
   fullMapReady: false,
   isFullMapVisible: false,
   taskRequests: [],
-  currentTask: null,
+  currentTaskId: null,
+  currentTempTaskId: null,
   isLoggedIn: false,
   profile: initialProfile,
   navigationState: undefined,
+  isDialog: false,
 };
 
 interface Notification {
@@ -169,19 +171,21 @@ export interface Task {
   subcategory: string;
   subtasks?: [];
 }
-/* Tasker request, when he clicks accept on any task  */
+/* Tasker request, when he clicks init on any task  */
 export interface TaskRequest {
   id: number;
   task_id: number;
   tasker_id: number;
+  client_id?: number;
   tasker_username: string;
   tasker_name: string;
   tasker_family_name: string;
-  rating: number;
+  tasker_rating: number;
   tasks_done: number;
   category: string;
   eta: number;
   created_at: string;
+  action?: any;
 }
 
 interface Jwt {
@@ -207,24 +211,31 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
-  currentTask: Task | null;
   taskRequests: TaskRequest[];
   isSearching: boolean;
+  isInitDialog: boolean; //tasker
+  isConfirmDialog: boolean; //tasker
   notifications: Notification[];
   appKey: number;
   navigationState: InitialState | undefined;
   refresh: number;
+
+  currentTaskId: number | null;
+  currentTempTaskId: number | null;
+  setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
+  setCurrentTempTaskId: (param: number | null) => void;
   setRefresh: () => void;
+  setIsInitDialog: (param: boolean) => void;
   setNavigationState: (state: InitialState) => void;
   setAppKey: () => void;
   forceReload: () => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
-  addRequest: (request: TaskRequest) => void;
-  clearRequest: (requestId: number) => void;
-  clearRequests: () => void;
+  addTaskRequest: (request: TaskRequest) => void;
+  deleteTaskRequest: (requestId: number) => void;
+  deleteTaskRequests: () => void;
   setRequests: (taskRequests: TaskRequest[]) => void;
-  setCurrentTask: (task: Task | null) => void;
+  setCurrentTaskId: (taskId: number | null) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -270,11 +281,18 @@ const useStore = create<State>()(
       isFullMapVisible: false,
       isLoggedIn: false,
       profile: initialProfile,
-      currentTask: null,
+      currentTaskId: null,
       taskRequests: [],
       isSearching: false,
       notifications: [],
       appKey: 0,
+      isInitDialog: false,
+      isConfirmDialog: false,
+      currentTempTaskId: null,
+      setCurrentTempTaskId: (id: number | null) =>
+        set({ currentTempTaskId: id }),
+      setIsConfirmDialog: (init, confirm) => set({ isConfirmDialog: init, isInitDialog: confirm }),
+      setIsInitDialog: (param) => set({ isInitDialog: param }),
       setAppKey: () =>
         set((state) => {
           console.log(
@@ -299,21 +317,22 @@ const useStore = create<State>()(
         })),
       clearNotifications: () => set({ notifications: [] }),
       setIsSearching: (param) => set({ isSearching: param }),
-      setCurrentTask: (task: Task | null) => set({ currentTask: task }),
-      addRequest: (request) =>
+      setCurrentTaskId: (taskId: number | null) =>
+        set({ currentTaskId: taskId }),
+      addTaskRequest: (request) =>
         set((state) => ({
           taskRequests: sortRequestsByDateDesc([
             ...state.taskRequests,
             request,
           ]),
         })),
-      clearRequest: (request_id: number) =>
+      deleteTaskRequest: (request_id: number) =>
         set((state) => ({
           taskRequests: sortRequestsByDateDesc(
             state.taskRequests.filter((r) => r.id !== request_id),
           ),
         })),
-      clearRequests: () => set({ taskRequests: [] }),
+      deleteTaskRequests: () => set({ taskRequests: [] }),
       setProfile: (profile: ProfileType) => set({ profile }),
       resetProfile: () => set({ profile: initialProfile }),
       setIsLoggedIn: (param) => set({ isLoggedIn: param }),

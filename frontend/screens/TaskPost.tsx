@@ -25,6 +25,7 @@ import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
 import api from "../services/api";
 import { useTaskFeed } from "../hooks/useTaskFeed";
+import { useTaskRequest } from "../hooks/useTaskRequest";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
@@ -33,18 +34,16 @@ export default function TaskPost({ navigation }: any) {
 
   const isSearching = useStore((state) => state.isSearching);
   const setIsSearching = useStore().setIsSearching;
-
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
-
+  const currentTaskId = useStore((state) => state.currentTaskId);
   const [taskerRequestsVisible, setTaskerRequestsVisible] = useState(false);
   const taskRequests = useStore((state) => state.taskRequests);
-
-  const setCurrentTask = useStore().setCurrentTask;
-  const currentTask = useStore((state) => state.currentTask);
+  const setCurrentTaskId = useStore().setCurrentTaskId;
 
   useTaskFeed();
+  useTaskRequest();
 
   const {
     control,
@@ -84,6 +83,7 @@ export default function TaskPost({ navigation }: any) {
     return () => {
       reset();
       setTempTaskData(null);
+      setIsSearching(false);
     };
   }, []);
 
@@ -102,8 +102,7 @@ export default function TaskPost({ navigation }: any) {
           longitude: coordinates?.longitude,
         };
         const res = await api.post("/tasks/create/", payload);
-        console.log(res.data, "res.data");
-        setCurrentTask(res.data);
+        setCurrentTaskId(res.data.id);
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -122,7 +121,7 @@ export default function TaskPost({ navigation }: any) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
-      //setCurrentTask(null);
+      setCurrentTaskId(null);
     };
   }, [tempTaskData]);
 
@@ -177,13 +176,19 @@ export default function TaskPost({ navigation }: any) {
   const cancelSearch = () => {
     setIsSearching(false);
     setTempTaskData(null);
-    console.log(currentTask?.id, "currentTask.id");
+    console.log(currentTaskId, "currentTask.id");
     deleteTaskById();
     cancelAllRequests();
   };
 
   const deleteTaskById = async () => {
-    const id = tasks.find((task) => currentTask!.id == task.id)?.id;
+    if (!currentTaskId) {
+      console.log(
+        "current task is null const deleteTaskById = async () =>  TaskPost.tsx",
+      );
+      return;
+    }
+    const id = tasks.find((task) => currentTaskId == task.id)?.id;
     if (!id) return;
     try {
       const res = await api.delete(`/tasks/delete/${id}/`);
@@ -192,7 +197,7 @@ export default function TaskPost({ navigation }: any) {
         "const res = await api.delete(`/tasks/delete/${id}/`);",
       );
       setTempTaskData(null);
-      setCurrentTask(null);
+      setCurrentTaskId(null);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -207,7 +212,7 @@ export default function TaskPost({ navigation }: any) {
   const cancelAllRequests = async () => {
     try {
       await api.post("/tasks/cancel-all-task-requests/", {
-        task_id: currentTask!,
+        task_id: currentTaskId!,
       });
       Toast.show({
         type: "success",

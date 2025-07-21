@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   Button,
-  Alert,
 } from "react-native";
 import { COLORS } from "../constants/colors";
 import useStore from "../store/useStore";
@@ -26,24 +25,23 @@ type InspectRequestsModalProps = {
 export default function InspectRequestsModal({
   visible,
   onClose,
-  onAccept,
-  onDecline,
 }: InspectRequestsModalProps) {
   const requests = useStore((state) => state.taskRequests);
+  const deleteTaskRequest = useStore().deleteTaskRequest;
   const setRequests = useStore().setRequests;
-  const currentTask = useStore((state) => state.currentTask);
+  const currentTaskId = useStore((state) => state.currentTaskId);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     const fetchTaskRequests = async () => {
-      if (!currentTask!.id) return;
+      if (!currentTaskId) return; //by the client, he is inside modal
       try {
-        const response = await api.get(`/task-requests/${currentTask}/`);
+        const response = await api.get(`/task-requests/${currentTaskId}/`);
         const data = response.data;
         Toast.show({
           type: "info",
-          text1: `Polling from /task-requests/${currentTask}/`,
+          text1: `Polling from /task-requests/${currentTaskId}/`,
           text2: "Inspect request modal",
         });
         setRequests(data);
@@ -51,21 +49,23 @@ export default function InspectRequestsModal({
         console.log(error);
       }
     };
-
     fetchTaskRequests();
     interval = setInterval(fetchTaskRequests, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleDecline = async (taskerId: number, taskId: number) => {
+  const handleCancelTaskRequestClient = async (
+    taskerId: number,
+    taskId: number
+  ) => {
     try {
       const res = await api.post("cancel-task-request-as-client/", {
         task_id: taskId,
         tasker_id: taskerId,
       });
+      deleteTaskRequest(res.data.id);
     } catch (error) {
-      console.log(error);
-      Alert.alert(`Failed to cancel request. ${currentTask} ${error}`);
+      console.warn(error, `Failed to cancel request`);
     }
   };
   return (
@@ -108,14 +108,19 @@ export default function InspectRequestsModal({
                   <Text style={styles.infoText}>
                     Task Done: {item.tasks_done}
                   </Text>
-                  <Text style={styles.infoText}>Rating: {item.rating} ★</Text>
+                  <Text style={styles.infoText}>
+                    Rating: {item.tasker_rating} ★
+                  </Text>
                   <Text style={styles.infoText}>ETA: {item.eta} min</Text>
                   <View style={styles.buttonRow}>
                     <Button title="Accept" />
                     <Button
                       title="Decline"
                       onPress={() =>
-                        handleDecline(item.tasker_id, item.task_id)
+                        handleCancelTaskRequestClient(
+                          item.tasker_id,
+                          item.task_id
+                        )
                       }
                     />
                   </View>

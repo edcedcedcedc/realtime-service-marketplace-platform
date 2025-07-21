@@ -1,6 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
-import { Portal, Dialog, Paragraph } from "react-native-paper";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Button,
+  Alert,
+} from "react-native";
 
 import useStore, {
   URGENCY_OPTIONS,
@@ -10,9 +16,10 @@ import useStore, {
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
 import api from "../services/api";
-import TinySpinner from "../components/TinySpinner";
+import { useTaskRequest } from "../hooks/useTaskRequest";
+import IOSModal from "../components/IOSmodal";
+import { withTimeout } from "../utils/withTimeout";
 import Toast from "react-native-toast-message";
-import { SocketManager } from "../utils/socketManager";
 
 const { width } = Dimensions.get("window");
 
@@ -21,52 +28,37 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
-
 const statusColorMap = STATUS_OPTIONS.reduce(
   (map, option) => {
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 type TaskCardProps = {
   task: Task;
   isMiniMapVisible: boolean;
+
+  handleInitTaskRequest: (param: number) => void;
 };
 
-export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
+export default function TaskCard({
+  task,
+  isMiniMapVisible,
+
+  handleInitTaskRequest,
+}: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const user = useStore((state) => state.auth.user);
 
-  async function handleAccept() {
-    try {
-      const res = await api.post("task-request/", {
-        task_id: Number(task.id),
-      });
-      console.log(res.data);
-      setDialogVisible(true);
-    } catch (error) {
-      setDialogVisible(false);
-      alert("Error: Failed to send accept request.");
-      console.error(error);
-    }
-  }
-
-  async function handleCancelRequest() {
-    try {
-      await api.post("cancel-task-request/", {
-        task_id: Number(task.id),
-      });
-      setDialogVisible(false);
-      //setActiveOutgoingRequestTaskId(null);
-    } catch (error) {
-      alert("Failed to cancel request.");
-    }
-  }
+  useEffect(() => {
+    return () => {
+      //setCurrentTempTaskId(null);
+      //setCurrentTaskId(null);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMiniMapVisible && showMiniMap) {
@@ -142,7 +134,10 @@ export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
           title={showMiniMap ? "Hide Location" : "View Location"}
           onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button title="Accept" onPress={handleAccept} />
+        <Button
+          title="Initiate"
+          onPress={() => handleInitTaskRequest(task.id)}
+        />
       </View>
 
       {showMiniMap && (
@@ -154,34 +149,6 @@ export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
           handleGetLocation={() => {}}
         />
       )}
-
-      {/* Paper Dialog */}
-      <Portal>
-        <Dialog
-          visible={dialogVisible}
-          onDismiss={handleCancelRequest}
-          dismissable={false}
-        >
-          <Dialog.Title>Request Sent</Dialog.Title>
-          <Dialog.Content>
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "flex-start",
-              }}
-            >
-              <Text style={{ paddingRight: 10 }}>
-                Waiting for client to respond
-              </Text>
-              <TinySpinner message="" />
-            </View>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={handleCancelRequest} color="red" title="Cancel" />
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </View>
   );
 }

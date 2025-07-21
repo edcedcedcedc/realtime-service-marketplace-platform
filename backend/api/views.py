@@ -23,8 +23,7 @@ from .models import (
     Profile,
 )
 from .utils import (
-    broadcast_task_request_new,
-    broadcast_task_request_deleted,
+    broadcast_task_request,
     broadcast_taskfeed_new,
     broadcast_taskfeed_deleted,
     get_user_ip,
@@ -191,7 +190,6 @@ def task_create(request):
         )
 
         broadcast_taskfeed_new(task_instance)
-
         all_taskers = User.objects.filter(role="tasker")
         for tasker in all_taskers:
             notify_user(
@@ -334,7 +332,7 @@ def profile_detail_update(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def accept_task_request_as_tasker(request):
+def initiate_task_request_as_tasker(request):
     task_id = request.data.get("task_id")
 
     try:
@@ -355,10 +353,9 @@ def accept_task_request_as_tasker(request):
             {"error": "You already sent a request for this task."},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
     task_request = TaskRequest.objects.create(task=task, tasker=request.user)
 
-    notify_user(
+    """ notify_user(
         task.client.id,
         "notify:taskrequest-initiate-by-tasker",
         {
@@ -366,8 +363,10 @@ def accept_task_request_as_tasker(request):
             "client_id": task.client.id,
             "action": "add_tasker_to_taskrequests",
         },
+    ) """
+    broadcast_task_request(
+        "initiate-by-tasker", {"tasker": "", "client": ""}, task_request
     )
-    broadcast_task_request_new(task_request, task.client.id)
 
     return Response({"message": "Request sent."}, status=status.HTTP_201_CREATED)
 
@@ -384,11 +383,7 @@ def cancel_task_request_as_tasker(request):
         return Response(
             {"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND
         )
-
-    task_request_id = task_request.id
-    task_request.delete()
-
-    notify_user(
+    """  notify_user(
         task.client.id,
         "notify:taskrequest-cancelled-by-tasker",
         {
@@ -397,16 +392,11 @@ def cancel_task_request_as_tasker(request):
             "task_request_id": task_request_id,
             "action": "delete_tasker_from_taskrequests",
         },
+    ) """
+    broadcast_task_request(
+        "cancelled-by-tasker", {"tasker": "", "client": ""}, task_request
     )
-    broadcast_task_request_deleted(
-        subtype="taskrequest:cancelled-by-tasker",
-        action={"tasker": "", "client": "delete_tasker_from_taskrequests"},
-        task_id=task.id,
-        client_id=task.client.id,
-        tasker_id=request.user.id,
-        task_request_id=task_request_id,
-    )
-
+    task_request.delete()
     return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)
 
 
@@ -424,29 +414,12 @@ def cancel_task_request_as_client(request):
             {"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND
         )
 
-    task_request_id = task_request.id
+    broadcast_task_request(
+        "cancelled-by-client",
+        {"tasker": "close_modal", "client": "delete_tasker_from_taskrequests"},
+        task_request,
+    )
     task_request.delete()
-
-    notify_user(
-        tasker_id,
-        "notify:taskrequest-cancelled-by-client",
-        {
-            "task_id": task.id,
-            "client_id": task.client.id,
-            "task_request_id": task_request_id,
-            "action": "close_modal",
-        },
-    )
-
-    broadcast_task_request_deleted(
-        subtype="taskrequest:cancelled-by-client",
-        action={"tasker": "close_modal", "client": "delete_tasker_from_taskrequests"},
-        task_id=task.id,
-        client_id=request.user.id,
-        tasker_id=tasker_id,
-        task_request_id=task_request_id,
-    )
-
     return Response({"message": "Request withdrawn."}, status=status.HTTP_200_OK)
 
 
@@ -497,16 +470,13 @@ def accept_task_request_as_client(request):
     other_requests = TaskRequest.objects.filter(task=task).exclude(tasker=tasker)
     for other_request in other_requests:
         try:
-            broadcast_task_request_deleted(
-                subtype="taskrequest:cancelled-by-client",
+            broadcast_task_request(
+                subtype="cancelled-by-client",
                 action={
                     "tasker": "close_modal",
                     "client": "delete_tasker_from_taskrequests",
                 },
-                task_id=task.id,
-                tasker_id=other_request.tasker.id,
-                client_id=request.user.id,
-                task_request_id=other_request.id,
+                task_request=other_request,
             )
             other_request.delete()
         except Exception as e:
@@ -514,7 +484,7 @@ def accept_task_request_as_client(request):
                 f"[!] Failed to broadcast/delete request for tasker {other_request.tasker.id}: {str(e)}"
             )
 
-    notify_user(
+    """     notify_user(
         tasker.id,
         "notify:taskrequest-request-to-confirm",
         {
@@ -523,21 +493,18 @@ def accept_task_request_as_client(request):
             "client_id": request.user.id,
             "action": "tasker_needs_to_confirm",
         },
-    )
+    ) """
 
-    broadcast_task_request_deleted(
-        subtype="taskrequest:accepted-by-client",
+    broadcast_task_request(
+        subtype="accepted-by-client",
         action={
-            "tasker": "needs_to_confirm",
-            "client": "await_tasker_confirmation",
+            "tasker": "payment_system",
+            "client": "payment_system",
         },
-        task_id=task.id,
-        tasker_id=tasker.id,
-        client_id=request.user.id,
-        task_request_id=task_request.id,
+        task_request=task_request,
     )
 
-    notify_user(
+    """    notify_user(
         request.user.id,
         "notify:taskrequest-request-to-confirm",
         {
@@ -546,7 +513,7 @@ def accept_task_request_as_client(request):
             "tasker_id": tasker.id,
             "action": "await_tasker_confirmation",
         },
-    )
+    ) """
 
     serializer = TaskSerializer(task, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
