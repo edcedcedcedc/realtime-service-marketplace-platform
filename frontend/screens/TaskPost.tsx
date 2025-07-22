@@ -627,16 +627,24 @@ export default function TaskPost({ navigation }: any) {
           {!isSearching ? (
             <TouchableOpacity
               onPress={handleSubmit(confirmSubmit)}
-              style={styles.searchButtonFind}
+              style={[
+                styles.searchButtonFind,
+                !isConnected && styles.disabledButton,
+              ]}
               activeOpacity={0.7}
+              disabled={!isConnected}
             >
               <Text style={styles.searchButtonText}>Find</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={rejectSubmit}
-              style={styles.searchButtonStop}
+              style={[
+                styles.searchButtonStop,
+                !isConnected && styles.disabledButton,
+              ]}
               activeOpacity={0.7}
+              disabled={!isConnected}
             >
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
@@ -779,6 +787,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingVertical: SPACING.md,
+  },
+  disabledButton: {
+    backgroundColor: "#aaa", // light gray
+    opacity: 0.6,
   },
   searchButtonFind: {
     alignItems: "center",
