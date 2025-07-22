@@ -51,11 +51,13 @@ export function useTaskRequest() {
     const onCancelledByTasker = (payload: TaskRequest) => {
       if (payload.client_id === currentUserId) {
         deleteTaskRequest(payload.id);
-        Toast.show({
-          type: "info",
-          text1: `Request cancelled by ${payload.tasker_name}`,
-          text2: `Task ${currentTaskId}`,
-        });
+        setTimeout(() => {
+          Toast.show({
+            type: "info",
+            text1: `Request cancelled by ${payload.tasker_name}`,
+            text2: `Task ${currentTaskId}`,
+          });
+        }, 1000);
       }
     };
 

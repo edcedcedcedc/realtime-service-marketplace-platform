@@ -19,17 +19,19 @@ export function useTaskFeed() {
   const refreshTaskFeedSocket = useStore(
     (state) => state.refreshTaskFeedSocket
   );
+  const setRefreshTaskFeedSocket = useStore().setRefreshTaskFeedSocket;
 
   const { setTasks } = useStore();
 
   useEffect(() => {
-    if (!wsTaskFeedUrl || !isLoggedIn) {
-      console.log("Skipping socket connection — missing URL or notLoggedIn");
-      return;
-    } else {
-      console.log(
-        `Trying socket connection — wsUrl ${wsTaskFeedUrl} isLoggedIn ${isLoggedIn}`
-      );
+    if (!wsTaskFeedUrl || !isLoggedIn || !user?.id) {
+      console.log("Delaying socket connection — missing data");
+      const timeout = setTimeout(() => {
+        console.log("Retrying useTaskFeed connection...");
+        setRefreshTaskFeedSocket(); // This will re-trigger the useEffect
+      }, 1000); // Retry in 1 second
+
+      return () => clearTimeout(timeout); // Cleanup in case component unmounts
     }
 
     const fetchTasks = async () => {
@@ -80,7 +82,7 @@ export function useTaskFeed() {
           text2: "Task feed",
         });
       }, 100);
-      removeTask(id.id);
+      removeTask(id.id); //this deletes the task from all the taskers
     };
 
     const onSocketOpen = () => {

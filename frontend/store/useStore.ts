@@ -77,7 +77,7 @@ const initialState = {
   isLoggedIn: false,
   profile: initialProfile,
   navigationState: undefined,
-  isDialog: false,
+  isInitDialog: false,
   isConnected: false,
   snackbarVisible:false,
   isSearching: false,

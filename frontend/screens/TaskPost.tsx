@@ -45,6 +45,7 @@ export default function TaskPost({ navigation }: any) {
   const isConnected = useStore((state) => state.isConnected);
   const setRefreshTaskFeedSocket = useStore().setRefreshTaskFeedSocket;
   const setRefreshTaskRequestSocket = useStore().setRefreshTaskRequestSocket;
+  const removeTask = useStore().removeTask;
   /* const snackbarVisible = useStore((state) => state.snackbarVisible);
   const setSnackbarVisible = useStore().setSnackbarVisible; */
   const refreshTaskFeedSocket = useStore(
@@ -195,7 +196,8 @@ export default function TaskPost({ navigation }: any) {
   const cancelSearch = () => {
     setIsSearching(false);
     setTempTaskData(null);
-    deleteTaskById();
+    deleteTaskById(); //and  cancel a specific request
+    cancelAllTaskRequestsById(); //
   };
 
   /* 
@@ -208,20 +210,15 @@ export default function TaskPost({ navigation }: any) {
   */
   function deleteTaskById() {
     let count = 0;
-
     const pollDelete = async () => {
       count += 1;
-
       if (!currentTaskId || count > 20) return;
-
-      const id = tasks.find((task) => currentTaskId === task.id)?.id;
-
-      if (!id) return;
-
+      //const id = tasks.find((task) => currentTaskId === task.id)?.id;
+      //if (!id) return;
       try {
         setRefreshTaskFeedSocket();
-        await withTimeout(api.delete(`/tasks/delete/${id}/`));
-        setCurrentTaskId(null);
+        await withTimeout(api.delete(`/tasks/delete/${currentTaskId}/`)); //sync the backend and broadcast to useTaskFeed
+        removeTask(currentTaskId); //this deletes the task from  the current client (the variable might be not used at all if )
         setRefreshTaskRequestSocket();
         Toast.show({
           type: "success",
@@ -245,23 +242,44 @@ export default function TaskPost({ navigation }: any) {
     pollDelete();
   }
 
-  const cancelAllRequests = async () => {
-    try {
-      await api.post("/tasks/cancel-all-task-requests/", {
-        task_id: currentTaskId!,
-      });
-      Toast.show({
-        type: "success",
-        text1: "Cancelled all tasker requests",
-      });
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to cancel all requests",
-        text2: err.response?.data?.error || "Try again later",
-      });
-    }
-  };
+  function cancelAllTaskRequestsById() {
+    const currentTaskId = useStore.getState().currentTaskId;
+    const setRefreshTaskRequestSocket =
+      useStore.getState().setRefreshTaskRequestSocket;
+
+    let count = 0;
+
+    const pollCancel = async () => {
+      count += 1;
+
+      if (!currentTaskId || count > 10) return;
+      try {
+        //setRefreshTaskFeedSocket();
+        await withTimeout(
+          api.post(`/cancel-all-task-requests-as-client/`, {
+            task_id: currentTaskId,
+          })
+        );
+        removeTask(currentTaskId); //this deletes the task from  the current client (the variable might be not used at all if )
+        setCurrentTaskId(null);
+        setRefreshTaskRequestSocket();
+        Toast.show({
+          type: "success",
+          text1: "All task requests cancelled",
+        });
+      } catch (err: any) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to cancel task requests",
+          text2:
+            err.response?.data?.error || "Retrying to cancel task requests...",
+        });
+        setTimeout(pollCancel, 5000);
+      }
+    };
+
+    pollCancel();
+  }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const yOffset = event.nativeEvent.contentOffset.y;

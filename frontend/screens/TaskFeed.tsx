@@ -20,6 +20,7 @@ import TaskSearchBar from "./TaskSearchBar";
 import { useTaskFeed } from "../hooks/useTaskFeed";
 import IOSModal from "../components/IOSmodal";
 import { useTaskRequest } from "../hooks/useTaskRequest";
+import ConnectionSnackbar from "../components/SnackBar";
 
 const HEADER_HEIGHT = 120;
 
@@ -38,10 +39,10 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   const isInitDialog = useStore((state) => state.isInitDialog);
   const isConfirmDialog = useStore((state) => state.isConfirmDialog);
   const setIsInitDialog = useStore().setIsInitDialog;
-
+  const setIsSearching = useStore().setIsSearching;
   const setCurrentTaskId = useStore((state) => state.setCurrentTaskId);
   const currentTaskId = useStore((state) => state.currentTaskId);
-
+  const isConnected = useStore((state) => state.isConnected);
   const [cancelDisabled, setCancelDisabled] = useState(false);
 
   const ref: any = useRef(null); //delay the cancel button in init modal for tasker
@@ -75,49 +76,14 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
     };
   }, []);
 
-  /*  useEffect(() => {
-    if (!currentTempTaskId) return;
-    if (taskRequestCreationTimeout.current) {
-      clearTimeout(taskRequestCreationTimeout.current);
-    }
-    console.log(currentTempTaskId);
-    taskRequestCreationTimeout.current = setTimeout(async () => {
-      try {
-        const res = await withTimeout(
-          api.post("initiate-task-request-as-tasker/", {
-            task_id: Number(currentTempTaskId),
-          }),
-          10
-        );
-        console.log("res", res.data);
-        setCurrentTaskId(res.data.id); //seen on the client side, this variable is tied to ws and http
-      } catch (err: any) {
-        Toast.show({
-          type: "error",
-          text1: "Failed to post a task",
-          text2:
-            JSON.stringify(err.response?.data) ||
-            "Something went wrong. Please check your internet connection.",
-        });
-      } finally {
-        taskRequestCreationTimeout.current = null;
-      }
-    }, 5000);
-
-    return () => {
-      if (taskRequestCreationTimeout.current) {
-        clearTimeout(taskRequestCreationTimeout.current);
-        taskRequestCreationTimeout.current = null;
-      }
-      setCurrentTaskId(null);
-      setIsDialog(false);
-    };
-  }, [currentTempTaskId]); */
-
   const apiOnInit = async (task_id: number) => {
+    if (!isConnected) {
+      return;
+    }
     setIsInitDialog(true);
     setCurrentTaskId(task_id);
     setCancelDisabled(true);
+    setIsSearching(true); //as TASKER!!! but this is as well the main variable for client, I NEED this to sync the states between client and tasker
 
     if (ref.current) {
       clearTimeout(ref.current);
@@ -138,7 +104,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
     }
   };
 
-  const apiOnAutoCancel = async () => {
+  const apiOnCancel = async () => {
     if (!currentTaskId) {
       setIsInitDialog(false);
       return;
@@ -155,6 +121,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         });
       }, 3000);
       setCurrentTaskId(null);
+      setIsSearching(false);
       setIsInitDialog(false);
     } catch (error) {
       Toast.show({
@@ -234,6 +201,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         renderItem={({ item }) => (
           <TaskCard
             task={item}
+            isConnected={isConnected}
             isMiniMapVisible={visibleTaskIds.has(item.id)}
             handleInitTaskRequest={() => apiOnInit(item.id)}
           />
@@ -271,10 +239,10 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         visible={isInitDialog}
         isShowConfirm={false}
         cancelDisabled={cancelDisabled}
-        onClose={apiOnAutoCancel}
+        onClose={apiOnCancel}
         onTimeout={() => {
           console.log("Auto cancelling...");
-          apiOnAutoCancel();
+          apiOnCancel();
         }}
         title="Initiate task"
         message="Waiting for client to respond..."

@@ -3,7 +3,7 @@ from .views import (
     initiate_task_request_as_tasker,
     accept_terms,
     all_tasks,
-    cancel_all_task_requests,
+    cancel_all_task_requests_as_client,
     cancel_task_request_as_tasker,
     cancel_task_request_as_client,
     completed_tasks,
@@ -88,9 +88,9 @@ urlpatterns = [
         name="confirm-task-request-as-tasker",
     ),
     path(
-        "api/cancel-all-task-requests/",
-        cancel_all_task_requests,
-        name="cancel-all-task-requests",
+        "api/cancel-all-task-requests-as-client/",
+        cancel_all_task_requests_as_client,
+        name="cancel-all-task-requests-as-client",
     ),
     #########################################
     # CHAT
