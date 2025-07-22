@@ -1,17 +1,34 @@
-import Constants from "expo-constants";
 import useStore from "../store/useStore";
+import { useEffect, useState } from "react";
+import { ensureValidAccessToken } from "../utils/ensureValidAccessToken";
 
-const IPV4 = Constants.expoConfig!.extra!.IPV4;
-export const HTTP_BASE_URL = `http://${IPV4}:8000/api/`;
-const WS_TASKFEED_URL = `ws://${IPV4}:8000/ws/taskfeed/`;
-const WS_TASKREQUEST_URL = `ws://${IPV4}:8000/ws/taskrequest/`;
-const WS_NOTIFICATION_URL = `ws://${IPV4}:8000/ws/notifications/`;
+import {
+  WS_NOTIFICATION_URL,
+  WS_TASKFEED_URL,
+  WS_TASKREQUEST_URL,
+} from "../utils/network";
 
 export function useNetwork() {
+  const [wsTaskFeedUrl, setWsTaskFeedUrl] = useState<string | null>(null);
+  const [wsTaskNotificationsUrl, setWsTaskNotificationsUrl] = useState<
+    string | null
+  >(null);
+
   const access = useStore((state) => state.auth.jwt?.access);
 
-  let wsTaskFeedUrl = `${WS_TASKFEED_URL}?token=${encodeURIComponent(access!)}`;
-  let wsTaskNotificationsUrl = `${WS_NOTIFICATION_URL}?token=${encodeURIComponent(access!)}`;
+  useEffect(() => {
+    (async () => {
+      const access = await ensureValidAccessToken();
+      if (access) {
+        setWsTaskFeedUrl(
+          `${WS_TASKFEED_URL}?token=${encodeURIComponent(access)}`
+        );
+        setWsTaskNotificationsUrl(
+          `${WS_NOTIFICATION_URL}?token=${encodeURIComponent(access)}`
+        );
+      }
+    })();
+  }, []);
 
   function getTaskRequestUrl(id: string | number, count: number) {
     if (!access) {

@@ -5,6 +5,7 @@ import { Menu, Text } from "react-native-paper";
 import { logout } from "../utils/logout";
 import useStore from "../store/useStore";
 import { COLORS } from "../constants/colors";
+import { manuallyCheckConnection } from "../utils/netInfo";
 
 interface HeaderMenuProps {
   navigation: any;
@@ -18,7 +19,7 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const setRefreshTaskRequestSocket = useStore().setRefreshTaskRequestSocket;
   const setRefreshTaskFeedocket = useStore().setRefreshTaskFeedSocket;
   const isConnected = useStore((state) => state.isConnected);
-
+  const setIsLoggedIn = useStore().setIsLoggedIn;
   if (!isLoggedIn) return null;
 
   return (
@@ -64,6 +65,9 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
           closeMenu();
           setRefreshTaskFeedocket();
           setRefreshTaskRequestSocket();
+          if (isLoggedIn) {
+            manuallyCheckConnection();
+          }
         }}
         title="Refresh"
       />

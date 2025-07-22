@@ -30,7 +30,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [setIsConnected]);
+  }, [setIsConnected, isLoggedIn]);
 
   return (
     <SafeAreaProvider>
@@ -52,16 +52,18 @@ export default function App() {
 
               <RootNavigator />
 
-              <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={3000}
-                style={{
-                  backgroundColor: isConnected ? "#388E3C" : "#D32F2F",
-                }}
-              >
-                {snackbarMessage}
-              </Snackbar>
+              {isLoggedIn && (
+                <Snackbar
+                  visible={snackbarVisible}
+                  onDismiss={() => setSnackbarVisible(false)}
+                  duration={3000}
+                  style={{
+                    backgroundColor: isConnected ? "#388E3C" : "#D32F2F",
+                  }}
+                >
+                  {snackbarMessage}
+                </Snackbar>
+              )}
             </AppLayout>
           </NavigationContainer>
         </AlertsProvider>

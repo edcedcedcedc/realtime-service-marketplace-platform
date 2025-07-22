@@ -219,7 +219,7 @@ interface State {
   isInitDialog: boolean; //tasker
   isConfirmDialog: boolean; //tasker
   notifications: Notification[];
-  appKey: number;
+
   navigationState: InitialState | undefined;
   refreshTaskRequestSocket: number;
   refreshTaskFeedSocket: number,
@@ -235,8 +235,6 @@ interface State {
   setRefreshTaskFeedSocket: () => void;
   setIsInitDialog: (param: boolean) => void;
   setNavigationState: (state: InitialState) => void;
-  setAppKey: () => void;
-  forceReload: () => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
   addTaskRequest: (request: TaskRequest) => void;
@@ -293,7 +291,7 @@ const useStore = create<State>()(
       taskRequests: [],
       isSearching: false,
       notifications: [],
-      appKey: 0,
+     
       isInitDialog: false,
       isConfirmDialog: false,
       currentTempTaskId: null,
@@ -307,18 +305,8 @@ const useStore = create<State>()(
         set({ currentTempTaskId: id }),
       setIsConfirmDialog: (init, confirm) => set({ isConfirmDialog: init, isInitDialog: confirm }),
       setIsInitDialog: (param) => set({ isInitDialog: param }),
-      setAppKey: () =>
-        set((state) => {
-          console.log(
-            "Force app reload triggered. Current appKey:",
-            state.appKey,
-          );
-          return { appKey: state.appKey + 1 };
-        }),
-      forceReload: () =>
-        set((state) => ({
-          appKey: state.appKey + 1,
-        })),
+  
+   
       setRefreshTaskFeedSocket: () =>
         set((state) => {
           console.log("Force app reload triggered. Current appKey:", state.refreshTaskFeedSocket);

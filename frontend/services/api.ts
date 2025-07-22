@@ -2,7 +2,7 @@ import { Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "../utils/navigationRef";
 import useStore from "../store/useStore";
-import { HTTP_BASE_URL } from "../hooks/useNetwork";
+import { HTTP_BASE_URL } from "../utils/network";
 import axios from "axios";
 
 const api = axios.create({

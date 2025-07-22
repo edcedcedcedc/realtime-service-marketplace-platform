@@ -23,12 +23,14 @@ export function useTaskRequest() {
   );
 
   useEffect(() => {
-    if (!currentTaskId || !isLoggedIn) return;
+    if (!currentTaskId || !isLoggedIn || !isSearching) return;
     console.log(currentTaskId, "current task if from useTaskRequest");
     const wsUrl = getTaskRequestUrl(currentTaskId, 0);
+
     if (!wsUrl) return;
 
     taskRequestsSocket.setIsLoggedIn(isLoggedIn);
+
     taskRequestsSocket.connect(
       wsUrl,
       `taskrequest ${currentTaskId} user ${currentUserId}`
@@ -120,7 +122,7 @@ export function useTaskRequest() {
           text1: "Websocket connected!",
           text2: `useTaskRequests ${currentTaskId} ${currentUserId}`,
         });
-      }, 4000);
+      }, 1000);
     };
 
     // === Register Events ===
