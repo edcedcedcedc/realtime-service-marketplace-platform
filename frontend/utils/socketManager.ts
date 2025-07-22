@@ -5,6 +5,7 @@ type ServerMessage =
   // Socket connection lifecycle
   | { type: "socket:onopen"; payload: null }
   | { type: "socket:onclose"; payload: null }
+  | { type: "socket:ondisconnect"; payload: null }
 
   // Task feed updates (broadcasted to all taskers)
   | { type: "task:new"; payload: Task }
@@ -91,10 +92,10 @@ export class SocketManager {
   private isLoggedIn = false;
   private manuallyDisconnected = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
+  private maxReconnectAttempts = 10;
   private additionalReconnectAttempts = 0;
   private maxAdditionalReconnectAttempts = 3;
-  private reconnectDelayMs = 1000;
+  private reconnectDelayMs = 2000;
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private pollingIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -125,7 +126,7 @@ export class SocketManager {
     this.socket.onopen = () => {
       console.log(`[${this.debugName}] WebSocket connected to`, this.url);
       this.reconnectAttempts = 0;
-      this.pollingAttempts = 0; // reset polling attempts on successful connection
+      this.pollingAttempts = 0; 
       this._clearReconnectTimeout();
       this._stopPolling();
       this.emit("socket:onopen", null);
@@ -233,13 +234,15 @@ export class SocketManager {
     this.manuallyDisconnected = true;
     this.socket = null;
     this.listeners = {};
-    setTimeout(() => {
+    this.emit("socket:onclose", `Websocket manually disconnected, ${this.debugName} ${msg}`);
+    console.log(`Websocket manually disconnected, ${this.debugName} ${msg}`)
+    /* setTimeout(() => {
       Toast.show({
         type: "info",
         text1: `Websocket manually disconnected,${msg} !`,
         text2: `${this.debugName}`,
       });
-    }, 10);
+    }, 10); */
   }
 
   on(event: ServerMessage["type"], handler: MessageHandler) {

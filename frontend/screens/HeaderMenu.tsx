@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, StyleSheet, View } from "react-native";
 import { Menu, Text } from "react-native-paper";
 
 import { logout } from "../utils/logout";
@@ -15,22 +15,35 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
-  const setRefresh = useStore().setRefresh;
+  const setRefreshTaskRequestSocket = useStore().setRefreshTaskRequestSocket;
+  const setRefreshTaskFeedocket = useStore().setRefreshTaskFeedSocket;
+  const isConnected = useStore((state) => state.isConnected);
 
-  if (!isLoggedIn) {
-    return;
-  }
+  if (!isLoggedIn) return null;
+
   return (
     <Menu
       visible={visible}
       onDismiss={closeMenu}
       contentStyle={{ backgroundColor: COLORS.color38 }}
       anchor={
-        <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
+        <TouchableOpacity onPress={openMenu} style={styles.anchor}>
+          <Text style={styles.menuTrigger}>...</Text>
         </TouchableOpacity>
       }
     >
+      <View style={styles.networkContainer}>
+        <Text style={styles.networkLabel}>Network </Text>
+        <Text
+          style={[
+            styles.networkStatus,
+            { color: isConnected ? COLORS.color3 : COLORS.color7 },
+          ]}
+        >
+          {isConnected ? "Online" : "Offline"}
+        </Text>
+      </View>
+
       <Menu.Item
         onPress={() => {
           closeMenu();
@@ -42,7 +55,6 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
         onPress={() => {
           closeMenu();
           console.log("Settings pressed");
-
           // navigation.navigate("SettingsScreen");
         }}
         title="Settings"
@@ -50,7 +62,8 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
       <Menu.Item
         onPress={() => {
           closeMenu();
-          setRefresh();
+          setRefreshTaskFeedocket();
+          setRefreshTaskRequestSocket();
         }}
         title="Refresh"
       />
@@ -64,3 +77,26 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
     </Menu>
   );
 }
+
+const styles = StyleSheet.create({
+  anchor: {
+    paddingHorizontal: 16,
+  },
+  menuTrigger: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  networkContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  networkLabel: {
+    fontSize: 15,
+    color: COLORS.color14,
+  },
+  networkStatus: {
+    fontSize: 15,
+  },
+});

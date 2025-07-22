@@ -12,10 +12,13 @@ export function useTaskFeed() {
   const { wsTaskFeedUrl } = useNetwork();
   const addTask = useStore.getState().addTask;
   const removeTask = useStore.getState().removeTask;
+  const isSearching = useStore((state) => state.isSearching);
 
   const user = useStore().auth.user;
   const isLoggedIn = useStore((state) => state.isLoggedIn);
-  const refresh = useStore((state) => state.refresh);
+  const refreshTaskFeedSocket = useStore(
+    (state) => state.refreshTaskFeedSocket
+  );
 
   const { setTasks } = useStore();
 
@@ -45,7 +48,14 @@ export function useTaskFeed() {
       } finally {
       }
     };
+
     taskFeedSocket.setIsLoggedIn(isLoggedIn);
+
+    if (user?.role === "client") {
+      taskFeedSocket.disconnect(
+        "is searching false, taskfeed socket disconnected for client"
+      );
+    }
 
     taskFeedSocket.connect(wsTaskFeedUrl, `taskfeed ${user?.id}`, fetchTasks);
 
@@ -72,23 +82,24 @@ export function useTaskFeed() {
     };
 
     const onSocketOpen = () => {
+      console.log(`useTaskFeed "Websocket connected!"`);
       setTimeout(() => {
         Toast.show({
           type: "success",
           text1: "Websocket connected!",
           text2: `useTaskFeed`,
         });
-      }, 2500);
+      }, 3000);
     };
 
     const onSocketClose = () => {
       setTimeout(() => {
         Toast.show({
           type: "info",
-          text1: "Websocket connection close !",
+          text1: "Websocket connection close!",
           text2: `UseTaskFeed`,
         });
-      }, 2500);
+      }, 3000);
     };
 
     // === Register Events ===
@@ -102,10 +113,9 @@ export function useTaskFeed() {
       taskFeedSocket.off("socket:onclose", onSocketClose);
       taskFeedSocket.off("task:new", handleNewTask);
       taskFeedSocket.off("task:delete", handleDeleteTask);
-      taskFeedSocket.setIsLoggedIn(false);
       taskFeedSocket.disconnect("useTaskFeed unmounted");
     };
-  }, [refresh, isLoggedIn]);
+  }, [refreshTaskFeedSocket, isLoggedIn, isSearching]);
 }
 
 /* 

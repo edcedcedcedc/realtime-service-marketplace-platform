@@ -26,6 +26,7 @@ import MapSelector from "./MapSelector";
 import api from "../services/api";
 import { useTaskFeed } from "../hooks/useTaskFeed";
 import { useTaskRequest } from "../hooks/useTaskRequest";
+import { withTimeout } from "../utils/withTimeout";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
@@ -41,6 +42,14 @@ export default function TaskPost({ navigation }: any) {
   const [taskerRequestsVisible, setTaskerRequestsVisible] = useState(false);
   const taskRequests = useStore((state) => state.taskRequests);
   const setCurrentTaskId = useStore().setCurrentTaskId;
+  const isConnected = useStore((state) => state.isConnected);
+  const setRefreshTaskFeedSocket = useStore().setRefreshTaskFeedSocket;
+  const setRefreshTaskRequestSocket = useStore().setRefreshTaskRequestSocket;
+  /* const snackbarVisible = useStore((state) => state.snackbarVisible);
+  const setSnackbarVisible = useStore().setSnackbarVisible; */
+  const refreshTaskFeedSocket = useStore(
+    (state) => state.refreshTaskFeedSocket
+  );
 
   useTaskFeed();
   useTaskRequest();
@@ -69,7 +78,7 @@ export default function TaskPost({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position.",
+        "Location permission is required to fetch your position."
       );
       return;
     }
@@ -84,6 +93,7 @@ export default function TaskPost({ navigation }: any) {
       reset();
       setTempTaskData(null);
       setIsSearching(false);
+      Toast.hide();
     };
   }, []);
 
@@ -92,6 +102,7 @@ export default function TaskPost({ navigation }: any) {
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
+
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
@@ -101,8 +112,10 @@ export default function TaskPost({ navigation }: any) {
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
+
         const res = await api.post("/tasks/create/", payload);
         setCurrentTaskId(res.data.id);
+        setRefreshTaskRequestSocket();
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -143,7 +156,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -162,52 +175,75 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
   const onSubmit: SubmitHandler<TaskFormInput> = async (formData) => {
     const current = useStore.getState().tempTaskData;
     if (JSON.stringify(current) === JSON.stringify(formData)) return;
+
     setIsSearching(true);
+    if (!isConnected) {
+      setIsSearching(false);
+      /*  setSnackbarVisible(true); */
+      return;
+    }
     setTempTaskData(formData);
   };
 
   const cancelSearch = () => {
     setIsSearching(false);
     setTempTaskData(null);
-    console.log(currentTaskId, "currentTask.id");
     deleteTaskById();
-    cancelAllRequests();
   };
 
-  const deleteTaskById = async () => {
-    if (!currentTaskId) {
-      console.log(
-        "current task is null const deleteTaskById = async () =>  TaskPost.tsx",
-      );
-      return;
-    }
-    const id = tasks.find((task) => currentTaskId == task.id)?.id;
-    if (!id) return;
-    try {
-      const res = await api.delete(`/tasks/delete/${id}/`);
-      console.log(
-        res.data,
-        "const res = await api.delete(`/tasks/delete/${id}/`);",
-      );
-      setTempTaskData(null);
-      setCurrentTaskId(null);
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to cancel task",
-        text2:
-          err.response?.data?.error ||
-          "Failed to cancel the task. Please try again later.",
-      });
-    }
-  };
+  /* 
+  trigger refresh
+  get both sockets working 
+  api delete 
+  set current task id null
+  regrigger 
+  
+  */
+  function deleteTaskById() {
+    let count = 0;
+
+    const pollDelete = async () => {
+      count += 1;
+
+      if (!currentTaskId || count > 20) return;
+
+      const id = tasks.find((task) => currentTaskId === task.id)?.id;
+
+      if (!id) return;
+
+      try {
+        setRefreshTaskFeedSocket();
+        await withTimeout(api.delete(`/tasks/delete/${id}/`));
+        setCurrentTaskId(null);
+        setRefreshTaskRequestSocket();
+        Toast.show({
+          type: "success",
+          text1: "Task cancelled successfully",
+        });
+      } catch (err: any) {
+        if (!currentTaskId) {
+          return;
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Failed to cancel task",
+            text2:
+              err.response?.data?.error || "Retrying to cancel the task...",
+          });
+          setTimeout(pollDelete, 5000);
+        }
+      }
+    };
+
+    pollDelete();
+  }
 
   const cancelAllRequests = async () => {
     try {
@@ -468,8 +504,9 @@ export default function TaskPost({ navigation }: any) {
                       </View>
                     </View>
                     <Text style={styles.helperText}>
-                      You can choose your location manually if you don't prefer
-                      exact location, just double tap the mini map.
+                      You can select the exact location, but it will be slightly
+                      shifted (±500 meters) for safety reasons until the task
+                      begins. To enlarge the map, simply double-tap it.
                     </Text>
                   </View>
                   <MapSelector
@@ -489,7 +526,7 @@ export default function TaskPost({ navigation }: any) {
 
           {/* Urgency Label with Help Icon */}
           <View style={styles.urgencyLabelWrapper}>
-            <Text style={styles.label}>Urgency</Text>
+            {!isSearching && <Text style={styles.label}>Urgency</Text>}
           </View>
           {!isSearching ? (
             <>

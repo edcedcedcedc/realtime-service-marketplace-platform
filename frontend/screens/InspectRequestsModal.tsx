@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   heading: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "600",
     color: COLORS.color11,
     textAlign: "center",
     marginBottom: 16,

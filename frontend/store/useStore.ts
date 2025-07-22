@@ -78,6 +78,9 @@ const initialState = {
   profile: initialProfile,
   navigationState: undefined,
   isDialog: false,
+  isConnected: false,
+  snackbarVisible:false,
+  isSearching: false,
 };
 
 interface Notification {
@@ -218,13 +221,18 @@ interface State {
   notifications: Notification[];
   appKey: number;
   navigationState: InitialState | undefined;
-  refresh: number;
-
+  refreshTaskRequestSocket: number;
+  refreshTaskFeedSocket: number,
   currentTaskId: number | null;
   currentTempTaskId: number | null;
+  isConnected: boolean;
+  snackbarVisible: boolean;
+  setSnackbarVisible:(param: boolean) => void;
+  setIsConnected: (value: boolean) => void;
   setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
   setCurrentTempTaskId: (param: number | null) => void;
-  setRefresh: () => void;
+  setRefreshTaskRequestSocket: () => void;
+  setRefreshTaskFeedSocket: () => void;
   setIsInitDialog: (param: boolean) => void;
   setNavigationState: (state: InitialState) => void;
   setAppKey: () => void;
@@ -289,6 +297,12 @@ const useStore = create<State>()(
       isInitDialog: false,
       isConfirmDialog: false,
       currentTempTaskId: null,
+      isConnected: true,
+      refreshTaskFeedSocket: 0,
+      refreshTaskRequestSocket: 0,
+      snackbarVisible: false,
+      setSnackbarVisible: (param) => set({ snackbarVisible: param }),  
+      setIsConnected: (value) => set({ isConnected: value }),   
       setCurrentTempTaskId: (id: number | null) =>
         set({ currentTempTaskId: id }),
       setIsConfirmDialog: (init, confirm) => set({ isConfirmDialog: init, isInitDialog: confirm }),
@@ -305,11 +319,15 @@ const useStore = create<State>()(
         set((state) => ({
           appKey: state.appKey + 1,
         })),
-      refresh: 0,
-      setRefresh: () =>
-        set((s) => {
-          console.log("Force app reload triggered. Current appKey:", s.refresh);
-          return { refresh: s.refresh + 1 };
+      setRefreshTaskFeedSocket: () =>
+        set((state) => {
+          console.log("Force app reload triggered. Current appKey:", state.refreshTaskFeedSocket);
+          return { refreshTaskFeedSocket: state.refreshTaskFeedSocket + 1 };
+        }),
+      setRefreshTaskRequestSocket: () =>
+        set((state) => {
+          console.log("Force app reload triggered. Current appKey:", state.setRefreshTaskFeedSocket);
+          return { refreshTaskRequestSocket: state.refreshTaskRequestSocket + 1 };
         }),
       addNotification: (notification) =>
         set((state) => ({
