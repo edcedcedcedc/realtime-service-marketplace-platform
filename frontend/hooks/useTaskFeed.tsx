@@ -52,9 +52,11 @@ export function useTaskFeed() {
     taskFeedSocket.setIsLoggedIn(isLoggedIn);
 
     if (user?.role === "client") {
-      taskFeedSocket.disconnect(
-        "is searching false, taskfeed socket disconnected for client"
-      );
+      if (!isSearching) {
+        taskFeedSocket.disconnect(
+          "is searching false, taskfeed socket disconnected for client"
+        );
+      }
     }
 
     taskFeedSocket.connect(wsTaskFeedUrl, `taskfeed ${user?.id}`, fetchTasks);
