@@ -7,7 +7,6 @@ from .views import (
     cancel_task_request_as_tasker,
     cancel_task_request_as_client,
     completed_tasks,
-    confirm_task_request_as_tasker,
     current_tsc_text,
     task_chat_history,
     task_requests_for_task_as_client,
@@ -81,11 +80,6 @@ urlpatterns = [
         "api/task-requests/<int:task_id>/",
         task_requests_for_task_as_client,
         name="task-requests-by-task-id",
-    ),
-    path(
-        "api/confirm-task-request-as-tasker/",
-        confirm_task_request_as_tasker,
-        name="confirm-task-request-as-tasker",
     ),
     path(
         "api/cancel-all-task-requests-as-client/",

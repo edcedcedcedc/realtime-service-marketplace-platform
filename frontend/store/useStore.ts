@@ -88,20 +88,18 @@ interface Notification {
   timestamp: string;
   payload: any;
 }
-interface ProfileType {
+export interface ProfileType {
   user: User; // must always be present
   name: string;
   family_name: string;
   rating: number;
   bio: string;
-
-  // tasker-only fields (optional for client)
-  tasks_done?: number;
-  eta?: string;
-  category?: Category;
-
   // client-only fields (optional for tasker)
   tasks_posted?: number;
+  // tasker-only fields (optional for client)
+  tasks_done?: number;
+  eta?: number;
+  category?: Category;
 }
 
 interface User {
@@ -189,6 +187,7 @@ export interface TaskRequest {
   eta: number;
   created_at: string;
   action?: any;
+  seen: boolean; 
 }
 
 interface Jwt {
@@ -219,7 +218,6 @@ interface State {
   isInitDialog: boolean; //tasker
   isConfirmDialog: boolean; //tasker
   notifications: Notification[];
-
   navigationState: InitialState | undefined;
   refreshTaskRequestSocket: number;
   refreshTaskFeedSocket: number,
@@ -240,7 +238,7 @@ interface State {
   addTaskRequest: (request: TaskRequest) => void;
   deleteTaskRequest: (requestId: number) => void;
   deleteTaskRequests: () => void;
-  setRequests: (taskRequests: TaskRequest[]) => void;
+  setTaskRequests: (taskRequests: TaskRequest[]) => void;
   setCurrentTaskId: (taskId: number | null) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
@@ -422,7 +420,7 @@ const useStore = create<State>()(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-      setRequests: (taskRequests: TaskRequest[]) =>
+      setTaskRequests: (taskRequests: TaskRequest[]) =>
         set({
           taskRequests: sortRequestsByDateDesc(
             taskRequests.map((request) => ({

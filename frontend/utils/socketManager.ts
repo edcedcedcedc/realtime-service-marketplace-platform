@@ -236,13 +236,6 @@ export class SocketManager {
     this.listeners = {};
     this.emit("socket:onclose", `Websocket manually disconnected, ${this.debugName} ${msg}`);
     console.log(`Websocket manually disconnected, ${this.debugName} ${msg}`)
-    /* setTimeout(() => {
-      Toast.show({
-        type: "info",
-        text1: `Websocket manually disconnected,${msg} !`,
-        text2: `${this.debugName}`,
-      });
-    }, 10); */
   }
 
   on(event: ServerMessage["type"], handler: MessageHandler) {

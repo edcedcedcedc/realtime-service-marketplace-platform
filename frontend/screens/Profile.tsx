@@ -17,28 +17,26 @@ import useStore, { Category } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
 import { withTimeout } from "../utils/withTimeout";
+import { ProfileType } from "../store/useStore";
 
 const profileSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
   family_name: Yup.string().required("Family name is required"),
-  eta: Yup.string()
-    .test(
-      "max-60",
-      "ETA must be a number less than or equal to 60",
-      (value) => {
-        if (!value) return true;
-        const num = Number(value);
-        return !isNaN(num) && num <= 60 && num >= 0;
-      },
+  eta: Yup.number()
+    .transform((value, originalValue) =>
+      originalValue === "" || isNaN(originalValue)
+        ? undefined
+        : Number(originalValue)
     )
-    .max(32, "ETA must be at most 32 characters"),
+    .max(100, "ETA must be at most 2 digits (minutes)")
+    .typeError("ETA must be a number"),
   bio: Yup.string()
     .max(128, "Bio must be at most 128 characters")
     .matches(/^[^\d]*$/, "About Tasker cannot contain digits"),
   category: Yup.string()
     .oneOf(
       ["repair", "personal_help", "delivery", "other"],
-      "Select a valid category",
+      "Select a valid category"
     )
     .when("role", {
       is: "tasker",
@@ -65,7 +63,7 @@ export default function Profile() {
     defaultValues: {
       name: "",
       family_name: "",
-      eta: "",
+      eta: 0,
       bio: "",
     },
   });
@@ -92,7 +90,7 @@ export default function Profile() {
       setValue("bio", response.data.bio || "");
 
       if (response.data.user.role == "tasker") {
-        setValue("eta", response.data.eta || "");
+        setValue("eta", response.data.eta);
         setValue("category", response.data.category || "");
       }
 
@@ -112,11 +110,12 @@ export default function Profile() {
     }
   };
 
-  const patchProfile = async (formData: any) => {
+  const patchProfile = async (formData: ProfileType) => {
     try {
       setLoading(true);
       const patchData = {
         ...formData,
+        eta: Number(formData.eta),
         category: formData.category,
       };
       console.log(patchData, "patchData", formData, "formData");
@@ -130,7 +129,7 @@ export default function Profile() {
       setValue("bio", response.data.bio || "");
 
       if (response.data.user.role === "tasker") {
-        setValue("eta", response.data.eta || "");
+        setValue("eta", Number(response.data.eta));
         setValue("category", response.data.category || "");
       }
 
@@ -153,7 +152,7 @@ export default function Profile() {
 
   const handleEdit = () => {
     if (isEditable) {
-      const wrapped = handleSubmit((data) => {
+      const wrapped = handleSubmit((data: any) => {
         patchProfile(data);
       });
       wrapped();
@@ -301,13 +300,13 @@ export default function Profile() {
               render={({ field: { onChange, value } }) => (
                 <EditableField
                   label="ETA"
-                  value={value || ""}
+                  value={value?.toString()!}
                   onChange={(value) => {
-                    setProfile({ ...profile, eta: value });
+                    setProfile({ ...profile, eta: Number(value) });
                     onChange(value);
                   }}
                   editable={isEditable}
-                  placeholder="Estimated Time of Arrival in minutes"
+                  placeholder="Estimated time of arrival in minutes"
                   error={errors.eta?.message}
                 />
               )}

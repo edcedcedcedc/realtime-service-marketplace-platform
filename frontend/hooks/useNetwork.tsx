@@ -13,7 +13,6 @@ export function useNetwork() {
   const [wsTaskNotificationsUrl, setWsTaskNotificationsUrl] = useState<
     string | null
   >(null);
-
   const access = useStore((state) => state.auth.jwt?.access);
 
   useEffect(() => {
