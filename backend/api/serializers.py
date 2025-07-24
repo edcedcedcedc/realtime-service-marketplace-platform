@@ -97,6 +97,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 
 class TaskerProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    eta = serializers.IntegerField(required=False, allow_null=False)
 
     class Meta:
         model = Profile
@@ -145,4 +146,5 @@ class TaskRequestSerializer(serializers.ModelSerializer):
             "category",
             "eta",
             "created_at",
+            "seen",
         ]

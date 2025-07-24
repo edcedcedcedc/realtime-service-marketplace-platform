@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Button,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
 
 import useStore, {
   URGENCY_OPTIONS,
@@ -15,11 +8,6 @@ import useStore, {
 } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
-import api from "../services/api";
-import { useTaskRequest } from "../hooks/useTaskRequest";
-import IOSModal from "../components/IOSmodal";
-import { withTimeout } from "../utils/withTimeout";
-import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
@@ -41,18 +29,17 @@ const statusColorMap = STATUS_OPTIONS.reduce(
 type TaskCardProps = {
   task: Task;
   isMiniMapVisible: boolean;
-
   handleInitTaskRequest: (param: number) => void;
+  isConnected: boolean;
 };
 
 export default function TaskCard({
   task,
   isMiniMapVisible,
-
   handleInitTaskRequest,
+  isConnected,
 }: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
-
   useEffect(() => {
     return () => {
       //setCurrentTempTaskId(null);
@@ -128,15 +115,24 @@ export default function TaskCard({
           Location: {task.location}
         </Text>
       </View>
-
+      {showMiniMap && (
+        <Text style={styles.helperText}>
+          To enlarge the map, simply double-tap it.
+        </Text>
+      )}
       <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
         <Button
+          disabled={!isConnected}
           title={showMiniMap ? "Hide Location" : "View Location"}
+          color={isConnected ? undefined : "#B0B0B0"}
           onPress={() => setShowMiniMap((show) => !show)}
         />
+
         <Button
           title="Initiate"
+          disabled={!isConnected}
           onPress={() => handleInitTaskRequest(task.id)}
+          color={isConnected ? undefined : "#B0B0B0"}
         />
       </View>
 
@@ -165,6 +161,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     width: width - 32,
+  },
+  helperText: {
+    color: COLORS.color32,
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
   },
   centeredRow: {
     alignItems: "center",

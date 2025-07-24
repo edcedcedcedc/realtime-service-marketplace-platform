@@ -519,6 +519,48 @@ def accept_task_request_as_client(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel_all_task_requests_as_client(request):
+    task_id = request.data.get("task_id")
+
+    if not task_id:
+        return Response(
+            {"error": "Task ID is required."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        task = Task.objects.get(id=task_id)
+    except Task.DoesNotExist:
+        return Response({"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized."}, status=status.HTTP_403_FORBIDDEN)
+
+    task_requests = TaskRequest.objects.filter(task=task)
+
+    cancelled_count = 0
+    for tr in task_requests:
+        try:
+            broadcast_task_request(
+                subtype="cancelled-by-client",
+                action={
+                    "tasker": "close_modal",
+                    "client": "delete_tasker_from_taskrequests",
+                },
+                task_request=tr,
+            )
+            tr.delete()
+            cancelled_count += 1
+        except Exception as e:
+            print(f"[!] Error cancelling TaskRequest {tr.id}: {e}")
+
+    return Response(
+        {"message": f"Cancelled {cancelled_count} task request(s)."},
+        status=status.HTTP_200_OK,
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def task_requests_for_task_as_client(request, task_id):
@@ -596,52 +638,6 @@ def confirm_task_request_as_tasker(request):
     )
 
     return Response({"message": "Confirmed"}, status=status.HTTP_200_OK)
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def cancel_all_task_requests(request):
-    task_id = request.data.get("task_id")
-
-    try:
-        task = Task.objects.get(id=task_id)
-    except Task.DoesNotExist:
-        return Response(
-            {"error": "Task not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    if task.client != request.user:
-        return Response(
-            {"error": "Unauthorized."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    task_requests = TaskRequest.objects.filter(task=task)
-
-    for task_request in task_requests:
-        try:
-            broadcast_task_request_deleted(
-                subtype="taskrequest:cancelled-by-client",
-                action={
-                    "tasker": "close_modal",
-                    "client": "delete_tasker_from_taskrequests",
-                },
-                task_id=task.id,
-                tasker_id=task_request.tasker.id,
-                client_id=request.user.id,
-                task_request_id=task_request.id,
-            )
-            task_request.delete()
-        except Exception as e:
-            print(
-                f"[!] Failed to broadcast/delete request for tasker {task_request.tasker.id}: {str(e)}"
-            )
-
-    return Response(
-        {"message": "All task requests for this task have been cancelled."},
-        status=status.HTTP_200_OK,
-    )
 
 
 @api_view(["GET"])

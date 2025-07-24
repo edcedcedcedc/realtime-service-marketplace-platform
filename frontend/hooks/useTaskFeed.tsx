@@ -12,21 +12,26 @@ export function useTaskFeed() {
   const { wsTaskFeedUrl } = useNetwork();
   const addTask = useStore.getState().addTask;
   const removeTask = useStore.getState().removeTask;
+  const isSearching = useStore((state) => state.isSearching);
 
   const user = useStore().auth.user;
   const isLoggedIn = useStore((state) => state.isLoggedIn);
-  const refresh = useStore((state) => state.refresh);
+  const refreshTaskFeedSocket = useStore(
+    (state) => state.refreshTaskFeedSocket
+  );
+  const setRefreshTaskFeedSocket = useStore().setRefreshTaskFeedSocket;
 
   const { setTasks } = useStore();
 
   useEffect(() => {
-    if (!wsTaskFeedUrl || !isLoggedIn) {
-      console.log("Skipping socket connection — missing URL or notLoggedIn");
-      return;
-    } else {
-      console.log(
-        `Trying socket connection — wsUrl ${wsTaskFeedUrl} isLoggedIn ${isLoggedIn}`
-      );
+    if (!wsTaskFeedUrl || !isLoggedIn || !user?.id) {
+      console.log("Delaying socket connection — missing data");
+      const timeout = setTimeout(() => {
+        console.log("Retrying useTaskFeed connection...");
+        setRefreshTaskFeedSocket(); // This will re-trigger the useEffect
+      }, 1000); // Retry in 1 second
+
+      return () => clearTimeout(timeout); // Cleanup in case component unmounts
     }
 
     const fetchTasks = async () => {
@@ -45,7 +50,12 @@ export function useTaskFeed() {
       } finally {
       }
     };
+
     taskFeedSocket.setIsLoggedIn(isLoggedIn);
+
+    if (user?.role !== "tasker") {
+      taskFeedSocket.disconnect("[not client, taskeed] disconnected");
+    }
 
     taskFeedSocket.connect(wsTaskFeedUrl, `taskfeed ${user?.id}`, fetchTasks);
 
@@ -68,27 +78,28 @@ export function useTaskFeed() {
           text2: "Task feed",
         });
       }, 100);
-      removeTask(id.id);
+      removeTask(id.id); //this deletes the task from all the taskers
     };
 
     const onSocketOpen = () => {
+      console.log(`useTaskFeed "Websocket connected!"`);
       setTimeout(() => {
         Toast.show({
           type: "success",
           text1: "Websocket connected!",
           text2: `useTaskFeed`,
         });
-      }, 2500);
+      }, 3000);
     };
 
     const onSocketClose = () => {
       setTimeout(() => {
         Toast.show({
           type: "info",
-          text1: "Websocket connection close !",
+          text1: "Websocket connection close!",
           text2: `UseTaskFeed`,
         });
-      }, 2500);
+      }, 3000);
     };
 
     // === Register Events ===
@@ -102,10 +113,9 @@ export function useTaskFeed() {
       taskFeedSocket.off("socket:onclose", onSocketClose);
       taskFeedSocket.off("task:new", handleNewTask);
       taskFeedSocket.off("task:delete", handleDeleteTask);
-      taskFeedSocket.setIsLoggedIn(false);
       taskFeedSocket.disconnect("useTaskFeed unmounted");
     };
-  }, [refresh, isLoggedIn]);
+  }, [refreshTaskFeedSocket, isLoggedIn, isSearching]);
 }
 
 /* 

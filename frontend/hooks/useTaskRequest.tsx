@@ -17,16 +17,20 @@ export function useTaskRequest() {
   const currentTaskId = useStore((state) => state.currentTaskId);
   const currentUserId = useStore.getState().auth.user?.id;
   const isLoggedIn = useStore((state) => state.isLoggedIn);
-  const refresh = useStore((state) => state.refresh);
-  const setIsConfirmDialog = useStore().setIsConfirmDialog;
+  const isSearching = useStore((state) => state.isSearching);
+  const refreshTaskRequestSocket = useStore(
+    (state) => state.refreshTaskRequestSocket
+  );
 
   useEffect(() => {
-    if (!currentTaskId || !isLoggedIn) return;
+    if (!currentTaskId || !isLoggedIn || !isSearching) return;
     console.log(currentTaskId, "current task if from useTaskRequest");
     const wsUrl = getTaskRequestUrl(currentTaskId, 0);
+
     if (!wsUrl) return;
 
-    taskRequestsSocket.setIsLoggedIn(true);
+    taskRequestsSocket.setIsLoggedIn(isLoggedIn);
+
     taskRequestsSocket.connect(
       wsUrl,
       `taskrequest ${currentTaskId} user ${currentUserId}`
@@ -47,11 +51,13 @@ export function useTaskRequest() {
     const onCancelledByTasker = (payload: TaskRequest) => {
       if (payload.client_id === currentUserId) {
         deleteTaskRequest(payload.id);
-        Toast.show({
-          type: "info",
-          text1: `Request cancelled by ${payload.tasker_name}`,
-          text2: `Task ${currentTaskId}`,
-        });
+        setTimeout(() => {
+          Toast.show({
+            type: "info",
+            text1: `Request cancelled by ${payload.tasker_name}`,
+            text2: `Task ${currentTaskId}`,
+          });
+        }, 1000);
       }
     };
 
@@ -81,7 +87,7 @@ export function useTaskRequest() {
         //do something else
         Toast.show({
           type: "error",
-          text1: "Client cancelled the request",
+          text1: "Client accepted the request",
           text2: `Task Request id ${payload.id}`,
         });
       }
@@ -106,9 +112,9 @@ export function useTaskRequest() {
         Toast.show({
           type: "info",
           text1: "Websocket disconnected!",
-          text2: `UseTaskRequest, ${currentTaskId} ${currentTaskId}`,
+          text2: `Server closed the connection, ${currentTaskId} ${currentTaskId}`,
         });
-      }, 2500);
+      }, 100);
     };
 
     const onSocketOpen = () => {
@@ -118,12 +124,13 @@ export function useTaskRequest() {
           text1: "Websocket connected!",
           text2: `useTaskRequests ${currentTaskId} ${currentUserId}`,
         });
-      }, 2500);
+      }, 1000);
     };
 
     // === Register Events ===
     taskRequestsSocket.on("socket:onopen", onSocketOpen);
     taskRequestsSocket.on("socket:onclose", onSocketClose);
+
     taskRequestsSocket.on("taskrequest:initiate-by-tasker", onInitiateByTasker);
     taskRequestsSocket.on(
       "taskrequest:cancelled-by-tasker",
@@ -159,10 +166,9 @@ export function useTaskRequest() {
         "taskrequest:accepted-by-client",
         onAcceptedByClient
       );
-
       taskRequestsSocket.disconnect("useTaskRequest unmount");
     };
-  }, [refresh, currentTaskId, isLoggedIn]);
+  }, [refreshTaskRequestSocket, isLoggedIn, isSearching]);
 
   return {
     currentTaskId,

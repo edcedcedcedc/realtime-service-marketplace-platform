@@ -6,95 +6,90 @@ import {
   FlatList,
   StyleSheet,
   Dimensions,
+  TouchableOpacity,
   Button,
 } from "react-native";
 import { COLORS } from "../constants/colors";
 import useStore from "../store/useStore";
 import api from "../services/api";
 import Toast from "react-native-toast-message";
+import { TaskRequest } from "../store/useStore";
 
 const { width } = Dimensions.get("window");
-
-type InspectRequestsModalProps = {
-  visible: boolean;
-  onClose: () => void;
-  onAccept: (id: string | number) => void;
-  onDecline: (id: string | number) => void;
-};
 
 export default function InspectRequestsModal({
   visible,
   onClose,
-}: InspectRequestsModalProps) {
-  const requests = useStore((state) => state.taskRequests);
-  const deleteTaskRequest = useStore().deleteTaskRequest;
-  const setRequests = useStore().setRequests;
-  const currentTaskId = useStore((state) => state.currentTaskId);
+  taskRequests,
+  currentTaskId,
+  handleAccept,
+  handleDecline,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  taskRequests: any[];
+  currentTaskId: number | null;
+  handleAccept: (taskerId: number, taskId: number) => void;
+  handleDecline: (taskerId: number, taskId: number) => void;
+}) {
+  const setTaskRequests = useStore().setTaskRequests;
+  const isConnected = useStore((state) => state.isConnected);
+  const requestsRef = useRef<NodeJS.Timeout | null>(null);
+  const [cancelDisabled, setCancelDisabled] = useState(true);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    const timeouts: NodeJS.Timeout[] = [];
+    const timeout = setTimeout(() => {
+      setCancelDisabled(false);
+    }, 3000);
 
-    const fetchTaskRequests = async () => {
-      if (!currentTaskId) return; //by the client, he is inside modal
-      try {
-        const response = await api.get(`/task-requests/${currentTaskId}/`);
-        const data = response.data;
-        Toast.show({
-          type: "info",
-          text1: `Polling from /task-requests/${currentTaskId}/`,
-          text2: "Inspect request modal",
-        });
-        setRequests(data);
-      } catch (error) {
-        console.log(error);
-      }
+    return () => {
+      clearTimeout(timeout);
+      setCancelDisabled(true);
     };
-    fetchTaskRequests();
-    interval = setInterval(fetchTaskRequests, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [taskRequests]);
 
-  const handleCancelTaskRequestClient = async (
-    taskerId: number,
-    taskId: number
-  ) => {
-    try {
-      const res = await api.post("cancel-task-request-as-client/", {
-        task_id: taskId,
-        tasker_id: taskerId,
-      });
-      deleteTaskRequest(res.data.id);
-    } catch (error) {
-      console.warn(error, `Failed to cancel request`);
+  useEffect(() => {
+    let wasOffline = false;
+    if (!isConnected) wasOffline = true;
+
+    if (isConnected && wasOffline && currentTaskId) {
+      const timeout = setTimeout(async () => {
+        try {
+          const res = await api.get(`/task-requests/${currentTaskId}/`);
+          setTaskRequests(res.data);
+          Toast.show({
+            type: "info",
+            text1: "Polled after reconnect",
+          });
+        } catch (e) {
+          console.warn("Polling error:", e);
+        }
+      }, 3000);
+
+      return () => clearTimeout(timeout);
     }
-  };
+  }, [isConnected, currentTaskId]);
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.heading}>Incoming Requests</Text>
+
           <FlatList
-            data={requests}
+            data={taskRequests}
             keyExtractor={(item) => item.id.toString()}
-            showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginTop: 50,
-                }}
-              >
-                {requests.length === 0 && (
-                  <Text style={{ fontSize: 16, color: COLORS.color25 }}>
-                    No tasker accept this task yet...
-                  </Text>
-                )}
-              </View>
+              <Text style={styles.emptyText}>
+                No tasker accepted this task yet...
+              </Text>
             }
-            renderItem={({ item }) => {
+            renderItem={({ item }: { item: TaskRequest }) => {
+              const disableInteraction = cancelDisabled || !isConnected;
+
               return (
                 <View style={styles.card}>
                   <Text style={styles.title}>{item.tasker_username}</Text>
@@ -106,21 +101,24 @@ export default function InspectRequestsModal({
                     Specialization: {item.category}
                   </Text>
                   <Text style={styles.infoText}>
-                    Task Done: {item.tasks_done}
+                    Tasks Done: {item.tasks_done}
                   </Text>
                   <Text style={styles.infoText}>
                     Rating: {item.tasker_rating} ★
                   </Text>
-                  <Text style={styles.infoText}>ETA: {item.eta} min</Text>
+                  <Text style={styles.infoText}>ETA: {item.eta}</Text>
+
                   <View style={styles.buttonRow}>
-                    <Button title="Accept" />
                     <Button
+                      title="Accept"
+                      onPress={() => handleAccept(item.tasker_id, item.task_id)}
+                      disabled={disableInteraction}
+                    />
+                    <Button
+                      disabled={disableInteraction}
                       title="Decline"
                       onPress={() =>
-                        handleCancelTaskRequestClient(
-                          item.tasker_id,
-                          item.task_id
-                        )
+                        handleDecline(item.tasker_id, item.task_id)
                       }
                     />
                   </View>
@@ -128,7 +126,10 @@ export default function InspectRequestsModal({
               );
             }}
           />
-          <Button title="Close" onPress={onClose} />
+
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -145,74 +146,88 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: width - 24,
     maxHeight: "85%",
-    backgroundColor: COLORS.color19,
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
+    elevation: 5,
   },
   heading: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.color11,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
     textAlign: "center",
     marginBottom: 16,
   },
   list: {
     paddingBottom: 12,
   },
+  emptyText: {
+    fontSize: 16,
+    color: "#888",
+    textAlign: "center",
+    marginTop: 50,
+  },
   card: {
-    alignContent: "center",
-    alignItems: "center",
-
-    borderColor: COLORS.color18,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 16,
+    backgroundColor: "#fff",
+    borderRadius: 10,
     padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: COLORS.color11,
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: COLORS.color12,
+    color: "#555",
     marginBottom: 4,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
+    justifyContent: "space-around",
+    marginTop: 16,
   },
-  smallButton: {
+  button: {
     flex: 1,
-    paddingVertical: 8,
     marginHorizontal: 5,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  acceptButton: {
-    backgroundColor: COLORS.color16,
-  },
-  declineButton: {
-    backgroundColor: COLORS.color5,
-  },
-  buttonText: {
-    color: COLORS.color19,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: COLORS.color30,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
   },
-  closeButtonText: {
-    color: COLORS.color19,
+  acceptButton: {
+    backgroundColor: "#4CAF50",
+  },
+  declineButton: {
+    backgroundColor: "#F44336",
+  },
+  closeButton: {
+    backgroundColor: "#2196F3",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
     fontWeight: "600",
     fontSize: 15,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: "#bdbdbd",
+  },
+  disabledText: {
+    color: "#eee",
   },
 });
