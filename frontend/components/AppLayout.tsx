@@ -1,5 +1,5 @@
 // AppLayout.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -17,15 +17,25 @@ import { COLORS } from "../constants/colors";
 import ConnectionSnackbar from "./SnackBar";
 import { useRoute } from "@react-navigation/native";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: any;
+  footer?: any;
+}
+
+export default function AppLayout({ children, footer }: Props) {
   const loading = useStore((state) => state.loading);
+  const hideSnackbar = useStore((state) => state.hideSnackbar);
+
+  const shouldRenderFooter = useMemo(() => {
+    return !hideSnackbar && footer;
+  }, [hideSnackbar, footer]);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {children}
         <Toast config={ToastConfig} visibilityTime={2000} />
         <GlobalLoading visible={loading} />
-        <ConnectionSnackbar />
+        {shouldRenderFooter}
       </View>
     </SafeAreaView>
   );

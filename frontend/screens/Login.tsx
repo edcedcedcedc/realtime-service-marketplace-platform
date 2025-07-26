@@ -32,11 +32,13 @@ export default function LoginScreen({ navigation }: any) {
 
   useEffect(() => {
     setIsLoggedIn(false);
+    useStore.getState().setHideSnackbar(true);
     Toast.hide();
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
       scrollRef.current?.scrollToPosition(0, 0, false);
+      useStore.getState().setHideSnackbar(false);
       reset();
     };
   }, []);

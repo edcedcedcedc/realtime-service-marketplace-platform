@@ -11,6 +11,7 @@ import { AlertsProvider } from "react-native-paper-alerts";
 import useStore from "./store/useStore";
 import { useEffect, useState } from "react";
 import { useRoute } from "@react-navigation/native";
+import ConnectionSnackbar from "./components/SnackBar";
 
 export default function App() {
   const setIsConnected = useStore((state) => state.setIsConnected);
@@ -39,7 +40,7 @@ export default function App() {
       <PaperProvider>
         <AlertsProvider>
           <NavigationContainer ref={navigationRef}>
-            <AppLayout>
+            <AppLayout footer={<ConnectionSnackbar />}>
               {/* Material Chip Status Bar */}
               {/* <View style={styles.statusBar}>
                 <Text

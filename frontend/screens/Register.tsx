@@ -39,7 +39,11 @@ export default function RegisterScreen({ navigation }: any) {
   });
 
   useEffect(() => {
-    return () => reset();
+    useStore.getState().setHideSnackbar(true);
+    return () => {
+      reset();
+      useStore.getState().setHideSnackbar(false);
+    };
   }, []);
 
   const handleRegister = async (data: Yup.InferType<typeof registerSchema>) => {
