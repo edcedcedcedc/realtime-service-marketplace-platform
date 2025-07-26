@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 
 import { COLORS } from "../constants/colors";
 
 import Login from "./Login";
 import Register from "./Register";
+import useStore from "../store/useStore";
 
 const Tab = createMaterialTopTabNavigator();
 

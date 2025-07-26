@@ -22,5 +22,5 @@ export const logout = () => {
       }),
     );
     setLoading(false);
-  }, 10);
+  }, 50);
 };
