@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
+import stripe
 from .serializers import (
     ClientProfileSerializer,
     TaskRequestSerializer,
@@ -15,9 +16,13 @@ from .serializers import (
     TaskerProfileSerializer,
 )
 from .models import (
+    Subtask,
+    SubtaskPayment,
     TaskChatMessage,
+    TaskCompletionProof,
     TaskLog,
     Task,
+    TaskPayment,
     TaskRequest,
     TermsAcceptanceLog,
     Profile,
@@ -26,8 +31,11 @@ from .utils import (
     broadcast_task_request,
     broadcast_taskfeed_new,
     broadcast_taskfeed_deleted,
+    capture_payment,
+    create_payment_intent,
     get_user_ip,
     notify_user,
+    transfer_to_tasker,
 )
 from api.tasks import delete_task_if_still_open
 from django.db.models.signals import post_delete
@@ -645,7 +653,7 @@ def confirm_task_request_as_tasker(request):
 def task_chat_history(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     if request.user != task.client and request.user != task.tasker:
-        return Response({"error": "Not authorized"}, status=403)
+        return Response({"error": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
 
     messages = TaskChatMessage.objects.filter(task=task).order_by("sent_at")
     return Response(
@@ -660,3 +668,152 @@ def task_chat_history(request, task_id):
             for msg in messages
         ]
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def start_task_payment(request):
+    task_id = request.data.get("task_id")
+    task = get_object_or_404(Task, id=task_id)
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    if hasattr(task, "payment"):
+        return Response({"error": "Payment already exists for this task."}, status=400)
+
+    intent = create_payment_intent(task.budget)
+
+    TaskPayment.objects.create(
+        task=task,
+        client=request.user,
+        tasker=task.tasker,
+        amount=task.budget,
+        stripe_payment_intent_id=intent.id,
+    )
+
+    return Response({"client_secret": intent.client_secret})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_task_payment(request):
+    task_id = request.data.get("task_id")
+    task = get_object_or_404(Task, id=task_id)
+
+    if task.client != request.user:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    if not hasattr(task, "payment"):
+        return Response({"error": "No payment found for this task."}, status=400)
+
+    payment = task.payment
+
+    if payment.is_captured:
+        return Response({"error": "Payment already released."}, status=400)
+
+    capture_payment(payment.stripe_payment_intent_id)
+    transfer_to_tasker(payment.amount * 0.7, task.tasker.stripe_account_id)
+
+    payment.is_captured = True
+    payment.released_at = timezone.now()
+    payment.save()
+
+    return Response({"success": "Payment released to tasker."})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def request_subtask_payment(request):
+    subtask_id = request.data.get("subtask_id")
+    subtask = get_object_or_404(Subtask, id=subtask_id)
+
+    if subtask.tasker != request.user:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    if hasattr(subtask, "payment"):
+        return Response(
+            {"error": "Payment already requested for this subtask."}, status=400
+        )
+
+    payment = SubtaskPayment.objects.create(
+        subtask=subtask,
+        tasker=request.user,
+        client=subtask.task.client,
+        amount=subtask.cost,
+    )
+
+    return Response({"subtask_payment_id": payment.id})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def approve_subtask_payment(request):
+    subtask_payment = get_object_or_404(
+        SubtaskPayment, id=request.data.get("subtask_payment_id")
+    )
+
+    if subtask_payment.client != request.user:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    if subtask_payment.payment_intent_id:
+        return Response({"error": "Payment already initialized."}, status=400)
+
+    intent = create_payment_intent(subtask_payment.amount)
+
+    subtask_payment.stripe_payment_intent_id = intent.id
+    subtask_payment.approved = True
+    subtask_payment.save()
+
+    return Response({"client_secret": intent.client_secret})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_subtask_payment(request):
+    subtask_payment = get_object_or_404(
+        SubtaskPayment, id=request.data.get("subtask_payment_id")
+    )
+
+    if subtask_payment.client != request.user:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    if subtask_payment.captured:
+        return Response({"error": "Subtask payment already released."}, status=400)
+
+    capture_payment(subtask_payment.stripe_payment_intent_id)
+    transfer_to_tasker(
+        subtask_payment.amount * 0.7, subtask_payment.tasker.stripe_account_id
+    )
+
+    subtask_payment.captured = True
+    subtask_payment.released_at = timezone.now()
+    subtask_payment.save()
+
+    return Response({"success": "Subtask payment released."})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_task_done(request):
+    task_id = request.data.get("task_id")
+    task = get_object_or_404(Task, id=task_id)
+
+    if task.tasker != request.user:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    if task.status != "in_progress":
+        return Response({"error": "Task is not active"}, status=400)
+
+    TaskCompletionProof.objects.create(
+        task=task,
+        description=request.data.get("description", ""),
+        photo_urls=request.data.get("photo_urls", []),
+    )
+
+    task.status = "pending_approval"
+    task.marked_done_at = timezone.now()
+    task.save()
+
+    # Later: Notify client via WebSocket
+    return Response({"success": "Task marked as done and proof submitted."})

@@ -286,3 +286,7 @@ LOGGING = {
         },
     },
 }
+
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_CLIENT_ID = os.getenv("STRIPE_CLIENT_ID")

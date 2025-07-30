@@ -27,7 +27,7 @@ export default function ConnectionSnackbar() {
     <Snackbar
       visible={snackbarVisible}
       onDismiss={() => setSnackbarVisible(false)}
-      duration={3000}
+      duration={1300}
       style={{
         backgroundColor: isConnected ? "#388E3C" : "#D32F2F",
         elevation: 1000,

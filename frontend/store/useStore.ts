@@ -81,6 +81,7 @@ const initialState = {
   isConnected: false,
   snackbarVisible:false,
   isSearching: false,
+  hideSnackbar: false,
 };
 
 interface Notification {
@@ -224,8 +225,10 @@ interface State {
   currentTaskId: number | null;
   currentTempTaskId: number | null;
   isConnected: boolean;
-  snackbarVisible: boolean;
-  setSnackbarVisible:(param: boolean) => void;
+  snackbarVisible: boolean; //from netInfo
+  hideSnackbar: boolean; //within components hide/show
+  setHideSnackbar: (val: boolean) => void; //within components hide/show
+  setSnackbarVisible:(param: boolean) => void; //from netInfo
   setIsConnected: (value: boolean) => void;
   setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
   setCurrentTempTaskId: (param: number | null) => void;
@@ -297,6 +300,8 @@ const useStore = create<State>()(
       refreshTaskFeedSocket: 0,
       refreshTaskRequestSocket: 0,
       snackbarVisible: false,
+      hideSnackbar: false,
+      setHideSnackbar: (val: boolean) => set({ hideSnackbar: val }),
       setSnackbarVisible: (param) => set({ snackbarVisible: param }),  
       setIsConnected: (value) => set({ isConnected: value }),   
       setCurrentTempTaskId: (id: number | null) =>

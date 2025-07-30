@@ -8,6 +8,7 @@ import HeaderMenu from "../screens/HeaderMenu";
 import Login from "../screens/Login";
 import Register from "../screens/Register";
 import Profile from "../screens/Profile";
+import TaskRequests from "../screens/TaskRequestsFeed";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   "Task details": undefined;
   "Search a tasker": undefined;
   Profile: undefined;
+  "Task Requests": undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -36,6 +38,7 @@ export default function RootNavigator() {
       <Stack.Screen name="Task feed" component={TaskFeed} />
       <Stack.Screen name="Search a tasker" component={TaskPost} />
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="Task Requests" component={TaskRequests} />
     </Stack.Navigator>
   );
 }

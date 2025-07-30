@@ -116,7 +116,7 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-
+    marked_done_at = models.DateTimeField(null=True, blank=True)
     requests = models.JSONField(
         default=list,
         blank=True,
@@ -316,3 +316,44 @@ class TaskChatMessage(models.Model):
 
     class Meta:
         ordering = ["sent_at"]
+
+
+class TaskPayment(models.Model):
+    task = models.OneToOneField(Task, on_delete=models.CASCADE, related_name="payment")
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="payments_made", on_delete=models.CASCADE
+    )
+    tasker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="payments_received",
+        on_delete=models.CASCADE,
+    )
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    stripe_payment_intent_id = models.CharField(max_length=255)
+    is_captured = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+
+
+class SubtaskPayment(models.Model):
+    subtask = models.OneToOneField(
+        Subtask, on_delete=models.CASCADE, related_name="payment"
+    )
+    tasker = models.ForeignKey(User, on_delete=models.CASCADE)
+    client = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    approved = models.BooleanField(default=False)
+    payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
+    captured = models.BooleanField(default=False)
+    released = models.BooleanField(default=False)
+    released_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TaskCompletionProof(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="proofs")
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    image_url = models.URLField()
+    description = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)

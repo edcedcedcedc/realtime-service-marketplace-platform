@@ -83,7 +83,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
     setIsInitDialog(true);
     setCurrentTaskId(task_id);
     setCancelDisabled(true);
-    setIsSearching(true); //as TASKER!!! but this is as well the main variable for client, I NEED this to sync the states between client and tasker
+    setIsSearching(true);
 
     if (ref.current) {
       clearTimeout(ref.current);
@@ -226,7 +226,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
             ) : null}
           </View>
         }
-        scrollEventThrottle={300}
+        scrollEventThrottle={3000}
         onScroll={onScroll}
         onScrollEndDrag={onScrollEndDrag}
         scrollEnabled={!loading}

@@ -32,11 +32,13 @@ export default function LoginScreen({ navigation }: any) {
 
   useEffect(() => {
     setIsLoggedIn(false);
+    useStore.getState().setHideSnackbar(true);
     Toast.hide();
     scrollRef.current?.scrollToPosition(0, 0, false);
     return () => {
       Keyboard.dismiss();
       scrollRef.current?.scrollToPosition(0, 0, false);
+      useStore.getState().setHideSnackbar(false);
       reset();
     };
   }, []);
@@ -97,7 +99,7 @@ export default function LoginScreen({ navigation }: any) {
         scrollEventThrottle={250}
         showsVerticalScrollIndicator={false}
       >
-        <Image source={require("../assets/1.png")} style={styles.logo} />
+        <Image source={require("../assets/light1.jpg")} style={styles.logo} />
         <Text style={styles.title}>Taskoon</Text>
 
         {/* Username */}
@@ -155,7 +157,7 @@ export default function LoginScreen({ navigation }: any) {
             onPress={handleSubmit(handleLogin)}
             activeOpacity={0.7}
           >
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>Sign in</Text>
           </TouchableOpacity>
         </View>
         {isLoggedIn && (
@@ -198,7 +200,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   container: {
-    backgroundColor: COLORS.color21,
+    backgroundColor: "#fff",
     flex: 1,
     paddingHorizontal: SPACING.md,
   },

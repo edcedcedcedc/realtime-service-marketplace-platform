@@ -21,7 +21,7 @@ import { taskPostSchema } from "../validation/validationSchema";
 import { URGENCY_OPTIONS, SUBCATEGORY_OPTIONS } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import { SPACING } from "../constants/dimensions";
-import IncomingRequestsModal from "./InspectRequestsModal";
+import TaskRequestsFeed from "./TaskRequestsFeed";
 import MapSelector from "./MapSelector";
 import api from "../services/api";
 import { useTaskFeed } from "../hooks/useTaskFeed";
@@ -38,7 +38,6 @@ export default function TaskPost({ navigation }: any) {
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
-  const currentTaskId = useStore((state) => state.currentTaskId);
   const [taskerRequestsVisible, setTaskerRequestsVisible] = useState(false);
   const taskRequests = useStore((state) => state.taskRequests);
   const setCurrentTaskId = useStore().setCurrentTaskId;
@@ -49,6 +48,7 @@ export default function TaskPost({ navigation }: any) {
   const addTask = useStore.getState().addTask;
   const deleteTaskRequest = useStore().deleteTaskRequest;
   const deleteTaskRequests = useStore().deleteTaskRequests;
+  const currentTaskId = useStore((state) => state.currentTaskId);
 
   useTaskFeed();
   useTaskRequest();
@@ -89,12 +89,10 @@ export default function TaskPost({ navigation }: any) {
 
   useEffect(() => {
     return () => {
+      console.log("[takpost] unmount");
       reset();
-      setTempTaskData(null);
-      setIsSearching(false);
+      resetLocalState();
       Toast.hide();
-      deleteTaskRequests();
-      setCurrentTaskId(null);
     };
   }, []);
 
@@ -103,6 +101,8 @@ export default function TaskPost({ navigation }: any) {
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
+
+    if (currentTaskId) return;
 
     taskCreationTimeout.current = setTimeout(async () => {
       try {
@@ -113,11 +113,7 @@ export default function TaskPost({ navigation }: any) {
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
-
-        const res = await api.post("/tasks/create/", payload);
-        setCurrentTaskId(res.data.id);
-        addTask(res.data); //add task task to the current client
-        setRefreshTaskRequestSocket();
+        orchestrateInitSearch(payload);
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -136,39 +132,8 @@ export default function TaskPost({ navigation }: any) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
-      setCurrentTaskId(null);
     };
   }, [tempTaskData]);
-
-  const handleCancelTaskRequestClient = async (
-    taskerId: number,
-    taskId: number
-  ) => {
-    try {
-      const res = await api.post("cancel-task-request-as-client/", {
-        task_id: taskId,
-        tasker_id: taskerId,
-      });
-      deleteTaskRequest(res.data.id);
-    } catch (error) {
-      console.warn("Failed to cancel request", error);
-    }
-  };
-
-  const handleAcceptTaskRequestClient = async (
-    taskerId: number,
-    taskId: number
-  ) => {
-    try {
-      const res = await api.post("accept-task-request-as-client/", {
-        task_id: taskId,
-        tasker_id: taskerId,
-      });
-      deleteTaskRequests();
-    } catch (error) {
-      console.warn("Failed to cancel request", error);
-    }
-  };
 
   const confirmSubmit = (data: TaskFormInput) => {
     Alert.alert(
@@ -203,7 +168,7 @@ export default function TaskPost({ navigation }: any) {
         {
           text: "Yes",
           onPress: () => {
-            cancelSearch();
+            orchestrateCancelSearch();
           },
         },
       ],
@@ -218,92 +183,71 @@ export default function TaskPost({ navigation }: any) {
     setTempTaskData(formData);
   };
 
-  const cancelSearch = () => {
-    setIsSearching(false);
-    setTempTaskData(null); // clean the form
-    deleteTaskById(); // delete the from task feed and from store
-    cancelAllTaskRequestsById(); //delete modals for all taskers and delete task requests from store
+  const orchestrateInitSearch = async (payload: any) => {
+    const res = await api.post("/tasks/create/", payload);
+    Toast.show({
+      type: "success",
+      text1: `Task with id ${res.data.id} created successfully`,
+    });
+    setCurrentTaskId(res.data.id);
+    setRefreshTaskRequestSocket();
   };
 
-  /* 
-  trigger refresh
-  get both sockets working 
-  api delete 
-  set current task id null
-  regrigger 
-  */
-  function deleteTaskById() {
-    let count = 0;
-    const pollDelete = async () => {
-      count += 1;
-      if (!currentTaskId || count >= 3) return;
-      //const id = tasks.find((task) => currentTaskId === task.id)?.id;
-      //if (!id) return;
-      try {
-        setRefreshTaskFeedSocket();
-        await withTimeout(api.delete(`/tasks/delete/${currentTaskId}/`)); //sync the backend and broadcast to useTaskFeed
-        removeTask(currentTaskId); //this deletes the task from  the current client (the variable might be not used at all if )
-        setRefreshTaskRequestSocket();
-        Toast.show({
-          type: "success",
-          text1: "Task cancelled successfully",
-        });
-      } catch (err: any) {
-        if (!currentTaskId) {
-          return;
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Failed to cancel task",
-            text2:
-              err.response?.data?.error || "Retrying to cancel the task...",
-          });
-          setTimeout(pollDelete, 5000);
-        }
-      }
-    };
+  const orchestrateCancelSearch = async () => {
+    if (!currentTaskId) {
+      setIsSearching(false);
+      resetLocalState();
+    } else {
+      setIsSearching(false);
+      await cancelAllTaskRequestsById(); //delete modals for all taskers and delete task request from server
+      await deleteTaskById(); // delete the task from task feed i.e. from server
+      setRefreshTaskRequestSocket();
+      resetLocalState(); //reset local states of the current user
+    }
+  };
 
-    pollDelete();
+  function resetLocalState() {
+    setTempTaskData(null);
+    setCurrentTaskId(null);
+    deleteTaskRequests();
   }
-  //TODO
-  function cancelAllTaskRequestsById() {
+
+  async function deleteTaskById() {
     const currentTaskId = useStore.getState().currentTaskId;
-    const setRefreshTaskRequestSocket =
-      useStore.getState().setRefreshTaskRequestSocket;
+    if (!currentTaskId) return;
+    try {
+      const res = await api.delete(`/tasks/delete/${currentTaskId}/`);
+      Toast.show({
+        type: "success",
+        text1: `${JSON.stringify(res.data)}`,
+      });
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel task",
+        text2: err.response?.data?.error || "Retrying to cancel the task...",
+      });
+    }
+  }
 
-    let count = 0;
-
-    const pollCancel = async () => {
-      count += 1;
-
-      if (!currentTaskId || count >= 3) return;
-      try {
-        //setRefreshTaskFeedSocket();
-        await withTimeout(
-          api.post(`/cancel-all-task-requests-as-client/`, {
-            task_id: currentTaskId,
-          })
-        );
-        console.log(currentTaskId, "current task id");
-        deleteTaskRequests();
-        //setCurrentTaskId(null);
-        setRefreshTaskRequestSocket();
-        Toast.show({
-          type: "success",
-          text1: "All task requests cancelled",
-        });
-      } catch (err: any) {
-        Toast.show({
-          type: "error",
-          text1: "Failed to cancel task requests",
-          text2:
-            err.response?.data?.error || "Retrying to cancel task requests...",
-        });
-        setTimeout(pollCancel, 5000);
-      }
-    };
-
-    pollCancel();
+  async function cancelAllTaskRequestsById() {
+    const currentTaskId = useStore.getState().currentTaskId;
+    try {
+      await api.post(`/cancel-all-task-requests-as-client/`, {
+        task_id: currentTaskId,
+      });
+      Toast.show({
+        type: "success",
+        text1: "All task requests cancelled",
+      });
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel task requests",
+        text2:
+          err.response?.data?.error || "Giving up after multiple attempts.",
+      });
+    }
   }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -315,6 +259,10 @@ export default function TaskPost({ navigation }: any) {
     } else {
       setIsAllowAutoScroll(true);
     }
+  };
+
+  const handleTaskRequests = async () => {
+    navigation.navigate("Task Requests");
   };
 
   return (
@@ -640,9 +588,7 @@ export default function TaskPost({ navigation }: any) {
                 <View style={{ marginRight: -2 }}>
                   <Button
                     title="Inspect Requests"
-                    onPress={() => {
-                      setTaskerRequestsVisible(true);
-                    }}
+                    onPress={handleTaskRequests}
                   />
                 </View>
               </View>
@@ -673,16 +619,6 @@ export default function TaskPost({ navigation }: any) {
             >
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
-          )}
-          {taskerRequestsVisible && (
-            <IncomingRequestsModal
-              visible={true}
-              currentTaskId={currentTaskId}
-              taskRequests={taskRequests}
-              handleAccept={handleAcceptTaskRequestClient}
-              handleDecline={handleCancelTaskRequestClient}
-              onClose={() => setTaskerRequestsVisible(false)}
-            />
           )}
         </View>
       </KeyboardAwareScrollView>
