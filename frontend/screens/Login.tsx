@@ -99,7 +99,7 @@ export default function LoginScreen({ navigation }: any) {
         scrollEventThrottle={250}
         showsVerticalScrollIndicator={false}
       >
-        <Image source={require("../assets/dark.png")} style={styles.logo} />
+        <Image source={require("../assets/light1.jpg")} style={styles.logo} />
         <Text style={styles.title}>Taskoon</Text>
 
         {/* Username */}
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   container: {
-    backgroundColor: "black",
+    backgroundColor: "#fff",
     flex: 1,
     paddingHorizontal: SPACING.md,
   },

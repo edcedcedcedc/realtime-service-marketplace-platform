@@ -2,76 +2,22 @@
 
 from django.conf import settings
 from rest_framework import serializers
-from .models import Profile, Task, Subtask, TaskRequest, User
+from .models import (
+    Profile,
+    SubtaskPayment,
+    Task,
+    Subtask,
+    TaskCompletionProof,
+    TaskPayment,
+    TaskRequest,
+    User,
+)
 
 
 class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subtask
         fields = ["id", "title", "cost", "is_completed"]
-
-
-class TaskSerializer(serializers.ModelSerializer):
-    # client_username = serializers.CharField(source="client.username", read_only=True)
-    # client_id = serializers.IntegerField(source="client.id", read_only=True)
-    # tasker_username = serializers.SerializerMethodField()
-    # tasker_id = serializers.SerializerMethodField()
-    subtasks = SubtaskSerializer(many=True, read_only=True)
-
-    terms_accepted_client_at = serializers.SerializerMethodField()
-    terms_accepted_tasker_at = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Task
-        fields = [
-            "id",
-            "title",
-            "description",
-            "budget",
-            "urgency",
-            "location",
-            "status",
-            "client",
-            "tasker",
-            "expires_from_feed",
-            "must_start_by",
-            "created_at",
-            "updated_at",
-            "completed_at",
-            "latitude",
-            "longitude",
-            "category",
-            "subcategory",
-            "subtasks",
-            "terms_accepted_client_at",
-            "terms_accepted_tasker_at",
-        ]
-
-    def create(self, validated_data):
-        validated_data["client"] = self.context["request"].user
-        return super().create(validated_data)
-
-    def get_tasker_username(self, obj):
-        return obj.tasker.username if obj.tasker else ""
-
-    def get_tasker_id(self, obj):
-        return obj.tasker.id if obj.tasker else None
-
-    def validate_latitude(self, value):
-        return value
-
-    def validate_longitude(self, value):
-        return value
-
-    def get_terms_accepted_client_at(self, obj):
-        if obj.terms_accepted_client_at:
-            return obj.terms_accepted_client_at.accepted_at.isoformat()
-        return None
-
-    def get_terms_accepted_tasker_at(self, obj):
-        if obj.terms_accepted_tasker_at:
-            return obj.terms_accepted_tasker_at.accepted_at.isoformat()
-        return None
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -148,3 +94,103 @@ class TaskRequestSerializer(serializers.ModelSerializer):
             "created_at",
             "seen",
         ]
+
+
+class SubtaskPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubtaskPayment
+        fields = [
+            "approved",
+            "captured",
+            "released",
+            "released_at",
+            "payment_intent_id",
+        ]
+
+
+class SubtaskSerializer(serializers.ModelSerializer):
+    payment = SubtaskPaymentSerializer(read_only=True)
+
+    class Meta:
+        model = Subtask
+        fields = ["id", "title", "cost", "is_completed", "payment"]
+
+
+class TaskPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskPayment
+        fields = [
+            "amount",
+            "stripe_payment_intent_id",
+            "is_captured",
+            "created_at",
+            "released_at",
+        ]
+
+
+class TaskCompletionProofSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskCompletionProof
+        fields = ["description", "photo_urls", "submitted_at"]
+
+
+class TaskSerializer(serializers.ModelSerializer):
+    subtasks = SubtaskSerializer(many=True, read_only=True)
+    payment = TaskPaymentSerializer(read_only=True)
+    terms_accepted_client_at = serializers.SerializerMethodField()
+    terms_accepted_tasker_at = serializers.SerializerMethodField()
+    completion_proof = TaskCompletionProofSerializer(read_only=True)
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "title",
+            "description",
+            "budget",
+            "urgency",
+            "location",
+            "status",
+            "client",
+            "tasker",
+            "expires_from_feed",
+            "must_start_by",
+            "created_at",
+            "updated_at",
+            "completed_at",
+            "latitude",
+            "longitude",
+            "category",
+            "subcategory",
+            "subtasks",
+            "terms_accepted_client_at",
+            "terms_accepted_tasker_at",
+            "completion_proof",
+            "payment",
+        ]
+
+    def create(self, validated_data):
+        validated_data["client"] = self.context["request"].user
+        return super().create(validated_data)
+
+    def get_tasker_username(self, obj):
+        return obj.tasker.username if obj.tasker else ""
+
+    def get_tasker_id(self, obj):
+        return obj.tasker.id if obj.tasker else None
+
+    def validate_latitude(self, value):
+        return value
+
+    def validate_longitude(self, value):
+        return value
+
+    def get_terms_accepted_client_at(self, obj):
+        if obj.terms_accepted_client_at:
+            return obj.terms_accepted_client_at.accepted_at.isoformat()
+        return None
+
+    def get_terms_accepted_tasker_at(self, obj):
+        if obj.terms_accepted_tasker_at:
+            return obj.terms_accepted_tasker_at.accepted_at.isoformat()
+        return None

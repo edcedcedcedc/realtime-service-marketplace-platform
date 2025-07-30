@@ -1,7 +1,9 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings
 from .serializers import TaskRequestSerializer, TaskSerializer
 from django.utils.timezone import now
+import stripe
 
 
 def broadcast_taskfeed_new(task_instance: object):
@@ -99,4 +101,28 @@ def notify_user(user_id, subtype, data):
             "type": "notify",
             "data": message,
         },
+    )
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+def create_payment_intent(amount, currency="mdl"):
+    return stripe.PaymentIntent.create(
+        amount=int(amount * 100),
+        currency=currency,
+        payment_method_types=["card"],
+        capture_method="manual",
+    )
+
+
+def capture_payment(payment_intent_id):
+    return stripe.PaymentIntent.capture(payment_intent_id)
+
+
+def transfer_to_tasker(amount, stripe_account_id, currency="mdl"):
+    return stripe.Transfer.create(
+        amount=int(amount * 100),
+        currency=currency,
+        destination=stripe_account_id,
     )
