@@ -25,6 +25,8 @@ import IncomingRequestsModal from "./InspectRequestsModal";
 import MapSelector from "./MapSelector";
 import api from "../services/api";
 import { useTaskFeed } from "../hooks/useTaskFeed";
+import { useTaskRequest } from "../hooks/useTaskRequest";
+import { withTimeout } from "../utils/withTimeout";
 
 export default function TaskPost({ navigation }: any) {
   const setTempTaskData = useStore().setTempTaskData;
@@ -33,18 +35,23 @@ export default function TaskPost({ navigation }: any) {
 
   const isSearching = useStore((state) => state.isSearching);
   const setIsSearching = useStore().setIsSearching;
-
   const taskCreationTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastYOffset = useRef(0);
   const [isAllowAutoScroll, setIsAllowAutoScroll] = useState(true);
-
+  const currentTaskId = useStore((state) => state.currentTaskId);
   const [taskerRequestsVisible, setTaskerRequestsVisible] = useState(false);
   const taskRequests = useStore((state) => state.taskRequests);
-
-  const setCurrentTask = useStore().setCurrentTask;
-  const currentTask = useStore((state) => state.currentTask);
+  const setCurrentTaskId = useStore().setCurrentTaskId;
+  const isConnected = useStore((state) => state.isConnected);
+  const setRefreshTaskFeedSocket = useStore().setRefreshTaskFeedSocket;
+  const setRefreshTaskRequestSocket = useStore().setRefreshTaskRequestSocket;
+  const removeTask = useStore().removeTask;
+  const addTask = useStore.getState().addTask;
+  const deleteTaskRequest = useStore().deleteTaskRequest;
+  const deleteTaskRequests = useStore().deleteTaskRequests;
 
   useTaskFeed();
+  useTaskRequest();
 
   const {
     control,
@@ -70,7 +77,7 @@ export default function TaskPost({ navigation }: any) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
-        "Location permission is required to fetch your position.",
+        "Location permission is required to fetch your position."
       );
       return;
     }
@@ -84,6 +91,10 @@ export default function TaskPost({ navigation }: any) {
     return () => {
       reset();
       setTempTaskData(null);
+      setIsSearching(false);
+      Toast.hide();
+      deleteTaskRequests();
+      setCurrentTaskId(null);
     };
   }, []);
 
@@ -92,6 +103,7 @@ export default function TaskPost({ navigation }: any) {
     if (taskCreationTimeout.current) {
       clearTimeout(taskCreationTimeout.current);
     }
+
     taskCreationTimeout.current = setTimeout(async () => {
       try {
         const coordinates = useStore.getState().selectedLatLng;
@@ -101,9 +113,11 @@ export default function TaskPost({ navigation }: any) {
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
         };
+
         const res = await api.post("/tasks/create/", payload);
-        console.log(res.data, "res.data");
-        setCurrentTask(res.data);
+        setCurrentTaskId(res.data.id);
+        addTask(res.data); //add task task to the current client
+        setRefreshTaskRequestSocket();
       } catch (err: any) {
         Toast.show({
           type: "error",
@@ -122,9 +136,39 @@ export default function TaskPost({ navigation }: any) {
         clearTimeout(taskCreationTimeout.current);
         taskCreationTimeout.current = null;
       }
-      //setCurrentTask(null);
+      setCurrentTaskId(null);
     };
   }, [tempTaskData]);
+
+  const handleCancelTaskRequestClient = async (
+    taskerId: number,
+    taskId: number
+  ) => {
+    try {
+      const res = await api.post("cancel-task-request-as-client/", {
+        task_id: taskId,
+        tasker_id: taskerId,
+      });
+      deleteTaskRequest(res.data.id);
+    } catch (error) {
+      console.warn("Failed to cancel request", error);
+    }
+  };
+
+  const handleAcceptTaskRequestClient = async (
+    taskerId: number,
+    taskId: number
+  ) => {
+    try {
+      const res = await api.post("accept-task-request-as-client/", {
+        task_id: taskId,
+        tasker_id: taskerId,
+      });
+      deleteTaskRequests();
+    } catch (error) {
+      console.warn("Failed to cancel request", error);
+    }
+  };
 
   const confirmSubmit = (data: TaskFormInput) => {
     Alert.alert(
@@ -144,7 +188,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -163,7 +207,7 @@ export default function TaskPost({ navigation }: any) {
           },
         },
       ],
-      { cancelable: true },
+      { cancelable: true }
     );
   };
 
@@ -176,51 +220,91 @@ export default function TaskPost({ navigation }: any) {
 
   const cancelSearch = () => {
     setIsSearching(false);
-    setTempTaskData(null);
-    console.log(currentTask?.id, "currentTask.id");
-    deleteTaskById();
-    cancelAllRequests();
+    setTempTaskData(null); // clean the form
+    deleteTaskById(); // delete the from task feed and from store
+    cancelAllTaskRequestsById(); //delete modals for all taskers and delete task requests from store
   };
 
-  const deleteTaskById = async () => {
-    const id = tasks.find((task) => currentTask!.id == task.id)?.id;
-    if (!id) return;
-    try {
-      const res = await api.delete(`/tasks/delete/${id}/`);
-      console.log(
-        res.data,
-        "const res = await api.delete(`/tasks/delete/${id}/`);",
-      );
-      setTempTaskData(null);
-      setCurrentTask(null);
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to cancel task",
-        text2:
-          err.response?.data?.error ||
-          "Failed to cancel the task. Please try again later.",
-      });
-    }
-  };
+  /* 
+  trigger refresh
+  get both sockets working 
+  api delete 
+  set current task id null
+  regrigger 
+  */
+  function deleteTaskById() {
+    let count = 0;
+    const pollDelete = async () => {
+      count += 1;
+      if (!currentTaskId || count >= 3) return;
+      //const id = tasks.find((task) => currentTaskId === task.id)?.id;
+      //if (!id) return;
+      try {
+        setRefreshTaskFeedSocket();
+        await withTimeout(api.delete(`/tasks/delete/${currentTaskId}/`)); //sync the backend and broadcast to useTaskFeed
+        removeTask(currentTaskId); //this deletes the task from  the current client (the variable might be not used at all if )
+        setRefreshTaskRequestSocket();
+        Toast.show({
+          type: "success",
+          text1: "Task cancelled successfully",
+        });
+      } catch (err: any) {
+        if (!currentTaskId) {
+          return;
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Failed to cancel task",
+            text2:
+              err.response?.data?.error || "Retrying to cancel the task...",
+          });
+          setTimeout(pollDelete, 5000);
+        }
+      }
+    };
 
-  const cancelAllRequests = async () => {
-    try {
-      await api.post("/tasks/cancel-all-task-requests/", {
-        task_id: currentTask!,
-      });
-      Toast.show({
-        type: "success",
-        text1: "Cancelled all tasker requests",
-      });
-    } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to cancel all requests",
-        text2: err.response?.data?.error || "Try again later",
-      });
-    }
-  };
+    pollDelete();
+  }
+  //TODO
+  function cancelAllTaskRequestsById() {
+    const currentTaskId = useStore.getState().currentTaskId;
+    const setRefreshTaskRequestSocket =
+      useStore.getState().setRefreshTaskRequestSocket;
+
+    let count = 0;
+
+    const pollCancel = async () => {
+      count += 1;
+
+      if (!currentTaskId || count >= 3) return;
+      try {
+        //setRefreshTaskFeedSocket();
+        await withTimeout(
+          api.post(`/cancel-all-task-requests-as-client/`, {
+            task_id: currentTaskId,
+          })
+        );
+        console.log(currentTaskId, "current task id");
+        deleteTaskRequests();
+        //setCurrentTaskId(null);
+        setRefreshTaskRequestSocket();
+        Toast.show({
+          type: "success",
+          text1: "All task requests cancelled",
+        });
+      } catch (err: any) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to cancel task requests",
+          text2:
+            err.response?.data?.error || "Retrying to cancel task requests...",
+        });
+        setTimeout(pollCancel, 5000);
+      }
+    };
+
+    pollCancel();
+  }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const yOffset = event.nativeEvent.contentOffset.y;
@@ -456,15 +540,16 @@ export default function TaskPost({ navigation }: any) {
                         }}
                       >
                         <Button
-                          disabled={isSearching}
+                          disabled={isSearching || !isConnected}
                           title="Use My Location"
                           onPress={() => handleGetLocation()}
                         />
                       </View>
                     </View>
                     <Text style={styles.helperText}>
-                      You can choose your location manually if you don't prefer
-                      exact location, just double tap the mini map.
+                      You can select the exact location, but it will be slightly
+                      shifted (±500 meters) for safety reasons until the task
+                      begins. To enlarge the map, simply double-tap it.
                     </Text>
                   </View>
                   <MapSelector
@@ -484,7 +569,7 @@ export default function TaskPost({ navigation }: any) {
 
           {/* Urgency Label with Help Icon */}
           <View style={styles.urgencyLabelWrapper}>
-            <Text style={styles.label}>Urgency</Text>
+            {!isSearching && <Text style={styles.label}>Urgency</Text>}
           </View>
           {!isSearching ? (
             <>
@@ -567,16 +652,24 @@ export default function TaskPost({ navigation }: any) {
           {!isSearching ? (
             <TouchableOpacity
               onPress={handleSubmit(confirmSubmit)}
-              style={styles.searchButtonFind}
+              style={[
+                styles.searchButtonFind,
+                !isConnected && styles.disabledButton,
+              ]}
               activeOpacity={0.7}
+              disabled={!isConnected}
             >
               <Text style={styles.searchButtonText}>Find</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={rejectSubmit}
-              style={styles.searchButtonStop}
+              style={[
+                styles.searchButtonStop,
+                !isConnected && styles.disabledButton,
+              ]}
               activeOpacity={0.7}
+              disabled={!isConnected}
             >
               <Text style={styles.searchButtonText}>Stop</Text>
             </TouchableOpacity>
@@ -584,9 +677,11 @@ export default function TaskPost({ navigation }: any) {
           {taskerRequestsVisible && (
             <IncomingRequestsModal
               visible={true}
+              currentTaskId={currentTaskId}
+              taskRequests={taskRequests}
+              handleAccept={handleAcceptTaskRequestClient}
+              handleDecline={handleCancelTaskRequestClient}
               onClose={() => setTaskerRequestsVisible(false)}
-              onAccept={(id) => console.log("Accepted:", id)}
-              onDecline={(id) => {}}
             />
           )}
         </View>
@@ -719,6 +814,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingVertical: SPACING.md,
+  },
+  disabledButton: {
+    backgroundColor: "#aaa", // light gray
+    opacity: 0.6,
   },
   searchButtonFind: {
     alignItems: "center",

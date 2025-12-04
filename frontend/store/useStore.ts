@@ -72,10 +72,15 @@ const initialState = {
   fullMapReady: false,
   isFullMapVisible: false,
   taskRequests: [],
-  currentTask: null,
+  currentTaskId: null,
+  currentTempTaskId: null,
   isLoggedIn: false,
   profile: initialProfile,
   navigationState: undefined,
+  isInitDialog: false,
+  isConnected: false,
+  snackbarVisible:false,
+  isSearching: false,
 };
 
 interface Notification {
@@ -83,20 +88,18 @@ interface Notification {
   timestamp: string;
   payload: any;
 }
-interface ProfileType {
+export interface ProfileType {
   user: User; // must always be present
   name: string;
   family_name: string;
   rating: number;
   bio: string;
-
-  // tasker-only fields (optional for client)
-  tasks_done?: number;
-  eta?: string;
-  category?: Category;
-
   // client-only fields (optional for tasker)
   tasks_posted?: number;
+  // tasker-only fields (optional for client)
+  tasks_done?: number;
+  eta?: number;
+  category?: Category;
 }
 
 interface User {
@@ -169,19 +172,22 @@ export interface Task {
   subcategory: string;
   subtasks?: [];
 }
-/* Tasker request, when he clicks accept on any task  */
+/* Tasker request, when he clicks init on any task  */
 export interface TaskRequest {
   id: number;
   task_id: number;
   tasker_id: number;
+  client_id?: number;
   tasker_username: string;
   tasker_name: string;
   tasker_family_name: string;
-  rating: number;
+  tasker_rating: number;
   tasks_done: number;
   category: string;
   eta: number;
   created_at: string;
+  action?: any;
+  seen: boolean; 
 }
 
 interface Jwt {
@@ -207,24 +213,33 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
-  currentTask: Task | null;
   taskRequests: TaskRequest[];
   isSearching: boolean;
+  isInitDialog: boolean; //tasker
+  isConfirmDialog: boolean; //tasker
   notifications: Notification[];
-  appKey: number;
   navigationState: InitialState | undefined;
-  refresh: number;
-  setRefresh: () => void;
+  refreshTaskRequestSocket: number;
+  refreshTaskFeedSocket: number,
+  currentTaskId: number | null;
+  currentTempTaskId: number | null;
+  isConnected: boolean;
+  snackbarVisible: boolean;
+  setSnackbarVisible:(param: boolean) => void;
+  setIsConnected: (value: boolean) => void;
+  setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
+  setCurrentTempTaskId: (param: number | null) => void;
+  setRefreshTaskRequestSocket: () => void;
+  setRefreshTaskFeedSocket: () => void;
+  setIsInitDialog: (param: boolean) => void;
   setNavigationState: (state: InitialState) => void;
-  setAppKey: () => void;
-  forceReload: () => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
-  addRequest: (request: TaskRequest) => void;
-  clearRequest: (requestId: number) => void;
-  clearRequests: () => void;
-  setRequests: (taskRequests: TaskRequest[]) => void;
-  setCurrentTask: (task: Task | null) => void;
+  addTaskRequest: (request: TaskRequest) => void;
+  deleteTaskRequest: (requestId: number) => void;
+  deleteTaskRequests: () => void;
+  setTaskRequests: (taskRequests: TaskRequest[]) => void;
+  setCurrentTaskId: (taskId: number | null) => void;
   setMiniMapReady: (ready: boolean) => void;
   setFullMapReady: (ready: boolean) => void;
   setIsFullMapVisible: (visible: boolean) => void;
@@ -270,28 +285,35 @@ const useStore = create<State>()(
       isFullMapVisible: false,
       isLoggedIn: false,
       profile: initialProfile,
-      currentTask: null,
+      currentTaskId: null,
       taskRequests: [],
       isSearching: false,
       notifications: [],
-      appKey: 0,
-      setAppKey: () =>
+     
+      isInitDialog: false,
+      isConfirmDialog: false,
+      currentTempTaskId: null,
+      isConnected: true,
+      refreshTaskFeedSocket: 0,
+      refreshTaskRequestSocket: 0,
+      snackbarVisible: false,
+      setSnackbarVisible: (param) => set({ snackbarVisible: param }),  
+      setIsConnected: (value) => set({ isConnected: value }),   
+      setCurrentTempTaskId: (id: number | null) =>
+        set({ currentTempTaskId: id }),
+      setIsConfirmDialog: (init, confirm) => set({ isConfirmDialog: init, isInitDialog: confirm }),
+      setIsInitDialog: (param) => set({ isInitDialog: param }),
+  
+   
+      setRefreshTaskFeedSocket: () =>
         set((state) => {
-          console.log(
-            "Force app reload triggered. Current appKey:",
-            state.appKey,
-          );
-          return { appKey: state.appKey + 1 };
+          console.log("Force app reload triggered. Current appKey:", state.refreshTaskFeedSocket);
+          return { refreshTaskFeedSocket: state.refreshTaskFeedSocket + 1 };
         }),
-      forceReload: () =>
-        set((state) => ({
-          appKey: state.appKey + 1,
-        })),
-      refresh: 0,
-      setRefresh: () =>
-        set((s) => {
-          console.log("Force app reload triggered. Current appKey:", s.refresh);
-          return { refresh: s.refresh + 1 };
+      setRefreshTaskRequestSocket: () =>
+        set((state) => {
+          console.log("Force app reload triggered. Current appKey:", state.setRefreshTaskFeedSocket);
+          return { refreshTaskRequestSocket: state.refreshTaskRequestSocket + 1 };
         }),
       addNotification: (notification) =>
         set((state) => ({
@@ -299,21 +321,22 @@ const useStore = create<State>()(
         })),
       clearNotifications: () => set({ notifications: [] }),
       setIsSearching: (param) => set({ isSearching: param }),
-      setCurrentTask: (task: Task | null) => set({ currentTask: task }),
-      addRequest: (request) =>
+      setCurrentTaskId: (taskId: number | null) =>
+        set({ currentTaskId: taskId }),
+      addTaskRequest: (request) =>
         set((state) => ({
           taskRequests: sortRequestsByDateDesc([
             ...state.taskRequests,
             request,
           ]),
         })),
-      clearRequest: (request_id: number) =>
+      deleteTaskRequest: (request_id: number) =>
         set((state) => ({
           taskRequests: sortRequestsByDateDesc(
             state.taskRequests.filter((r) => r.id !== request_id),
           ),
         })),
-      clearRequests: () => set({ taskRequests: [] }),
+      deleteTaskRequests: () => set({ taskRequests: [] }),
       setProfile: (profile: ProfileType) => set({ profile }),
       resetProfile: () => set({ profile: initialProfile }),
       setIsLoggedIn: (param) => set({ isLoggedIn: param }),
@@ -397,7 +420,7 @@ const useStore = create<State>()(
             tasks.map((task) => ({ ...task, id: Number(task.id) })),
           ),
         }),
-      setRequests: (taskRequests: TaskRequest[]) =>
+      setTaskRequests: (taskRequests: TaskRequest[]) =>
         set({
           taskRequests: sortRequestsByDateDesc(
             taskRequests.map((request) => ({

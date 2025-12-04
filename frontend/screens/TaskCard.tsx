@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Dimensions, Button } from "react-native";
-import { Portal, Dialog, Paragraph } from "react-native-paper";
 
 import useStore, {
   URGENCY_OPTIONS,
@@ -9,10 +8,6 @@ import useStore, {
 } from "../store/useStore";
 import { COLORS } from "../constants/colors";
 import MapSelector from "./MapSelector";
-import api from "../services/api";
-import TinySpinner from "../components/TinySpinner";
-import Toast from "react-native-toast-message";
-import { SocketManager } from "../utils/socketManager";
 
 const { width } = Dimensions.get("window");
 
@@ -21,52 +16,36 @@ const urgencyColorMap = URGENCY_OPTIONS.reduce(
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
-
 const statusColorMap = STATUS_OPTIONS.reduce(
   (map, option) => {
     map[option.value] = option.color;
     return map;
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 );
 
 type TaskCardProps = {
   task: Task;
   isMiniMapVisible: boolean;
+  handleInitTaskRequest: (param: number) => void;
+  isConnected: boolean;
 };
 
-export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
+export default function TaskCard({
+  task,
+  isMiniMapVisible,
+  handleInitTaskRequest,
+  isConnected,
+}: TaskCardProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const user = useStore((state) => state.auth.user);
-
-  async function handleAccept() {
-    try {
-      const res = await api.post("task-request/", {
-        task_id: Number(task.id),
-      });
-      console.log(res.data);
-      setDialogVisible(true);
-    } catch (error) {
-      setDialogVisible(false);
-      alert("Error: Failed to send accept request.");
-      console.error(error);
-    }
-  }
-
-  async function handleCancelRequest() {
-    try {
-      await api.post("cancel-task-request/", {
-        task_id: Number(task.id),
-      });
-      setDialogVisible(false);
-      //setActiveOutgoingRequestTaskId(null);
-    } catch (error) {
-      alert("Failed to cancel request.");
-    }
-  }
+  useEffect(() => {
+    return () => {
+      //setCurrentTempTaskId(null);
+      //setCurrentTaskId(null);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMiniMapVisible && showMiniMap) {
@@ -136,13 +115,25 @@ export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
           Location: {task.location}
         </Text>
       </View>
-
+      {showMiniMap && (
+        <Text style={styles.helperText}>
+          To enlarge the map, simply double-tap it.
+        </Text>
+      )}
       <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
         <Button
+          disabled={!isConnected}
           title={showMiniMap ? "Hide Location" : "View Location"}
+          color={isConnected ? undefined : "#B0B0B0"}
           onPress={() => setShowMiniMap((show) => !show)}
         />
-        <Button title="Accept" onPress={handleAccept} />
+
+        <Button
+          title="Initiate"
+          disabled={!isConnected}
+          onPress={() => handleInitTaskRequest(task.id)}
+          color={isConnected ? undefined : "#B0B0B0"}
+        />
       </View>
 
       {showMiniMap && (
@@ -154,34 +145,6 @@ export default function TaskCard({ task, isMiniMapVisible }: TaskCardProps) {
           handleGetLocation={() => {}}
         />
       )}
-
-      {/* Paper Dialog */}
-      <Portal>
-        <Dialog
-          visible={dialogVisible}
-          onDismiss={handleCancelRequest}
-          dismissable={false}
-        >
-          <Dialog.Title>Request Sent</Dialog.Title>
-          <Dialog.Content>
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "flex-start",
-              }}
-            >
-              <Text style={{ paddingRight: 10 }}>
-                Waiting for client to respond
-              </Text>
-              <TinySpinner message="" />
-            </View>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={handleCancelRequest} color="red" title="Cancel" />
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </View>
   );
 }
@@ -198,6 +161,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     width: width - 32,
+  },
+  helperText: {
+    color: COLORS.color32,
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
   },
   centeredRow: {
     alignItems: "center",

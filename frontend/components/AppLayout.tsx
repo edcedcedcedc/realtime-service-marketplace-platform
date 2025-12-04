@@ -14,16 +14,18 @@ import ToastConfig from "../config/ToastConfig";
 import useStore from "../store/useStore";
 import { SPACING } from "../constants/dimensions";
 import { COLORS } from "../constants/colors";
+import ConnectionSnackbar from "./SnackBar";
+import { useRoute } from "@react-navigation/native";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const loading = useStore((state) => state.loading);
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {children}
-        <Toast config={ToastConfig} visibilityTime={3000} />
+        <Toast config={ToastConfig} visibilityTime={2000} />
         <GlobalLoading visible={loading} />
+        <ConnectionSnackbar />
       </View>
     </SafeAreaView>
   );

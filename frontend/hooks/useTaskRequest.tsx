@@ -6,85 +6,174 @@ import { useNetwork } from "./useNetwork";
 
 const taskRequestsSocket = new SocketManager();
 
-export function useTaskRequests() {
+export function useTaskRequest() {
   const { getTaskRequestUrl } = useNetwork();
-  const currentTask = useStore((state) => state.currentTask);
-  const addRequest = useStore((state) => state.addRequest);
-  const clearRequest = useStore((state) => state.clearRequest);
-  const clearRequests = useStore((state) => state.clearRequests);
+
+  const addTaskRequest = useStore((state) => state.addTaskRequest);
+  const deleteTaskRequest = useStore((state) => state.deleteTaskRequest);
+  const deleteTaskRequests = useStore((state) => state.deleteTaskRequests);
+  const setIsInitDialog = useStore().setIsInitDialog;
+
+  const currentTaskId = useStore((state) => state.currentTaskId);
   const currentUserId = useStore.getState().auth.user?.id;
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
+  const isSearching = useStore((state) => state.isSearching);
+  const refreshTaskRequestSocket = useStore(
+    (state) => state.refreshTaskRequestSocket
+  );
 
   useEffect(() => {
-    if (!currentTask) {
-      return;
-    }
+    if (!currentTaskId || !isLoggedIn || !isSearching) return;
+    console.log(currentTaskId, "current task if from useTaskRequest");
+    const wsUrl = getTaskRequestUrl(currentTaskId, 0);
 
-    const wsUrl = getTaskRequestUrl(currentTask.id, 0)!;
+    if (!wsUrl) return;
+
+    taskRequestsSocket.setIsLoggedIn(isLoggedIn);
 
     taskRequestsSocket.connect(
       wsUrl,
-      `taskrequest ${currentTask.id} user ${currentUserId}`
+      `taskrequest ${currentTaskId} user ${currentUserId}`
     );
 
-    const handleOnAdd = (payload: TaskRequest) => {
-      Toast.show({
-        type: "info",
-        text1: `New request for task ${currentTask.id} from ${payload.tasker_username}`,
-        text2: "Task requests",
-      });
-      addRequest(payload);
+    // === Event Handlers ===
+    const onInitiateByTasker = (payload: TaskRequest) => {
+      if (payload.client_id === currentUserId) {
+        addTaskRequest(payload);
+        Toast.show({
+          type: "info",
+          text1: `New request from ${payload.tasker_username}`,
+          text2: `Task ${currentTaskId}`,
+        });
+      }
     };
 
-    const handleOnDelete = (payload: {
-      task_request_id: number;
-      task_id: number;
-      tasker_id: number;
-    }) => {
-      Toast.show({
-        type: "success",
-        text1: `Request ${payload.task_request_id} removed`,
-        text2: "Task requests",
-      });
-      clearRequest(payload.task_request_id);
+    const onCancelledByTasker = (payload: TaskRequest) => {
+      if (payload.client_id === currentUserId) {
+        deleteTaskRequest(payload.id);
+        setTimeout(() => {
+          Toast.show({
+            type: "info",
+            text1: `Request cancelled by ${payload.tasker_name}`,
+            text2: `Task ${currentTaskId}`,
+          });
+        }, 1000);
+      }
     };
 
-    const handleOnOpen = () => {
-      Toast.show({
-        type: "success",
-        text1: "Websocket Connected!",
-        text2: "Task requests",
-      });
+    const onCancelledByClient = (payload: TaskRequest) => {
+      if (
+        payload.tasker_id === currentUserId &&
+        payload.action?.tasker === "close_modal"
+      ) {
+        setIsInitDialog(false);
+        Toast.show({
+          type: "error",
+          text1: "Client cancelled the request",
+          text2: `Task Request id ${payload.id}`,
+        });
+      }
+      if (payload.client_id === currentUserId) {
+        deleteTaskRequest(payload.id);
+      }
     };
 
-    const handleOnClose = () => {
-      Toast.show({
-        type: "info",
-        text1: "Websocket Disconnected!",
-        text2: "Task requests",
-      });
+    const onAcceptedByClient = (payload: TaskRequest) => {
+      if (
+        payload.tasker_id === currentUserId &&
+        payload.action?.tasker === "close_modal"
+      ) {
+        setIsInitDialog(false);
+        //do something else
+        Toast.show({
+          type: "error",
+          text1: "Client accepted the request",
+          text2: `Task Request id ${payload.id}`,
+        });
+      }
     };
 
-    taskRequestsSocket.on("socket:onopen", handleOnOpen);
-    taskRequestsSocket.on("socket:onclose", handleOnClose);
-    taskRequestsSocket.on("taskrequest:new", handleOnAdd);
-    taskRequestsSocket.on("taskrequest:delete", handleOnDelete);
-    taskRequestsSocket.on("taskrequest:initiate-by-tasker", handleOnDelete);
-    taskRequestsSocket.on("taskrequest:cancelled-by-client", handleOnDelete);
-    taskRequestsSocket.on("taskrequest:cancelled-by-tasker", handleOnDelete);
-    taskRequestsSocket.on("taskrequest:accepted-by-client", handleOnDelete);
-    taskRequestsSocket.on("taskrequest:confirmed-by-tasker", handleOnDelete);
+    const onConfirmedByTasker = (payload: TaskRequest) => {
+      if (
+        payload.tasker_id === currentUserId &&
+        payload.action?.tasker === "close_modal"
+      ) {
+        setIsInitDialog(false);
+        Toast.show({
+          type: "error",
+          text1: "Client cancelled the request",
+          text2: `Task Request id ${payload.id}`,
+        });
+      }
+    };
+
+    const onSocketClose = () => {
+      setTimeout(() => {
+        Toast.show({
+          type: "info",
+          text1: "Websocket disconnected!",
+          text2: `Server closed the connection, ${currentTaskId} ${currentTaskId}`,
+        });
+      }, 100);
+    };
+
+    const onSocketOpen = () => {
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Websocket connected!",
+          text2: `useTaskRequests ${currentTaskId} ${currentUserId}`,
+        });
+      }, 1000);
+    };
+
+    // === Register Events ===
+    taskRequestsSocket.on("socket:onopen", onSocketOpen);
+    taskRequestsSocket.on("socket:onclose", onSocketClose);
+
+    taskRequestsSocket.on("taskrequest:initiate-by-tasker", onInitiateByTasker);
+    taskRequestsSocket.on(
+      "taskrequest:cancelled-by-tasker",
+      onCancelledByTasker
+    );
+    taskRequestsSocket.on(
+      "taskrequest:cancelled-by-client",
+      onCancelledByClient
+    );
+    taskRequestsSocket.on("taskrequest:accepted-by-client", onAcceptedByClient);
+
+    /* taskRequestsSocket.on(
+      "taskrequest:confirmed-by-tasker",
+      onConfirmedByTasker
+    ); */
+
     return () => {
-      taskRequestsSocket.off("socket:onopen", handleOnOpen);
-      taskRequestsSocket.off("socket:onclose", handleOnClose);
-      taskRequestsSocket.off("taskrequest:new", handleOnAdd);
-      taskRequestsSocket.off("taskrequest:delete", handleOnDelete);
-      taskRequestsSocket.off("taskrequest:initiate-by-tasker", handleOnDelete);
-      taskRequestsSocket.off("taskrequest:cancelled-by-client", handleOnDelete);
-      taskRequestsSocket.off("taskrequest:cancelled-by-tasker", handleOnDelete);
-      taskRequestsSocket.off("taskrequest:accepted-by-client", handleOnDelete);
-      taskRequestsSocket.off("taskrequest:confirmed-by-tasker", handleOnDelete);
-      taskRequestsSocket.disconnect("manually disconnected");
-      //clearRequests();
+      taskRequestsSocket.off("socket:onopen", onSocketOpen);
+      taskRequestsSocket.off("socket:onclose", onSocketClose);
+      taskRequestsSocket.off(
+        "taskrequest:initiate-by-tasker",
+        onInitiateByTasker
+      );
+      taskRequestsSocket.off(
+        "taskrequest:cancelled-by-tasker",
+        onCancelledByTasker
+      );
+      taskRequestsSocket.off(
+        "taskrequest:cancelled-by-client",
+        onCancelledByClient
+      );
+      taskRequestsSocket.off(
+        "taskrequest:accepted-by-client",
+        onAcceptedByClient
+      );
+      taskRequestsSocket.disconnect("useTaskRequest unmount");
     };
-  }, [currentTask]);
+  }, [refreshTaskRequestSocket, isLoggedIn, isSearching]);
+
+  return {
+    currentTaskId,
+    addTaskRequest,
+    deleteTaskRequest,
+    deleteTaskRequests,
+  };
 }

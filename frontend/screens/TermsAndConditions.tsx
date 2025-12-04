@@ -38,7 +38,7 @@ export default function TermsAndConditions({
         const res = await withTimeout(
           api.get("/current-tsc-text/"),
           5000,
-          "Request timed out. Please try again",
+          "Request timed out. Please try again"
         );
         setTermsText(res.data.tsc);
       } catch (err) {
@@ -55,17 +55,17 @@ export default function TermsAndConditions({
       const res = await withTimeout(
         api.post("/accept-terms/", {}),
         5000,
-        "Request timed out. Please try again",
+        "Request timed out. Please try again"
       );
-      Toast.show({
+      /* Toast.show({
         type: "success",
         text1: "TsC timestamp success!",
         text2:
           res.data.message ||
           "Please check your credentials and internet connection",
-      });
+      }); */
       navigation.replace(
-        auth.user?.role === "client" ? "Search a tasker" : "Task feed",
+        auth.user?.role === "client" ? "Search a tasker" : "Task feed"
       );
     } catch (err: any) {
       Toast.show({

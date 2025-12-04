@@ -61,7 +61,7 @@ class Profile(models.Model):
         blank=True,
     )
 
-    eta = models.CharField(max_length=50, blank=True)
+    eta = models.IntegerField(blank=False, default=0)
 
     def __str__(self):
         return f"Profile of {self.user.username}"
@@ -305,6 +305,7 @@ class TaskRequest(models.Model):
         blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    seen = models.BooleanField(default=False)
 
 
 class TaskChatMessage(models.Model):

@@ -1,0 +1,8 @@
+import Constants from "expo-constants";
+
+const IPV4 = Constants.expoConfig!.extra!.IPV4;
+
+export const HTTP_BASE_URL = `http://${IPV4}:8000/api/`;
+export const WS_TASKFEED_URL = `ws://${IPV4}:8000/ws/taskfeed/`;
+export const WS_TASKREQUEST_URL = `ws://${IPV4}:8000/ws/taskrequest/`;
+export const WS_NOTIFICATION_URL = `ws://${IPV4}:8000/ws/notifications/`;

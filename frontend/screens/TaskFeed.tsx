@@ -18,6 +18,10 @@ import { COLORS } from "../constants/colors";
 import TaskCard from "./TaskCard";
 import TaskSearchBar from "./TaskSearchBar";
 import { useTaskFeed } from "../hooks/useTaskFeed";
+import IOSModal from "../components/IOSmodal";
+import { useTaskRequest } from "../hooks/useTaskRequest";
+import ConnectionSnackbar from "../components/SnackBar";
+
 const HEADER_HEIGHT = 120;
 
 export default function TaskFeed({ navigation }: { navigation: any }) {
@@ -27,13 +31,24 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
   const setLoading = useStore().setLoading;
   const lastRefreshRef = useRef(0);
   const scrollOffsetRef = useRef(0);
-  const taskRequests = useStore((state) => state.taskRequests);
+
   const [value, setValue] = useState("");
   const [visibleTaskIds, setVisibleTaskIds] = useState<Set<number | string>>(
-    new Set(),
+    new Set()
   );
+  const isInitDialog = useStore((state) => state.isInitDialog);
+  const isConfirmDialog = useStore((state) => state.isConfirmDialog);
+  const setIsInitDialog = useStore().setIsInitDialog;
+  const setIsSearching = useStore().setIsSearching;
+  const setCurrentTaskId = useStore((state) => state.setCurrentTaskId);
+  const currentTaskId = useStore((state) => state.currentTaskId);
+  const isConnected = useStore((state) => state.isConnected);
+  const [cancelDisabled, setCancelDisabled] = useState(false);
+
+  const ref: any = useRef(null); //delay the cancel button in init modal for tasker
 
   useTaskFeed();
+  useTaskRequest();
 
   /**
    * Keeps track of which tasks are currently visible in the FlatList.
@@ -51,12 +66,73 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       const visibleIds = new Set(info.viewableItems.map((v) => v.item.id));
       setVisibleTaskIds(visibleIds);
     },
-    [],
+    []
   );
 
   useEffect(() => {
     fetchTasks();
+    return () => {
+      clearTimeout(ref.current);
+    };
   }, []);
+
+  const apiOnInit = async (task_id: number) => {
+    if (!isConnected) {
+      return;
+    }
+    setIsInitDialog(true);
+    setCurrentTaskId(task_id);
+    setCancelDisabled(true);
+    setIsSearching(true); //as TASKER!!! but this is as well the main variable for client, I NEED this to sync the states between client and tasker
+
+    if (ref.current) {
+      clearTimeout(ref.current);
+    }
+
+    ref.current = setTimeout(() => {
+      setCancelDisabled(false);
+    }, 6000);
+
+    try {
+      const res = await api.post("initiate-task-request-as-tasker/", {
+        task_id: task_id,
+      });
+      console.log(res.data);
+    } catch (error) {
+      console.warn(error, "const apiOn = async (task_id: number) =>");
+    } finally {
+    }
+  };
+
+  const apiOnCancel = async () => {
+    if (!currentTaskId) {
+      setIsInitDialog(false);
+      return;
+    }
+    try {
+      await api.post("/cancel-task-request-as-tasker/", {
+        task_id: currentTaskId,
+      });
+      setTimeout(() => {
+        Toast.show({
+          type: "success",
+          text1: "Task request deleted from the db",
+          text2: ", sync is ok",
+        });
+      }, 3000);
+      setCurrentTaskId(null);
+      setIsSearching(false);
+      setIsInitDialog(false);
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Cannot cancel task request",
+        text2: "Something went wrong while trying to cancel the request.",
+      });
+    } finally {
+      setCancelDisabled(false);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -102,7 +178,7 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
       task.description?.toLowerCase().includes(value.toLowerCase()) ||
       task.urgency.toLowerCase().includes(value.toLowerCase()) ||
       task.location.toLowerCase().includes(value.toLowerCase()) ||
-      task.status.toLowerCase().includes(value.toLowerCase()),
+      task.status.toLowerCase().includes(value.toLowerCase())
   );
 
   return (
@@ -125,7 +201,9 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         renderItem={({ item }) => (
           <TaskCard
             task={item}
+            isConnected={isConnected}
             isMiniMapVisible={visibleTaskIds.has(item.id)}
+            handleInitTaskRequest={() => apiOnInit(item.id)}
           />
         )}
         ListEmptyComponent={
@@ -156,6 +234,19 @@ export default function TaskFeed({ navigation }: { navigation: any }) {
         viewabilityConfig={{
           itemVisiblePercentThreshold: 1,
         }}
+      />
+      <IOSModal
+        visible={isInitDialog}
+        isShowConfirm={false}
+        cancelDisabled={cancelDisabled}
+        onClose={apiOnCancel}
+        onTimeout={() => {
+          console.log("Auto cancelling...");
+          apiOnCancel();
+        }}
+        title="Initiate task"
+        message="Waiting for client to respond..."
+        duration={30}
       />
     </View>
   );

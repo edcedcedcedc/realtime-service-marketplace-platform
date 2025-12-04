@@ -1,13 +1,12 @@
 from .views import (
     accept_task_request_as_client,
-    accept_task_request_as_tasker,
+    initiate_task_request_as_tasker,
     accept_terms,
     all_tasks,
-    cancel_all_task_requests,
+    cancel_all_task_requests_as_client,
     cancel_task_request_as_tasker,
     cancel_task_request_as_client,
     completed_tasks,
-    confirm_task_request_as_tasker,
     current_tsc_text,
     task_chat_history,
     task_requests_for_task_as_client,
@@ -58,9 +57,9 @@ urlpatterns = [
     # TASK REQUESTS
     ########################################
     path(
-        "api/accept-task-request-as-tasker/",
-        accept_task_request_as_tasker,
-        name="accept-task-request-as-tasker",
+        "api/initiate-task-request-as-tasker/",
+        initiate_task_request_as_tasker,
+        name="initiate-task-request-as-tasker",
     ),
     path(
         "api/accept-task-request-as-client/",
@@ -83,14 +82,9 @@ urlpatterns = [
         name="task-requests-by-task-id",
     ),
     path(
-        "api/confirm-task-request-as-tasker/",
-        confirm_task_request_as_tasker,
-        name="confirm-task-request-as-tasker",
-    ),
-    path(
-        "api/cancel-all-task-requests/",
-        cancel_all_task_requests,
-        name="cancel-all-task-requests",
+        "api/cancel-all-task-requests-as-client/",
+        cancel_all_task_requests_as_client,
+        name="cancel-all-task-requests-as-client",
     ),
     #########################################
     # CHAT
