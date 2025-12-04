@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "Symmetrical Engine",
     slug: "symmetrical-engine",
-    sdkVersion: "53.0.0",
+    sdkVersion: "54.0.0",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -16,6 +16,7 @@ export default {
     },
     extra: {
       IPV4: process.env.IPV4,
+      EXPO_TUNNEL_SUBDOMAIN: process.env.EXPO_TUNNEL_SUBDOMAIN
     },
     ios: {
       bundleIdentifier: "com.mycompany.myapp",

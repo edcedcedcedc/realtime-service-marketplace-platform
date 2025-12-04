@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useOnlineStatus } from "../hooks/useOnlineStatus"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sortTasksByDateDesc, sortRequestsByDateDesc } from "../utils/sort";
 import type { InitialState } from "@react-navigation/native";
@@ -75,7 +76,7 @@ const initialState = {
   currentTask: null,
   isLoggedIn: false,
   profile: initialProfile,
-  navigationState: undefined,
+  navigationState: undefined
 };
 
 interface Notification {
@@ -207,6 +208,7 @@ interface State {
   fullMapReady: boolean;
   isFullMapVisible: boolean;
   isLoggedIn: boolean;
+  isOnline: boolean;
   currentTask: Task | null;
   taskRequests: TaskRequest[];
   isSearching: boolean;
@@ -214,6 +216,9 @@ interface State {
   appKey: number;
   navigationState: InitialState | undefined;
   refresh: number;
+  isHeaderMenuVisible: boolean;
+  setIsOnline: (isOnline: boolean) => void;
+  setIsHeaderMenuVisible: (visible: boolean) => void;
   setRefresh: () => void;
   setNavigationState: (state: InitialState) => void;
   setAppKey: () => void;
@@ -275,6 +280,10 @@ const useStore = create<State>()(
       isSearching: false,
       notifications: [],
       appKey: 0,
+      isOnline: false,
+      setIsOnline: (isOnline) => set({ isOnline }),
+      isHeaderMenuVisible: false,
+      setIsHeaderMenuVisible: (visible) =>set({ isHeaderMenuVisible: visible }),
       setAppKey: () =>
         set((state) => {
           console.log(

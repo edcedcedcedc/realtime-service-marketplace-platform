@@ -66,7 +66,7 @@ def broadcast_task_request_new(task_request, client_id):
     payload = TaskRequestSerializer(task_request).data
     payload["client_id"] = client_id
     payload["action"] = {"tasker": "", "client": ""}
-    group_name = f"taskrequest_{payload["task_id"]}"
+    group_name = f"taskrequest_{payload['task_id']}"
     message = {
         "type": "taskrequest:new",
         "payload": payload,

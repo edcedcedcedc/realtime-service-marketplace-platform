@@ -58,3 +58,4 @@ dump.rdb
 backend/db.sqlite3
 __pycache__/
 *.pyc
+backend/test/*

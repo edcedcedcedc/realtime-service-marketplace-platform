@@ -11,25 +11,23 @@ interface HeaderMenuProps {
 }
 
 export default function HeaderMenu({ navigation }: HeaderMenuProps) {
-  const [visible, setVisible] = useState(false);
+  const visible = useStore((s) => s.isHeaderMenuVisible);
+  const setVisible = useStore((s) => s.setIsHeaderMenuVisible);
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
-  const setRefresh = useStore().setRefresh;
+  const setRefresh = useStore((state) => state.setRefresh);
 
   if (!isLoggedIn) {
     return;
   }
+
   return (
     <Menu
       visible={visible}
       onDismiss={closeMenu}
       contentStyle={{ backgroundColor: COLORS.color38 }}
-      anchor={
-        <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
-        </TouchableOpacity>
-      }
+      anchor={<Anchor openMenu={openMenu} />}
     >
       <Menu.Item
         onPress={() => {
@@ -42,7 +40,6 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
         onPress={() => {
           closeMenu();
           console.log("Settings pressed");
-
           // navigation.navigate("SettingsScreen");
         }}
         title="Settings"
@@ -62,5 +59,13 @@ export default function HeaderMenu({ navigation }: HeaderMenuProps) {
         title="Logout"
       />
     </Menu>
+  );
+}
+
+function Anchor({ openMenu }: any) {
+  return (
+    <TouchableOpacity onPress={openMenu} style={{ paddingHorizontal: 16 }}>
+      <Text style={{ fontSize: 24, fontWeight: "bold" }}>...</Text>
+    </TouchableOpacity>
   );
 }

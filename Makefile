@@ -1,36 +1,49 @@
-.PHONY: start-server-h start-server-hws start-client migrate makemigrations \
+.PHONY: start-server-old start-server start-client migrate makemigrations \
 createsuperuser shell test-server reset-client freeze \
 update-client install-server format-client lint-client \
-reset-db test-client coverage-server start-server-r stop-server-r start-celery start-celery-windows \
+reset-db test-client coverage-server start-redis stop-redis start-celery-windows start-celery \
 docker-build docker-up docker-down docker-shell docker-migrate docker-migrations \
 docker-createsuperuser docker-test docker-reset-db docker-restart docker-logs docker-up-d \
 docker-running docker-collectstatic loaddata docker-loaddata docker-admin 
 
 # =============================================================================
-# [ BACKEND TASKS ]
+# [ SERVER TASKS ]
 # =============================================================================
-start-server-h:
-	cd backend && python manage.py runserver 0.0.0.0:8000
 
-start-server-hws:
+ifneq (,$(wildcard .env.make))
+    include .env.make
+    export
+endif
+
+print-vars:
+	@echo "REDIS_SERVER = $(REDIS_SERVER)"
+	@echo "REDIS_CLI = $(REDIS_CLI)"
+
+start-server-old:
+	cd backend && py -3.10 manage.py runserver 0.0.0.0:8000
+
+start-server:
 	cd backend && daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
-start-server-r:
-	wsl -- bash -c "redis-server --daemonize yes && redis-cli ping"
+start-redis:
+	@echo "Starting Redis server..."
+	$(REDIS_SERVER)
 
-stop-server-r:
-	wsl -- bash -c "redis-cli shutdown && echo server-r shut down"
-
-start-celery:
-	cd backend && celery -A config worker --loglevel=info
+stop-redis:
+	@echo "Stopping Redis server..."
+	$(REDIS_CLI) shutdown
+	@echo "Redis server stopped."
 
 start-celery-windows:
+	cd backend && celery -A config worker --loglevel=info
+
+start-celery:
 	cd backend && celery -A config worker --loglevel=info --pool=solo
 
 install-server:
 	@cd backend && \
 	echo "Checking backend dependencies..." && \
-	pip install -r requirements.txt --quiet && \
+	pip install -r requirements.txt && \
 	echo "All backend dependencies are installed and up to date."
 
 freeze:
@@ -40,28 +53,28 @@ reset-db:
 	cd backend && rm db.sqlite3
 
 migrate:
-	cd backend && python manage.py migrate
+	cd backend && py -3.10 manage.py migrate
 
 migrations:
-	cd backend && python manage.py makemigrations
+	cd backend && py -3.10 manage.py makemigrations
 
 createsuperuser:
-	cd backend && python manage.py createsuperuser
+	cd backend && py -3.10 manage.py createsuperuser
 
 shell:
-	cd backend && python manage.py shell
+	cd backend && py -3.10 manage.py shell
 	
 test-server:
-	cd backend && python manage.py test -v 2
+	cd backend && py -3.10 manage.py test -v 2
 
 coverage-server:
 	cd backend && coverage run manage.py test && coverage report
 
 loaddata:
-	cd backend && python manage.py loaddata fixtures/users.json
+	cd backend && py -3.10 manage.py loaddata fixtures/users.json
 
 # =============================================================================
-# [ FRONTEND TASKS ]
+# [ CLIENT TASKS ]
 # =============================================================================
 start-client:
 	cd frontend && npx expo start --reset-cache
