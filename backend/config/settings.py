@@ -13,7 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-s$-wy3b3(mhjxzzftu^$d3e!b1zi^y6&qfo0e@c2z&z0nxrn&e"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -106,7 +108,7 @@ DATABASES = {
 
 
 ASGI_APPLICATION = "config.asgi.application"
-REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_HOST = "127.0.0.1"
 CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
 CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/1"
 
@@ -286,3 +288,10 @@ LOGGING = {
         },
     },
 }
+
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+
+PAYPAL_SANDBOX_CLIENT_ID = os.getenv("PAYPAL_SANDBOX_CLIENT_ID")
+PAYPAL_SANDBOX_SECRET = os.getenv("PAYPAL_SANDBOX_SECRET")

@@ -12,7 +12,8 @@ interface HeaderMenuProps {
 }
 
 export default function HeaderMenu({ navigation }: HeaderMenuProps) {
-  const [visible, setVisible] = useState(false);
+  const visible = useStore((s) => s.isHeaderMenuVisible);
+  const setVisible = useStore((s) => s.setIsHeaderMenuVisible);
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);

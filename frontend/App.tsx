@@ -1,39 +1,22 @@
-import { StyleSheet, View } from "react-native";
-import { PaperProvider, Text, Chip, Snackbar } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
-import NetInfo from "@react-native-community/netinfo";
 import RootNavigator from "./navigation/RootNavigator";
 import AppLayout from "./components/AppLayout";
 import { navigationRef } from "./utils/navigationRef";
 import { COLORS } from "./constants/colors";
 import { AlertsProvider } from "react-native-paper-alerts";
 import useStore from "./store/useStore";
-import { useEffect, useState } from "react";
-import { useRoute } from "@react-navigation/native";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { useEffect } from "react";
 
 export default function App() {
-  const setIsConnected = useStore((state) => state.setIsConnected);
-  const isConnected = useStore((state) => state.isConnected);
-  const isLoggedIn = useStore((state) => state.isLoggedIn);
-
-  /* const snackbarVisible = useStore((state) => state.snackbarVisible);
-  const setSnackbarVisible = useStore().setSnackbarVisible;
-  const [snackbarMessage, setSnackbarMessage] = useState(""); */
-
+  useOnlineStatus();
+  const isOnline = useStore((s) => s.isOnline);
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const connected = state.isConnected ?? false;
-      setIsConnected(connected);
-      /*  setSnackbarMessage(connected ? "You are online" : "You are offline");
-      setSnackbarVisible(true) */ console.log(
-        `[App.tsx] NetInfo changed: ${connected}`
-      );
-    });
-
-    return () => unsubscribe();
-  }, [setIsConnected, isLoggedIn]);
-
+    console.log("🌐 Online Status:", isOnline);
+  }, [isOnline]);
   return (
     <SafeAreaProvider>
       <PaperProvider>

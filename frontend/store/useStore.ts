@@ -225,6 +225,10 @@ interface State {
   currentTempTaskId: number | null;
   isConnected: boolean;
   snackbarVisible: boolean;
+  isOnline: boolean;
+  isHeaderMenuVisible: boolean;
+  setIsHeaderMenuVisible: (value: boolean) => void;
+  setIsOnline: (value: boolean) => void;
   setSnackbarVisible:(param: boolean) => void;
   setIsConnected: (value: boolean) => void;
   setIsConfirmDialog: (init: boolean, confirm: boolean) => void;
@@ -289,7 +293,6 @@ const useStore = create<State>()(
       taskRequests: [],
       isSearching: false,
       notifications: [],
-     
       isInitDialog: false,
       isConfirmDialog: false,
       currentTempTaskId: null,
@@ -297,6 +300,10 @@ const useStore = create<State>()(
       refreshTaskFeedSocket: 0,
       refreshTaskRequestSocket: 0,
       snackbarVisible: false,
+      isOnline: false, 
+      isHeaderMenuVisible: false,
+      setIsHeaderMenuVisible: (value) => set({ isHeaderMenuVisible: value }),  
+      setIsOnline: (value) => set({ isOnline: value }),   
       setSnackbarVisible: (param) => set({ snackbarVisible: param }),  
       setIsConnected: (value) => set({ isConnected: value }),   
       setCurrentTempTaskId: (id: number | null) =>
