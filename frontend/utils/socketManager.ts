@@ -119,9 +119,15 @@ export class SocketManager {
     if(!this.isLoggedIn || this.manuallyDisconnected || !this.isOnline) return;
 
     this.socket = new WebSocket(this.url);
-
     this.socket.onopen = () => {
       console.log(`[${this.debugName}] WebSocket connected to`, this.url);
+      setTimeout(()=>{
+        Toast.show({
+        type: "success",
+        text1: "Websocket connected!",
+        text2: `${this.debugName}`,
+      });
+      }, 3000)
       this.reconnectAttempts = 0;
       this.pollingAttempts = 0; 
       this._clearReconnectTimeout();
