@@ -3,23 +3,85 @@
 **Symmetrical Engine** is a real-time task marketplace platform connecting clients with workers for immediate, location-flexible tasks.  
 Think Uber for services — with bidding, escrow, and instant payouts.
 
-## Run/Install 
-server:
-install requirements
-choco install redis or choco install redis server 
-create a .env.make 
-    REDIS_SERVER = 
-    REDIS_CLI    = 
-test your vars with make print-vars
-run migration
-create your test users with python manage.py createsuperuser
-open python shell and get the user with User.objects.get(username) and set the role to tasker and another user the role for client
+## Run / Install
 
-client:
-install requirements
-create .env set IPV4="your IPV4 address"
+### Server
 
-run the app, congratz!
+1. Install backend dependencies:
+
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+2. Install Redis (Windows):
+
+   ```sh
+   choco install redis
+   ```
+
+   or:
+
+   ```sh
+   choco install redis-64
+   ```
+
+3. Create **.env.make** in project root:
+
+   ```
+   REDIS_SERVER=
+   REDIS_CLI=
+   ```
+
+4. Test your variables:
+
+   ```sh
+   make print-vars
+   ```
+
+5. Run migrations:
+
+   ```sh
+   make migrate
+   ```
+
+6. Create test users:
+
+   ```sh
+   python manage.py createsuperuser
+   ```
+
+7. Open Django shell and set roles:
+
+   ```py
+   user = User.objects.get(username="your_username")
+   user.role = "tasker"      # or "client"
+   user.save()
+   ```
+
+---
+
+### Client
+
+1. Install frontend dependencies:
+
+   ```sh
+   npm install
+   ```
+
+2. Create `.env`:
+
+   ```
+   IPV4="your_local_ipv4_address"
+   ```
+
+3. Start the app:
+
+   ```sh
+   npx expo start
+   ```
+
+🎉 That’s it — you're ready to run the application!
+
 
 ---
 
@@ -47,12 +109,13 @@ run the app, congratz!
 | `/api/tasks/delete/<int:id>/`    | DELETE    | Delete task by ID             |
 
 ## WebSocket Endpoints
-| Endpoint                      | Method |                                                                                                                              
-| ----------------------------- |------- |------------------------------------------------------------------------------------------------| ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `/ws/taskfeed/`               | WS     | Task Feed channel: broadcast new and deleted tasks to all taskers. No client messages expected.                               
-| `/ws/taskrequests/<task_id>/` | WS     | Task Requests channel for a specific task: broadcasts updates about task requests related to the given task. No client messages expected.|
-| `/ws/notifications/`          | WS     | User Notifications channel: sends direct notifications to individual users (taskers or clients). No client messages expected.|
-| `/ws/taskchat/<task_id>/`     | WS     | Task Chat channel for real-time chat between the client and tasker participants of the task. Client sends and receives chat messages.|
+| Endpoint                      | Type | Description                                          |
+| ----------------------------- | ---- | ---------------------------------------------------- |
+| `/ws/taskfeed/`               | WS   | Broadcasts new and deleted tasks to all taskers.     |
+| `/ws/taskrequests/<task_id>/` | WS   | Broadcasts task request updates for a specific task. |
+| `/ws/notifications/`          | WS   | Sends real-time personal notifications to users.     |
+| `/ws/taskchat/<task_id>/`     | WS   | Real-time chat between client and tasker for a task. |
+
 
 ## Tech Stack (Planned)
 - **Frontend:** React Native  
