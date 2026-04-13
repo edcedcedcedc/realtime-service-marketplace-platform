@@ -1,6 +1,6 @@
-# Symmetrical Engine
+# Real-time task marketplace platform
 
-**Symmetrical Engine** is a real-time task marketplace platform connecting clients with workers for immediate, location-flexible tasks.  
+**connecting clients with workers for immediate, location-flexible tasks.  
 Think Uber for services — with bidding, escrow, and instant payouts.
 
 ## Run / Install
