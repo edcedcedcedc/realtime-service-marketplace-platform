@@ -63,6 +63,7 @@ export function useTaskFeed() {
 
   useEffect(() => {
     taskFeedSocket.setIsLoggedIn(isLoggedIn);
+    console.log("isOnline", isOnline);
     taskFeedSocket.setIsOnline(isOnline);
     if (!wsTaskFeedUrl || !isLoggedIn || !isOnline) {
       console.log(
@@ -83,6 +84,7 @@ export function useTaskFeed() {
       taskFeedSocket.off("task:new", handleNewTask);
       taskFeedSocket.off("task:delete", handleDeleteTask);
       taskFeedSocket.disconnect("useTaskFeed unmounted");
+      console.log("isOnline", isOnline);
     };
   }, [refreshTaskFeedSocket, isLoggedIn, isSearching, wsTaskFeedUrl, isOnline]);
 }
