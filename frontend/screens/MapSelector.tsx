@@ -213,6 +213,7 @@ export default function MapSelectorScreen({
       {/* MiniMap */}
       <View style={styles.mapWrapper}>
         <MapView
+          provider="google"
           ref={miniMapRef}
           onMapReady={() => setMiniMapReady(true)}
           style={styles.mapMini}
@@ -248,6 +249,7 @@ export default function MapSelectorScreen({
           onRequestClose={handleExit}
         >
           <MapView
+            provider="google"
             ref={fullMapRef}
             initialRegion={selectedRegion}
             style={styles.mapFull}
